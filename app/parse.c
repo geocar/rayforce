@@ -19,15 +19,15 @@ typedef struct
 
 parser_t new_parser()
 {
-    parser_t parser;
+    parser_t parser = {
+        .filename = NULL,
+        .input = NULL,
+        .current = NULL,
+        .line = 0,
+        .column = 0,
+    };
 
-    parser = (parser_t)storm_malloc(sizeof(struct parser_t));
     return parser;
-}
-
-nil_t free_parser(parser_t parser)
-{
-    storm_free(parser);
 }
 
 u8_t is_whitespace(u8_t c)
@@ -87,12 +87,12 @@ num_t parse_number(str_t *current)
     return num;
 }
 
-value_t next(parser_t parser)
+value_t next(parser_t *parser)
 {
     str_t *current = &parser->current;
 
     if (at_eof(**current))
-        return NULL;
+        return s0(NULL, 0);
 
     while (is_whitespace(**current))
         (*current)++;
@@ -117,10 +117,10 @@ value_t next(parser_t parser)
         num = strtoll(*current, &end, 10);
 
         if ((num == LONG_MAX || num == LONG_MIN) && errno == ERANGE)
-            return new_error(ERR_PARSE, "Number out of range");
+            return error(ERR_PARSE, "Number out of range");
 
         if (end == *current)
-            return new_error(ERR_PARSE, "Invalid number");
+            return error(ERR_PARSE, "Invalid number");
 
         // try double instead
         if (*end == '.')
@@ -128,14 +128,14 @@ value_t next(parser_t parser)
             dnum = strtod(*current, &end);
 
             if (errno == ERANGE)
-                return new_error(ERR_PARSE, "Number out of range");
+                return error(ERR_PARSE, "Number out of range");
 
-            res = new_scalar_f64(dnum);
+            res = f64(dnum);
         }
         else
         {
 
-            res = new_scalar_i64(num);
+            res = i64(num);
         }
 
         *current = end;
@@ -143,10 +143,10 @@ value_t next(parser_t parser)
         return res;
     }
 
-    return NULL;
+    return s0(NULL, 0);
 }
 
-value_t parse_program(parser_t parser)
+value_t parse_program(parser_t *parser)
 {
     str_t err_msg;
     value_t token;
@@ -157,20 +157,24 @@ value_t parse_program(parser_t parser)
     // } while (token != NULL);
 
     if (!at_eof(*parser->current))
-        return new_error(ERR_PARSE, str_fmt("Unexpected token: %s", parser->current));
+        return error(ERR_PARSE, str_fmt("Unexpected token: %s", parser->current));
 
     return token;
 }
 
-extern value_t parse(parser_t parser, str_t filename, str_t input)
+extern value_t parse(str_t filename, str_t input)
 {
     value_t result_t;
 
-    parser->filename = filename;
-    parser->input = input;
-    parser->current = input;
+    parser_t parser = {
+        .filename = filename,
+        .input = input,
+        .current = input,
+        .line = 0,
+        .column = 0,
+    };
 
-    result_t = parse_program(parser);
+    result_t = parse_program(&parser);
 
     return result_t;
 }

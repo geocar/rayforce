@@ -59,30 +59,32 @@ extern "C"
 
         union
         {
-            i8_t i8_t_value;
-            i64_t i64_t_value;
-            f64_t f64_value;
-            vector_t list_value;
-            error_t error_value;
+            i8_t i8;
+            i64_t i64;
+            f64_t f64;
+            vector_t s0;
+            error_t error;
         };
-    } __attribute__((aligned(16))) * value_t;
+    } __attribute__((aligned(16))) value_t;
 
     CASSERT(sizeof(struct value_t) == 32, storm_h)
 
     // Constructors
-    extern value_t new_scalar_i64(i64_t value);
-    extern value_t new_scalar_f64(f64_t value);
-    extern value_t new_vector_i64(i64_t *ptr, i64_t len);
-    extern value_t new_vector_f64(f64_t *ptr, i64_t len);
-    extern value_t new_vector_str(str_t *ptr, i64_t len);
+    extern value_t i64(i64_t value);
+    extern value_t f64(f64_t value);
+    extern value_t vi64(i64_t *ptr, i64_t len);
+    extern value_t vf64(f64_t *ptr, i64_t len);
+    extern value_t str(str_t *ptr, i64_t len);
+    extern value_t s0(value_t *ptr, i64_t len);
 
     // Error
-    extern value_t new_error(i8_t code, str_t message);
+    extern value_t error(i8_t code, str_t message);
 
     // Destructor
-    extern nil_t value_free(value_t value);
+    extern nil_t value_free(value_t *value);
 
     // Accessors
+    extern i8_t null(value_t *value);
 
 #ifdef __cplusplus
 }

@@ -11,28 +11,28 @@ value_t til(i64_t count)
     {
         vec[i] = i;
     }
-    return new_vector_i64(vec, count);
+    return vi64(vec, count);
 }
 
-value_t storm_add(value_t a, value_t b)
+value_t storm_add(value_t *a, value_t *b)
 {
     i64_t a_len, b_len, sum = 0;
     i64_t *a_vec;
 
-    a_len = a->list_value.len;
-    a_vec = a->list_value.ptr;
+    a_len = a->s0.len;
+    a_vec = a->s0.ptr;
 
-    sum = b->i64_t_value;
+    sum = b->i64;
 
     for (i64_t i = 0; i < a_len; i++)
     {
         sum += a_vec[i];
     }
 
-    return new_scalar_i64(sum);
+    return i64(sum);
 }
 
-u8_t *compile(value_t value)
+u8_t *compile(value_t *value)
 {
     u8_t *code;
 

@@ -30,7 +30,7 @@ extern str_t str_fmt(str_t fmt, ...)
     return p;
 }
 
-str_t vector_fmt(value_t value)
+str_t vector_fmt(value_t *value)
 {
     str_t str, buf;
     i64_t count, remains, len;
@@ -40,7 +40,7 @@ str_t vector_fmt(value_t value)
     strncpy(buf, "[", 2);
     buf += 1;
 
-    count = value->list_value.len < 1 ? 0 : value->list_value.len - 1;
+    count = value->s0.len < 1 ? 0 : value->s0.len - 1;
     remains = MAX_ROW_WIDTH;
     len = 0;
 
@@ -49,9 +49,9 @@ str_t vector_fmt(value_t value)
         remains = MAX_ROW_WIDTH - (buf - str);
 
         if (v_type == TYPE_I64)
-            len = snprintf(buf, remains, "%lld, ", ((i64_t *)value->list_value.ptr)[i]);
+            len = snprintf(buf, remains, "%lld, ", ((i64_t *)value->s0.ptr)[i]);
         else if (v_type == TYPE_F64)
-            len = snprintf(buf, remains, "%.*f, ", F64_PRECISION, ((f64_t *)value->list_value.ptr)[i]);
+            len = snprintf(buf, remains, "%.*f, ", F64_PRECISION, ((f64_t *)value->s0.ptr)[i]);
 
         if (len < 0)
         {
@@ -68,12 +68,12 @@ str_t vector_fmt(value_t value)
     }
 
     remains = MAX_ROW_WIDTH - (buf - str);
-    if (value->list_value.len > 0 && remains > 0)
+    if (value->s0.len > 0 && remains > 0)
     {
         if (v_type == TYPE_I64)
-            len = snprintf(buf, remains, "%lld", ((i64_t *)value->list_value.ptr)[count]);
+            len = snprintf(buf, remains, "%lld", ((i64_t *)value->s0.ptr)[count]);
         else if (v_type == TYPE_F64)
-            len = snprintf(buf, remains, "%.*f", F64_PRECISION, ((f64_t *)value->list_value.ptr)[count]);
+            len = snprintf(buf, remains, "%.*f", F64_PRECISION, ((f64_t *)value->s0.ptr)[count]);
 
         if (len < 0)
         {
@@ -97,11 +97,11 @@ str_t vector_fmt(value_t value)
     return str;
 }
 
-str_t error_fmt(value_t value)
+str_t error_fmt(value_t *value)
 {
     str_t code;
 
-    switch (value->error_value.code)
+    switch (value->error.code)
     {
     case ERR_INIT:
         code = "init";
@@ -114,17 +114,17 @@ str_t error_fmt(value_t value)
         break;
     }
 
-    return str_fmt("** %s error: %s", code, value->error_value.message);
+    return str_fmt("** %s error: %s", code, value->error.message);
 }
 
-extern str_t value_fmt(value_t value)
+extern str_t value_fmt(value_t *value)
 {
     switch (value->type)
     {
     case -TYPE_I64:
-        return str_fmt("%lld", value->i64_t_value);
+        return str_fmt("%lld", value->i64);
     case -TYPE_F64:
-        return str_fmt("%.*f", F64_PRECISION, value->f64_value);
+        return str_fmt("%.*f", F64_PRECISION, value->f64);
     case TYPE_I64:
         return vector_fmt(value);
     case TYPE_ERR:

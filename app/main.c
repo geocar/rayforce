@@ -21,7 +21,6 @@ int main()
     value_t value;
     vm_t vm;
     u8_t *code;
-    parser_t parser = new_parser();
 
     vm = vm_create();
 
@@ -32,21 +31,20 @@ int main()
         ptr = fgets(line, LINE_SIZE, stdin);
         UNUSED(ptr);
 
-        value = parse(parser, "REPL", line);
+        value = parse("REPL", line);
 
-        if (value == NULL)
+        if (null(&value))
             continue;
 
-        str_t buf = value_fmt(value);
+        str_t buf = value_fmt(&value);
         printf("%s\n", buf);
 
         // code = compile(value);
         // vm_exec(vm, code);
 
-        value_free(value);
+        value_free(&value);
     }
 
-    free_parser(parser);
     vm_free(vm);
     storm_alloc_deinit();
 

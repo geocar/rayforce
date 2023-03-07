@@ -3,66 +3,90 @@
 #include <stdio.h>
 #include "alloc.h"
 
-extern value_t new_error(i8_t code, str_t message)
+extern i8_t null(value_t *value)
 {
-    value_t error;
+    return value->type == TYPE_S0 && value->s0.ptr == NULL;
+}
 
-    error = storm_malloc(sizeof(struct value_t));
-    error->type = TYPE_ERR;
-    error->error_value.code = code;
-    error->error_value.message = message;
+extern value_t error(i8_t code, str_t message)
+{
+    value_t error = {
+        .type = TYPE_ERR,
+        .error = {
+            .code = code,
+            .message = message,
+        },
+    };
+
     return error;
 }
 
-extern value_t new_scalar_i64(i64_t value)
+extern value_t i64(i64_t value)
 {
-    value_t scalar;
+    value_t scalar = {
+        .type = -TYPE_I64,
+        .i64 = value,
+    };
 
-    scalar = storm_malloc(sizeof(struct value_t));
-    scalar->type = -TYPE_I64;
-    scalar->i64_t_value = value;
     return scalar;
 }
 
-extern value_t new_scalar_f64(f64_t value)
+extern value_t f64(f64_t value)
 {
-    value_t scalar;
+    value_t scalar = {
+        .type = -TYPE_F64,
+        .f64 = value,
+    };
 
-    scalar = storm_malloc(sizeof(struct value_t));
-    scalar->type = -TYPE_F64;
-    scalar->f64_value = value;
     return scalar;
 }
 
-extern value_t new_vector_i64(i64_t *ptr, i64_t len)
+extern value_t vi64(i64_t *ptr, i64_t len)
 {
-    value_t vector;
+    value_t vector = {
+        .type = TYPE_I64,
+        .s0 = {
+            .ptr = ptr,
+            .len = len,
+        },
+    };
 
-    vector = storm_malloc(sizeof(struct value_t));
-    vector->type = TYPE_I64;
-    vector->list_value.ptr = ptr;
-    vector->list_value.len = len;
     return vector;
 }
 
-extern value_t new_vector_f64(f64_t *ptr, i64_t len)
+extern value_t vf64(f64_t *ptr, i64_t len)
 {
-    value_t vector;
+    value_t vector = {
+        .type = TYPE_F64,
+        .s0 = {
+            .ptr = ptr,
+            .len = len,
+        },
+    };
 
-    vector = storm_malloc(sizeof(struct value_t));
-    vector->type = TYPE_F64;
-    vector->list_value.ptr = ptr;
-    vector->list_value.len = len;
     return vector;
 }
 
-extern nil_t value_free(value_t value)
+extern value_t s0(value_t *ptr, i64_t len)
+{
+    value_t list = {
+        .type = TYPE_S0,
+        .s0 = {
+            .ptr = ptr,
+            .len = len,
+        },
+    };
+
+    return list;
+}
+
+extern nil_t value_free(value_t *value)
 {
     switch (value->type)
     {
     case TYPE_I64:
     {
-        storm_free(value->list_value.ptr);
+        storm_free(value->s0.ptr);
         break;
     }
     default:
@@ -71,5 +95,4 @@ extern nil_t value_free(value_t value)
         break;
     }
     }
-    storm_free(value);
 }
