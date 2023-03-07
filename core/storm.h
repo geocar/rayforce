@@ -84,7 +84,8 @@ extern "C"
     extern nil_t value_free(value_t *value);
 
     // Accessors
-    extern i8_t null(value_t *value);
+    extern i8_t is_null(value_t *value);
+    extern i8_t is_error(value_t *value);
 
 #ifdef __cplusplus
 }

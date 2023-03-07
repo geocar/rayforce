@@ -3,9 +3,14 @@
 #include <stdio.h>
 #include "alloc.h"
 
-extern i8_t null(value_t *value)
+extern i8_t is_null(value_t *value)
 {
     return value->type == TYPE_S0 && value->s0.ptr == NULL;
+}
+
+extern i8_t is_error(value_t *value)
+{
+    return value->type == TYPE_ERR;
 }
 
 extern value_t error(i8_t code, str_t message)
@@ -89,9 +94,14 @@ extern nil_t value_free(value_t *value)
         storm_free(value->s0.ptr);
         break;
     }
+    case TYPE_F64:
+    {
+        storm_free(value->s0.ptr);
+        break;
+    }
     default:
     {
-        printf("** Free: Invalid type\n");
+        // printf("** Free: Invalid type\n");
         break;
     }
     }

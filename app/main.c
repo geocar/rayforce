@@ -33,9 +33,6 @@ int main()
 
         value = parse("REPL", line);
 
-        if (null(&value))
-            continue;
-
         str_t buf = value_fmt(&value);
         printf("%s\n", buf);
 

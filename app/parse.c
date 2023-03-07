@@ -7,29 +7,6 @@
 #include <errno.h>
 #include <limits.h>
 
-typedef struct
-{
-    u8_t is_int;
-    union
-    {
-        i64_t i64;
-        f64_t f64;
-    };
-} num_t;
-
-parser_t new_parser()
-{
-    parser_t parser = {
-        .filename = NULL,
-        .input = NULL,
-        .current = NULL,
-        .line = 0,
-        .column = 0,
-    };
-
-    return parser;
-}
-
 u8_t is_whitespace(u8_t c)
 {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
@@ -55,31 +32,37 @@ u8_t at_eof(u8_t c)
     return c == '\n';
 }
 
-num_t parse_number(str_t *current)
+value_t parse_number(parser_t *parser)
 {
-    num_t num;
     str_t end;
+    i64_t num_i64;
+    f64_t num_f64;
+    value_t num;
+    str_t *current = &parser->current;
 
     errno = 0;
 
-    num.i64 = strtoll(*current, &end, 10);
+    num_i64 = strtoll(*current, &end, 10);
 
-    if ((num.i64 == LONG_MAX || num.i64 == LONG_MIN) && errno == ERANGE)
-    {
-        num.is_int = 1;
-        return num;
-    }
+    if ((num_i64 == LONG_MAX || num_i64 == LONG_MIN) && errno == ERANGE)
+        return error(ERR_PARSE, "Number out of range");
 
     if (end == *current)
-        return num;
+        return error(ERR_PARSE, "Invalid number");
 
     // try double instead
     if (*end == '.')
     {
-        num.f64 = strtod(*current, &end);
+        num_f64 = strtod(*current, &end);
 
         if (errno == ERANGE)
-            return num;
+            return error(ERR_PARSE, "Number out of range");
+
+        num = f64(num_f64);
+    }
+    else
+    {
+        num = i64(num_i64);
     }
 
     *current = end;
@@ -87,7 +70,77 @@ num_t parse_number(str_t *current)
     return num;
 }
 
-value_t next(parser_t *parser)
+value_t parse_vector(parser_t *parser)
+{
+    i64_t cap = 8;
+    i64_t *vec = (i64_t *)storm_malloc(cap * sizeof(i64_t));
+    i64_t len = 0;
+    str_t *current = &parser->current;
+    value_t token;
+    u8_t is_f64 = 0;
+
+    (*current)++; // skip '['
+
+    while (!at_eof(**current) && (**current) != ']')
+    {
+        token = advance(parser);
+
+        if (is_error(&token))
+            return token;
+
+        // extend vec if needed
+        if (len == cap)
+        {
+            cap *= 2;
+            vec = storm_realloc(vec, cap * sizeof(i64_t));
+        }
+
+        if (token.type == -TYPE_I64)
+        {
+            if (is_f64)
+                ((f64_t *)vec)[len++] = (f64_t)token.i64;
+            else
+                vec[len++] = token.i64;
+        }
+        else if (token.type == -TYPE_F64)
+        {
+            if (!is_f64)
+            {
+                for (i64_t i = 0; i < len; i++)
+                    ((f64_t *)vec)[i] = (f64_t)vec[i];
+
+                is_f64 = 1;
+            }
+
+            ((f64_t *)vec)[len++] = token.f64;
+        }
+        else
+        {
+            storm_free(vec);
+            return error(ERR_PARSE, "Invalid token in vector");
+        }
+
+        if ((**current) != ',')
+            break;
+
+        (*current)++;
+    }
+
+    if ((**current) != ']')
+    {
+        storm_free(vec);
+        return error(ERR_PARSE, "Expected ']'");
+    }
+
+    (*current)++;
+
+    if (is_f64)
+        return vf64((f64_t *)vec, len);
+
+    return vi64(vec, len);
+}
+
+value_t advance(parser_t *parser)
 {
     str_t *current = &parser->current;
 
@@ -97,51 +150,11 @@ value_t next(parser_t *parser)
     while (is_whitespace(**current))
         (*current)++;
 
-    // if ((**current) == '[')
-    // {
-    //     i64_t *vec_i64 = NULL;
-    //     f64_t *vec_f64 = NULL;
-
-    //     (*current)++;
-    // }
+    if ((**current) == '[')
+        return parse_vector(parser);
 
     if ((**current) == '-' || is_digit(**current))
-    {
-        str_t end;
-        i64_t num;
-        value_t res;
-        f64_t dnum;
-
-        errno = 0;
-
-        num = strtoll(*current, &end, 10);
-
-        if ((num == LONG_MAX || num == LONG_MIN) && errno == ERANGE)
-            return error(ERR_PARSE, "Number out of range");
-
-        if (end == *current)
-            return error(ERR_PARSE, "Invalid number");
-
-        // try double instead
-        if (*end == '.')
-        {
-            dnum = strtod(*current, &end);
-
-            if (errno == ERANGE)
-                return error(ERR_PARSE, "Number out of range");
-
-            res = f64(dnum);
-        }
-        else
-        {
-
-            res = i64(num);
-        }
-
-        *current = end;
-
-        return res;
-    }
+        return parse_number(parser);
 
     return s0(NULL, 0);
 }
@@ -153,7 +166,7 @@ value_t parse_program(parser_t *parser)
 
     // do
     // {
-    token = next(parser);
+    token = advance(parser);
     // } while (token != NULL);
 
     if (!at_eof(*parser->current))

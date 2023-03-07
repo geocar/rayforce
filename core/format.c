@@ -1,7 +1,8 @@
-#include "format.h"
-#include "storm.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "format.h"
+#include "storm.h"
 #include "alloc.h"
 
 #define MAX_i64_t_WIDTH 20
@@ -121,15 +122,19 @@ extern str_t value_fmt(value_t *value)
 {
     switch (value->type)
     {
+    case TYPE_S0:
+        return str_fmt("null");
     case -TYPE_I64:
         return str_fmt("%lld", value->i64);
     case -TYPE_F64:
         return str_fmt("%.*f", F64_PRECISION, value->f64);
     case TYPE_I64:
         return vector_fmt(value);
+    case TYPE_F64:
+        return vector_fmt(value);
     case TYPE_ERR:
         return error_fmt(value);
     default:
-        return NULL;
+        return str_fmt("null");
     }
 }

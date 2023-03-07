@@ -12,6 +12,8 @@ typedef struct parser_t
     i64_t column;
 } __attribute__((aligned(16))) parser_t;
 
+value_t advance(parser_t *parser);
+
 extern value_t parse(str_t filename, str_t input);
 
 #endif
