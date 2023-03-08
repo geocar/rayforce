@@ -85,7 +85,7 @@ extern value_t s0(value_t *ptr, i64_t len)
     return list;
 }
 
-extern nil_t value_free(value_t *value)
+extern null_t value_free(value_t *value)
 {
     switch (value->type)
     {

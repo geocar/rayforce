@@ -25,8 +25,8 @@ typedef struct vm_t
 } *vm_t;
 
 vm_t vm_create();
-nil_t vm_exec(vm_t vm, u8_t *code);
-nil_t vm_free(vm_t vm);
+null_t vm_exec(vm_t vm, u8_t *code);
+null_t vm_free(vm_t vm);
 
 // void vm_init(VM *vm, int *code, int code_size, int nglobals);
 // void vm_print_instr(i16_t *code, int ip);

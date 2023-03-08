@@ -38,7 +38,7 @@ extern "C"
     typedef long long i64_t;
     typedef unsigned long long u64_t;
     typedef double f64_t;
-    typedef void nil_t;
+    typedef void null_t;
 
     typedef struct error_t
     {
@@ -81,7 +81,7 @@ extern "C"
     extern value_t error(i8_t code, str_t message);
 
     // Destructor
-    extern nil_t value_free(value_t *value);
+    extern null_t value_free(value_t *value);
 
     // Accessors
     extern i8_t is_null(value_t *value);

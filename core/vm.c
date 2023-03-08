@@ -13,7 +13,7 @@ vm_t vm_create()
     return vm;
 }
 
-nil_t vm_exec(vm_t vm, u8_t *code)
+null_t vm_exec(vm_t vm, u8_t *code)
 {
     // i8_t *stack = vm->stack;
     // i64_t *regs = vm->regs;
@@ -49,7 +49,7 @@ nil_t vm_exec(vm_t vm, u8_t *code)
     }
 }
 
-nil_t vm_free(vm_t vm)
+null_t vm_free(vm_t vm)
 {
     storm_free(vm);
 }
