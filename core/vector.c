@@ -23,6 +23,7 @@
 
 #include "bitspire.h"
 #include "alloc.h"
+#include "vector.h"
 
 /*
  * Each vector capacity is always factor of 8
@@ -32,16 +33,15 @@
 #define alignup(x, a) (((x) + (a)-1) & ~((a)-1))
 #define capacity(x) (alignup(x, CAPACITY_FACTOR))
 #define push(vector, type, value)                                                      \
-    {                                                                                  \
-        i64_t len = vector->list.len;                                                  \
-        i64_t cap = capacity(len);                                                     \
-        if (cap == 0)                                                                  \
-            vector->list.ptr = bitspire_malloc(CAPACITY_FACTOR * sizeof(type));        \
-        else if (cap == len)                                                           \
-            vector->list.ptr = bitspire_realloc(vector->list.ptr, cap * sizeof(type)); \
-        ((type *)(vector->list.ptr))[vector->list.len++] = value;                      \
-    }
-#define pop(vector, type) ((type *)(vector->list.ptr))[vector->list.len--]
+    i64_t len = (vector)->list.len;                                                    \
+    i64_t cap = capacity(len);                                                         \
+    if (cap == 0)                                                                      \
+        (vector)->list.ptr = bitspire_malloc(CAPACITY_FACTOR * sizeof(type));          \
+    else if (cap == len)                                                               \
+        (vector)->list.ptr = bitspire_realloc((vector)->list.ptr, cap * sizeof(type)); \
+    ((type *)((vector)->list.ptr))[(vector)->list.len++] = (value);
+
+#define pop(vector, type) ((type *)((vector)->list.ptr))[(vector)->list.len--]
 
 extern value_t vector(i8_t type, u8_t size_of_val, i64_t len)
 {
@@ -89,4 +89,32 @@ extern null_t list_push(value_t *list, value_t value)
 extern value_t list_pop(value_t *list)
 {
     return pop(list, value_t);
+}
+
+extern value_t list_flatten(value_t *value)
+{
+    if (value->type != TYPE_LIST)
+        return value_clone(value);
+
+    value_t *first = &as_list(value)[0],
+            vec = vector(first->type, sizeof(value_t), 1);
+    i8_t type = first->type, current_type;
+
+    push(&vec, i64_t, first->i64);
+
+    printf("LEN: %ld", value->list.len);
+
+    for (i64_t i = 1; i < value->list.len; i++)
+    {
+        // List of lists could not be flattened
+        // if (!is_scalar(first))
+        // {
+        //     value_free(&vec);
+        //     return value_clone(value);
+        // }
+
+        // push(&vec, i64_t, as_list(value)[i].i64);
+    }
+
+    return vec;
 }

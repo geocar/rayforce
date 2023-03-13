@@ -53,7 +53,12 @@
 #define ERR_INIT 1
 #define ERR_PARSE 2
 #define ERR_FORMAT 3
-#define ERR_INVALID_TYPE 4
+#define ERR_TYPE 4
+#define ERR_LENGTH 5
+#define ERR_INDEX 6
+#define ERR_ALLOC 7
+#define ERR_IO 8
+#define ERR_UNKNOWN 127
 
 typedef char i8_t;
 typedef unsigned char u8_t;
@@ -108,16 +113,17 @@ extern value_t string(i64_t len);                              // string (alloca
 #define vector_symbol(len) (vector(TYPE_SYMBOL, sizeof(i64_t), len)) // symbol vector
 #define list(len) (vector(TYPE_LIST, sizeof(value_t), len))          // list
 
-extern value_t str(str_t ptr, i64_t len); // str non-duplicated string, possibly non null terminated
-extern value_t null();                    // null (as null list)
-extern value_t table(value_t *ptr);       // table (accepts list of two vectors)
-extern value_t dict(value_t *ptr);        // dict (accepts list of two vectors)
+extern value_t str(str_t ptr, i64_t len);         // str non-duplicated string, possibly non null terminated
+extern value_t null();                            // null (as null list)
+extern value_t table(value_t keys, value_t vals); // table
+extern value_t dict(value_t keys, value_t vals);  // dict
 
 // Error
 extern value_t error(i8_t code, str_t message);
 
 // Destructor
 extern null_t value_free(value_t *value);
+extern value_t value_clone(value_t *value);
 
 // Accessors
 #define as_vector_i64(value) ((i64_t *)(value)->list.ptr)
@@ -127,8 +133,9 @@ extern null_t value_free(value_t *value);
 #define as_list(value) ((value_t *)(value)->list.ptr)
 
 // Checkers
-extern i8_t is_null(value_t *value);
-extern i8_t is_error(value_t *value);
+#define is_null(value) ((value)->type == TYPE_LIST && (value)->list.ptr == NULL)
+#define is_error(value) ((value)->type == TYPE_ERROR)
+#define is_scalar(value) ((value)->type < 0)
 
 // Mutators
 extern null_t vector_i64_push(value_t *vector, i64_t value);

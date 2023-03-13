@@ -27,16 +27,6 @@
 #include "alloc.h"
 #include "string.h"
 
-extern i8_t is_null(value_t *value)
-{
-    return value->type == TYPE_LIST && value->list.ptr == NULL;
-}
-
-extern i8_t is_error(value_t *value)
-{
-    return value->type == TYPE_ERROR;
-}
-
 extern value_t error(i8_t code, str_t message)
 {
     value_t error = {
@@ -95,6 +85,40 @@ extern value_t null()
     };
 
     return list;
+}
+
+extern value_t dict(value_t keys, value_t vals)
+{
+    if (keys.type < 0 || vals.type < 0)
+        return error(ERR_TYPE, "Keys and values must be lists");
+
+    if (keys.list.len != vals.list.len)
+        return error(ERR_LENGTH, "Keys and values must have the same length");
+
+    value_t dict = list(2);
+
+    as_list(&dict)[0] = keys;
+    as_list(&dict)[1] = vals;
+
+    dict.type = TYPE_DICT;
+
+    return dict;
+}
+
+extern value_t value_clone(value_t *value)
+{
+    switch (value->type)
+    {
+    case TYPE_I64:
+        return *value;
+    case TYPE_F64:
+        return *value;
+    default:
+    {
+        // printf("** Clone: Invalid type\n");
+        return *value;
+    }
+    }
 }
 
 extern null_t value_free(value_t *value)

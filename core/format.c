@@ -159,7 +159,8 @@ str_t list_fmt(u32_t pad, u32_t lim, value_t *value)
         return str_fmt(0, "null");
 
     str_t s, str, buf;
-    i64_t count, remains, len;
+    u8_t slim = lim - FORMAT_TRAILER_SIZE;
+    i64_t count, remains = slim, len;
 
     str = buf = (str_t)bitspire_malloc(2048);
     len = snprintf(buf, remains, "%*.*s(\n", pad, pad, PADDING);
@@ -211,6 +212,31 @@ str_t string_fmt(u32_t pad, u32_t lim, value_t *value)
     return str_fmt(value->list.len + 3, "\"%s\"", value->list.ptr);
 }
 
+str_t dict_fmt(u32_t pad, u32_t lim, value_t *value)
+{
+    value_t *keys = &as_list(value)[0], *vals = &as_list(value)[1];
+    u32_t len = keys->list.len;
+
+    if (lim < FORMAT_TRAILER_SIZE)
+        return NULL;
+
+    str_t s, str, buf;
+    u8_t slim = lim - FORMAT_TRAILER_SIZE;
+    i64_t count, remains = slim;
+
+    str = buf = (str_t)bitspire_malloc(2048);
+    len = snprintf(buf, remains, "%*.*s{\n", pad, pad, PADDING);
+    buf += len;
+
+    for (u64_t i = 0; i < len; i++)
+    {
+        s = value_fmt(((value_t *)value->list.ptr) + i);
+        buf += snprintf(buf, MAX_ROW_WIDTH, "  %s\n", s);
+    }
+
+    return str;
+}
+
 extern str_t value_fmt(value_t *value)
 {
     switch (value->type)
@@ -231,6 +257,8 @@ extern str_t value_fmt(value_t *value)
         return vector_fmt(0, MAX_ROW_WIDTH, value);
     case TYPE_STRING:
         return string_fmt(0, MAX_ROW_WIDTH, value);
+    case TYPE_DICT:
+        return dict_fmt(0, MAX_ROW_WIDTH, value);
     case TYPE_ERROR:
         return error_fmt(0, 0, value);
     default:

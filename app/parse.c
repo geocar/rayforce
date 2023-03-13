@@ -30,6 +30,7 @@
 #include "../core/alloc.h"
 #include "../core/format.h"
 #include "../core/string.h"
+#include "../core/vector.h"
 
 u8_t is_whitespace(u8_t c)
 {
@@ -96,9 +97,8 @@ value_t parse_number(parser_t *parser)
 
 value_t parse_vector(parser_t *parser)
 {
-    i64_t cap = 8;
     str_t *current = &parser->current;
-    value_t token, vec = vector_i64(0);
+    value_t token, vec, lst = list(0);
 
     (*current)++; // skip '['
 
@@ -108,68 +108,25 @@ value_t parse_vector(parser_t *parser)
 
         if (is_error(&token))
         {
-            value_free(&vec);
+            value_free(&lst);
             return token;
         }
 
-        if (token.type == -TYPE_I64)
-        {
-            if (vec.type == TYPE_I64)
-                vector_i64_push(&vec, token.i64);
-            else if (vec.type == TYPE_F64)
-                vector_f64_push(&vec, (f64_t)token.i64);
-            else
-            {
-                value_free(&vec);
-                return error(ERR_PARSE, "Invalid token in vector");
-            }
-        }
-        else if (token.type == -TYPE_F64)
-        {
-            if (vec.type == TYPE_F64)
-                vector_f64_push(&vec, token.f64);
-            else if (vec.type == TYPE_I64)
-            {
-
-                for (u64_t i = 0; i < vec.list.len; i++)
-                    as_vector_f64(&vec)[i] = (f64_t)as_vector_i64(&vec)[i];
-
-                vector_f64_push(&vec, token.f64);
-                vec.type = TYPE_F64;
-            }
-            else
-            {
-                value_free(&vec);
-                return error(ERR_PARSE, "Invalid token in vector");
-            }
-        }
-        else if (token.type == -TYPE_SYMBOL)
-        {
-            if (vec.type == TYPE_SYMBOL || (vec.list.len == 0))
-            {
-                vector_i64_push(&vec, token.i64);
-                vec.type = TYPE_SYMBOL;
-            }
-            else
-            {
-                value_free(&vec);
-                return error(ERR_PARSE, "Invalid token in vector");
-            }
-        }
-        else
-        {
-            value_free(&vec);
-            return error(ERR_PARSE, "Invalid token in vector");
-        }
+        list_push(&lst, token);
     }
 
     if ((**current) != ']')
     {
-        value_free(&vec);
+        value_free(&lst);
         return error(ERR_PARSE, "Expected ']'");
     }
 
     (*current)++;
+
+    printf("FFFLLL");
+    fflush(stdout);
+    vec = list_flatten(&lst);
+    value_free(&lst);
 
     return vec;
 }
@@ -256,46 +213,59 @@ value_t parse_string(parser_t *parser)
     return res;
 }
 
-// value_t parse_dict(parser_t *parser)
-// {
-//     i64_t cap = 8;
-//     u32_t len = 0;
-//     str_t *current = &parser->current;
-//     value_t *vec = (value_t *)bitspire_malloc(cap * sizeof(value_t));
-//     value_t token;
+value_t parse_dict(parser_t *parser)
+{
+    i64_t cap = 8;
+    str_t *current = &parser->current;
+    value_t token, keys = list(0), vals = list(0);
 
-//     (*current)++; // skip '{'
+    (*current)++; // skip '{'
 
-//     while (!at_eof(**current) && (**current) != '}')
-//     {
-//         token = advance(parser);
+    while (!at_eof(**current) && (**current) != '}')
+    {
+        token = advance(parser);
 
-//         if (is_error(&token))
-//         {
-//             bitspire_free(vec);
-//             return token;
-//         }
+        if (is_error(&token))
+        {
+            value_free(&keys);
+            value_free(&vals);
+            return token;
+        }
 
-//         // extend vec if needed
-//         if (len == cap)
-//         {
-//             cap *= 2;
-//             vec = bitspire_realloc(vec, cap * sizeof(value_t));
-//         }
+        list_push(&keys, token);
 
-//         vec[len++] = token;
-//     }
+        if ((**current) != ':')
+        {
+            value_free(&keys);
+            value_free(&vals);
+            return error(ERR_PARSE, "Expected ':'");
+        }
 
-//     if ((**current) != '}')
-//     {
-//         bitspire_free(vec);
-//         return error(ERR_PARSE, "Expected '}'");
-//     }
+        (*current)++;
 
-//     (*current)++;
+        token = advance(parser);
 
-//     return dict(vec, len);
-// }
+        if (is_error(&token))
+        {
+            value_free(&keys);
+            value_free(&vals);
+            return token;
+        }
+
+        list_push(&vals, token);
+    }
+
+    if ((**current) != '}')
+    {
+        value_free(&keys);
+        value_free(&vals);
+        return error(ERR_PARSE, "Expected '}'");
+    }
+
+    (*current)++;
+
+    return dict(keys, vals);
+}
 
 value_t advance(parser_t *parser)
 {
@@ -312,6 +282,9 @@ value_t advance(parser_t *parser)
 
     if ((**current) == '(')
         return parse_list(parser);
+
+    if ((**current) == '{')
+        return parse_dict(parser);
 
     if ((**current) == '-' || is_digit(**current))
         return parse_number(parser);
