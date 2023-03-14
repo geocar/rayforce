@@ -35,6 +35,8 @@
 #define F64_PRECISION 4
 
 const str_t PADDING = "                                                                                                   ";
+const str_t TABLE_SEPARATOR = " | ";
+const str_t TABLE_HEADER_SEPARATOR = "------------------------------------------------------------------------------------";
 
 extern str_t value_fmt_ind(u32_t indent, u32_t limit, value_t *value);
 
@@ -225,6 +227,42 @@ str_t dict_fmt(u32_t indent, u32_t limit, value_t *value)
     return str;
 }
 
+str_t table_fmt(u32_t indent, u32_t limit, value_t *value)
+{
+    if (!limit)
+        return "";
+
+    i64_t *colnames = as_vector_symbol(&as_list(value)[0]);
+    u32_t table_width = (&as_list(value)[0])->list.len, width = 0;
+    value_t *columns = &as_list(value)[1], column_widths = vector_i64(table_width);
+    str_t str = str_fmt(limit, "|"), s;
+
+    // Calculate table width
+    for (u64_t i = 0; i < table_width; i++)
+    {
+        width = strlen(symbols_get(colnames[i]));
+        as_vector_i64(&column_widths)[i] = width;
+    }
+
+    for (u64_t i = 0; i < table_width; i++)
+    {
+        width = as_vector_i64(&column_widths)[i] + 1;
+        s = symbols_get(colnames[i]);
+        str = str_fmt(0, "%s %s%*.*s|", str, s, width - strlen(s), width - strlen(s), PADDING);
+        // for (u64_t j = 0; j < (&as_list(columns)[i])->list.len; j++)
+        // {
+        //     width = strlen(value_fmt_ind(indent, limit - indent, &as_list(&columns[i])[j]));
+        //     if (width > as_vector_i64(&column_widths)[i])
+        //         as_vector_i64(&column_widths)[i] = width;
+        // }
+    }
+
+    width = strlen(str);
+    str = str_fmt(0, "%s\n%*.*s", str, width, width, TABLE_HEADER_SEPARATOR);
+
+    return str;
+}
+
 extern str_t value_fmt_ind(u32_t indent, u32_t limit, value_t *value)
 {
     switch (value->type)
@@ -247,6 +285,8 @@ extern str_t value_fmt_ind(u32_t indent, u32_t limit, value_t *value)
         return string_fmt(indent, limit, value);
     case TYPE_DICT:
         return dict_fmt(indent, limit, value);
+    case TYPE_TABLE:
+        return table_fmt(indent, limit, value);
     case TYPE_ERROR:
         return error_fmt(indent, limit, value);
     default:

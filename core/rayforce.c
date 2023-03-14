@@ -107,8 +107,8 @@ extern value_t dict(value_t keys, value_t vals)
 
 extern value_t table(value_t keys, value_t vals)
 {
-    if (keys.type < 0 || vals.type != 0)
-        return error(ERR_TYPE, "Keys and values must be lists");
+    if (keys.type != TYPE_SYMBOL || vals.type != 0)
+        return error(ERR_TYPE, "Keys must be a symbol vector and values must be list");
 
     if (keys.list.len != vals.list.len)
         return error(ERR_LENGTH, "Keys and values must have the same length");

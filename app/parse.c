@@ -348,9 +348,9 @@ value_t parse_dict(parser_t *parser)
     }
 
     keys = list_flatten(&keys);
-    vals = list_flatten(&vals);
+    // vals = list_flatten(&vals);
 
-    return dict(keys, vals);
+    return table(keys, vals);
 }
 
 value_t advance(parser_t *parser)
@@ -390,6 +390,7 @@ value_t advance(parser_t *parser)
 
 value_t parse_program(parser_t *parser)
 {
+    return advance(parser);
     str_t err_msg;
     value_t token, list = list(0);
 

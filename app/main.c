@@ -94,14 +94,14 @@ int main()
 
     vm = vm_create();
 
-    str_t file = open_file("test.ray");
-    value = parse("test.ray", file);
-    str_t buf = value_fmt(&value);
+    // str_t file = open_file("test.ray");
+    // value = parse("test.ray", file);
+    // str_t buf = value_fmt(&value);
 
-    if (is_error(&value))
-        printf("%s%s%s\n", TOMATO, buf, RESET);
-    else
-        printf("%s\n", buf);
+    // if (is_error(&value))
+    //     printf("%s%s%s\n", TOMATO, buf, RESET);
+    // else
+    //     printf("%s\n", buf);
 
     while (run)
     {
