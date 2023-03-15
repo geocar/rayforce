@@ -221,6 +221,7 @@ str_t dict_fmt(u32_t indent, u32_t limit, value_t *value)
     value_t *keys = &as_list(value)[0], *vals = &as_list(value)[1];
     u32_t len = keys->list.len;
     str_t k, v, str = str_fmt(limit, "{");
+    u32_t offset = 1;
 
     indent += 2;
 
@@ -259,10 +260,12 @@ str_t dict_fmt(u32_t indent, u32_t limit, value_t *value)
             break;
         }
 
-        str = str_fmt(0, "%s\n%*.*s%s: %s", str, indent, indent, PADDING, k, v);
+        offset += str_fmt_into(0, offset, &str, "\n%*.*s%s: %s", indent, indent, PADDING, k, v);
+        rayforce_free(k);
+        rayforce_free(v);
     }
 
-    str = str_fmt(0, "%s\n%*.*s}", str, indent - 2, indent - 2, PADDING);
+    str_fmt_into(0, offset, &str, "\n%*.*s}", indent - 2, indent - 2, PADDING);
     return str;
 }
 
@@ -298,7 +301,24 @@ str_t table_fmt(u32_t indent, u32_t limit, value_t *value)
         // Then traverse column until maximum height limit
         for (u64_t j = 0; j < table_height; j++)
         {
-            s = str_fmt(0, "%lld", as_vector_i64(&as_list(columns)[i])[j]);
+            value_t *column = &as_list(columns)[i];
+
+            switch (column->type)
+            {
+            case TYPE_I64:
+                s = str_fmt(limit, "%lld", as_vector_i64(column)[j]);
+                break;
+            case TYPE_F64:
+                s = str_fmt(limit, "%.*f", F64_PRECISION, as_vector_f64(column)[j]);
+                break;
+            case TYPE_SYMBOL:
+                s = str_fmt(limit, "%s", symbols_get(as_vector_symbol(column)[j]));
+                break;
+            default:
+                s = value_fmt_ind(indent, limit - indent, &as_list(column)[j]);
+                break;
+            }
+
             formatted_columns[i][j] = s;
             width = strlen(s);
             if (width > as_vector_i64(&column_widths)[i])
@@ -334,10 +354,10 @@ str_t table_fmt(u32_t indent, u32_t limit, value_t *value)
             width = as_vector_i64(&column_widths)[i] + 1;
             s = formatted_columns[i][j];
             offset += str_fmt_into(0, offset, &str, " %s%*.*s|", s, width - strlen(s), width - strlen(s), PADDING);
+            // Free formatted column
+            rayforce_free(s);
         }
     }
-
-    // Free formatted_columns
 
     return str;
 }
