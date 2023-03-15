@@ -33,12 +33,49 @@
 #define MAX_ROW_WIDTH MAX_I64_WIDTH * 2
 #define FORMAT_TRAILER_SIZE 4
 #define F64_PRECISION 4
+#define TABLE_MAX_WIDTH 10  // Maximum number of columns
+#define TABLE_MAX_HEIGHT 10 // Maximum number of rows
 
 const str_t PADDING = "                                                                                                   ";
 const str_t TABLE_SEPARATOR = " | ";
 const str_t TABLE_HEADER_SEPARATOR = "------------------------------------------------------------------------------------";
 
 extern str_t value_fmt_ind(u32_t indent, u32_t limit, value_t *value);
+
+extern i32_t str_fmt_into(u32_t limit, u64_t offset, str_t *dst, str_t fmt, ...)
+{
+    i32_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
+    str_t p;
+
+    n = strlen(*dst);
+
+    if (n < (size + offset))
+    {
+        size = size + offset;
+        *dst = rayforce_realloc(*dst, size);
+    }
+
+    while (1)
+    {
+        p = *dst + offset;
+
+        va_list args;
+        va_start(args, fmt);
+        n = vsnprintf(p, size, fmt, args);
+        va_end(args);
+
+        if (n < 0)
+            return n;
+
+        if (limit != 0 || n < size)
+            break;
+
+        size = size * 2;
+        *dst = rayforce_realloc(*dst, size);
+    }
+
+    return n;
+}
 
 extern str_t str_fmt(u32_t limit, str_t fmt, ...)
 {
@@ -145,16 +182,18 @@ str_t list_fmt(u32_t indent, u32_t limit, value_t *value)
         return str_fmt(limit, "null");
 
     str_t s, str = str_fmt(limit, "(");
+    i32_t offset = 1;
 
     indent += 2;
 
     for (u64_t i = 0; i < value->list.len; i++)
     {
         s = value_fmt_ind(indent, limit - indent, ((value_t *)value->list.ptr) + i);
-        str = str_fmt(0, "%s\n%*.*s%s", str, indent, indent, PADDING, s);
+        offset += str_fmt_into(0, offset, &str, "\n%*.*s%s", indent, indent, PADDING, s);
+        rayforce_free(s);
     }
 
-    str = str_fmt(0, "%s\n%*.*s)", str, indent - 2, indent - 2, PADDING);
+    str_fmt_into(0, offset, &str, "\n%*.*s)", indent - 2, indent - 2, PADDING);
     return str;
 }
 
@@ -232,33 +271,73 @@ str_t table_fmt(u32_t indent, u32_t limit, value_t *value)
     if (!limit)
         return "";
 
-    i64_t *colnames = as_vector_symbol(&as_list(value)[0]);
-    u32_t table_width = (&as_list(value)[0])->list.len, width = 0;
-    value_t *columns = &as_list(value)[1], column_widths = vector_i64(table_width);
-    str_t str = str_fmt(limit, "|"), s;
+    i64_t *header = as_vector_symbol(&as_list(value)[0]);
+    value_t *columns = &as_list(value)[1], column_widths;
+    u32_t table_width, width, table_height;
+    str_t str = str_fmt(0, "|"), s;
+    str_t formatted_columns[TABLE_MAX_WIDTH][TABLE_MAX_HEIGHT] = {{NULL}};
+    i32_t offset = 1;
 
-    // Calculate table width
+    table_width = (&as_list(value)[0])->list.len;
+    if (table_width > TABLE_MAX_WIDTH)
+        table_width = TABLE_MAX_WIDTH;
+
+    table_height = (&as_list(columns)[0])->list.len;
+    if (table_height > TABLE_MAX_HEIGHT)
+        table_height = TABLE_MAX_HEIGHT;
+
+    column_widths = vector_i64(table_width);
+
+    // Calculate each column maximum width
     for (u64_t i = 0; i < table_width; i++)
     {
-        width = strlen(symbols_get(colnames[i]));
+        // First check the column name
+        width = strlen(symbols_get(header[i]));
         as_vector_i64(&column_widths)[i] = width;
+
+        // Then traverse column until maximum height limit
+        for (u64_t j = 0; j < table_height; j++)
+        {
+            s = str_fmt(0, "%lld", as_vector_i64(&as_list(columns)[i])[j]);
+            formatted_columns[i][j] = s;
+            width = strlen(s);
+            if (width > as_vector_i64(&column_widths)[i])
+                as_vector_i64(&column_widths)[i] = width;
+        }
     }
+
+    // Print table header
+    for (u64_t i = 0; i < table_width; i++)
+    {
+        width = as_vector_i64(&column_widths)[i];
+        s = symbols_get(header[i]);
+        width = width - strlen(s) + 2;
+        offset += str_fmt_into(0, offset, &str, "%s%*.*s|", s, width, width, PADDING);
+    }
+
+    // Print table header separator
+    offset += str_fmt_into(0, offset, &str, "\n+");
 
     for (u64_t i = 0; i < table_width; i++)
     {
-        width = as_vector_i64(&column_widths)[i] + 1;
-        s = symbols_get(colnames[i]);
-        str = str_fmt(0, "%s %s%*.*s|", str, s, width - strlen(s), width - strlen(s), PADDING);
-        // for (u64_t j = 0; j < (&as_list(columns)[i])->list.len; j++)
-        // {
-        //     width = strlen(value_fmt_ind(indent, limit - indent, &as_list(&columns[i])[j]));
-        //     if (width > as_vector_i64(&column_widths)[i])
-        //         as_vector_i64(&column_widths)[i] = width;
-        // }
+        width = as_vector_i64(&column_widths)[i] + 2;
+        offset += str_fmt_into(0, offset, &str, "%*.*s+", width, width, TABLE_HEADER_SEPARATOR);
     }
 
-    width = strlen(str);
-    str = str_fmt(0, "%s\n%*.*s", str, width, width, TABLE_HEADER_SEPARATOR);
+    // Print table content
+    for (u64_t j = 0; j < table_height; j++)
+    {
+        offset += str_fmt_into(0, offset, &str, "\n|");
+
+        for (u64_t i = 0; i < table_width; i++)
+        {
+            width = as_vector_i64(&column_widths)[i] + 1;
+            s = formatted_columns[i][j];
+            offset += str_fmt_into(0, offset, &str, " %s%*.*s|", s, width - strlen(s), width - strlen(s), PADDING);
+        }
+    }
+
+    // Free formatted_columns
 
     return str;
 }
