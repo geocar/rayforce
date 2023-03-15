@@ -25,6 +25,7 @@
 #include "string.h"
 #include "rayforce.h"
 #include "alloc.h"
+#include "util.h"
 
 /*
  * Creates new value_t string from a C string.
@@ -69,9 +70,10 @@ extern value_t str(str_t ptr, i64_t len)
  * Note that this implementation assumes that the pattern and text strings do not contain any null characters ('\0').
  * If this is not the case, a more sophisticated implementation may be required.
  */
-u8_t match(str_t pat, str_t str)
+u8_t string_match(str_t str, str_t pat)
 {
-    // u8_t start, end;
+    str_t end;
+    u8_t inv = 0, match = 0;
 
     while (*str != '\0')
     {
@@ -85,11 +87,60 @@ u8_t match(str_t pat, str_t str)
 
             while (*str != '\0')
             {
-                if (match(pat, str))
+                if (string_match(pat, str))
                     return 1;
 
                 str++;
             }
+        }
+
+        // Set of characters
+        else if (*pat == '[')
+        {
+            pat++;
+
+            // Character '[' itself
+            if (*pat == '[')
+            {
+                if (*pat != *str)
+                    return 0;
+
+                pat++;
+                str++;
+                continue;
+            }
+
+            // Inverse characters set
+            if (*pat == '^')
+            {
+                inv = 1;
+                pat++;
+            }
+
+            end = strchr(pat, ']');
+
+            if (end == NULL || end == pat)
+                return 0;
+
+            while (pat < end)
+            {
+                if (inv && *pat == *str)
+                    return 0;
+                else if (*pat == *str)
+                {
+                    match = 1;
+                    break;
+                }
+
+                pat++;
+            }
+
+            if (!(match | inv))
+                return 0;
+
+            pat = end + 1;
+            str++;
+            inv = match = 0;
         }
 
         // exact match
@@ -98,32 +149,6 @@ u8_t match(str_t pat, str_t str)
             pat++;
             str++;
         }
-
-        // Set of characters
-        // else if (*pat == '[')
-        // {
-        //     start = pat++;
-        //     end = strchr(pat, ']');
-
-        //     if (end == NULL || end == pat)
-        //         return 0;
-
-        //     u8_t match = 0;
-
-        //     while (*pat != ']')
-        //     {
-        //         if (*pat == *str)
-        //             match = 1;
-
-        //         pat++;
-        //     }
-
-        //     if (!match)
-        //         return 0;
-
-        //     pat++;
-        //     str++;
-        // }
 
         else
             return 0;

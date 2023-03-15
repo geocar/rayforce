@@ -26,6 +26,6 @@
 
 #include "rayforce.h"
 
-u8_t match(str_t pat, str_t str);
+u8_t string_match(str_t str, str_t pat);
 
 #endif
