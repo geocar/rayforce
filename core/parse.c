@@ -100,7 +100,7 @@ u8_t at_eof(i8_t c)
 
 u8_t at_term(i8_t c)
 {
-    return c == ')' || c == ']' || c == '}' || c == ':' || c == '\0' || c == '\n';
+    return c == ')' || c == ']' || c == '}' || c == ':' || c == '\n';
 }
 
 u8_t is_at(rf_object_t *token, i8_t c)
@@ -113,13 +113,14 @@ u8_t is_at_term(rf_object_t *token)
     return token->type == TYPE_TOKEN && at_term(token->i64);
 }
 
-u8_t shift(str_t *current)
+u8_t shift(parser_t *parser, u32_t num)
 {
-    if (at_eof(**current))
-        return '\0';
+    if (at_eof(*parser->current))
+        return 0;
 
-    u8_t res = **current;
-    (*current)++;
+    u8_t res = *parser->current;
+    parser->current += num;
+    parser->column += num;
 
     return res;
 }
@@ -137,22 +138,21 @@ rf_object_t parse_number(parser_t *parser)
     i64_t num_i64;
     f64_t num_f64;
     rf_object_t num;
-    str_t *current = &parser->current;
 
     errno = 0;
 
-    num_i64 = strtoll(*current, &end, 10);
+    num_i64 = strtoll(parser->current, &end, 10);
 
     if ((num_i64 == LONG_MAX || num_i64 == LONG_MIN) && errno == ERANGE)
         return error(ERR_PARSE, "Number out of range");
 
-    if (end == *current)
+    if (end == parser->current)
         return error(ERR_PARSE, "Invalid number");
 
     // try double instead
     if (*end == '.')
     {
-        num_f64 = strtod(*current, &end);
+        num_f64 = strtod(parser->current, &end);
 
         if (errno == ERANGE)
             return error(ERR_PARSE, "Number out of range");
@@ -164,7 +164,7 @@ rf_object_t parse_number(parser_t *parser)
         num = i64(num_i64);
     }
 
-    *current = end;
+    shift(parser, end - parser->current);
 
     return num;
 }
@@ -193,7 +193,7 @@ rf_object_t parse_string(parser_t *parser)
     len = pos - parser->current;
     res = string(len);
     strncpy(as_string(&res), parser->current, len);
-    parser->current = pos + 1;
+    shift(parser, len + 1);
 
     return res;
 }
@@ -214,20 +214,19 @@ rf_object_t parse_symbol(parser_t *parser)
     id = symbols_intern(&s);
     res = i64(id);
     res.type = -TYPE_SYMBOL;
-    parser->current = pos;
+    shift(parser, pos - parser->current);
 
     return res;
 }
 
 rf_object_t parse_vector(parser_t *parser)
 {
-    str_t *current = &parser->current;
     rf_object_t token, vec = vector_i64(0), err;
 
     // save current span
     span_t s = span(parser);
 
-    (*current)++; // skip '['
+    shift(parser, 1); // skip '['
     token = advance(parser);
 
     while (!is_at(&token, ']'))
@@ -305,9 +304,8 @@ rf_object_t parse_vector(parser_t *parser)
 rf_object_t parse_list(parser_t *parser)
 {
     rf_object_t lst = list(0), token;
-    str_t *current = &parser->current;
 
-    (*current)++; // skip '('
+    shift(parser, 1); // skip '('
     token = advance(parser);
 
     while (!is_at(&token, ')'))
@@ -319,10 +317,16 @@ rf_object_t parse_list(parser_t *parser)
             return token;
         }
 
-        if (at_eof(**current))
+        if (at_eof(*parser->current))
         {
             object_free(&lst);
             return error(ERR_PARSE, "Expected ')'");
+        }
+
+        if (is_at_term(&token))
+        {
+            object_free(&lst);
+            return error(ERR_PARSE, str_fmt(0, "There is no opening found for: '%c'", token.i64));
         }
 
         list_push(&lst, token);
@@ -335,10 +339,9 @@ rf_object_t parse_list(parser_t *parser)
 
 rf_object_t parse_dict(parser_t *parser)
 {
-    str_t *current = &parser->current;
     rf_object_t token, keys = list(0), vals = list(0);
 
-    (*current)++; // skip '{'
+    shift(parser, 1); // skip '{'
     token = advance(parser);
 
     while (!is_at(&token, '}'))
@@ -350,7 +353,7 @@ rf_object_t parse_dict(parser_t *parser)
             return token;
         }
 
-        if (at_eof(**current))
+        if (at_eof(*parser->current))
         {
             object_free(&keys);
             object_free(&vals);
@@ -377,7 +380,7 @@ rf_object_t parse_dict(parser_t *parser)
             return token;
         }
 
-        if (at_eof(**current))
+        if (at_eof(*parser->current))
         {
             object_free(&keys);
             object_free(&vals);
@@ -397,37 +400,45 @@ rf_object_t parse_dict(parser_t *parser)
 
 rf_object_t advance(parser_t *parser)
 {
-    str_t *current = &parser->current;
+    // Skip all whitespaces
+    while (is_whitespace(*parser->current))
+    {
+        if (*parser->current == '\n')
+        {
+            parser->line++;
+            parser->column = 0;
+        }
+        else
+            parser->column++;
 
-    if (at_eof(**current))
+        shift(parser, 1);
+    }
+
+    if (at_eof(*parser->current))
         return to_token(0);
 
-    // Skip all whitespaces
-    while (is_whitespace(**current))
-        (*current)++;
-
-    if ((**current) == '[')
+    if ((*parser->current) == '[')
         return parse_vector(parser);
 
-    if ((**current) == '(')
+    if ((*parser->current) == '(')
         return parse_list(parser);
 
-    if ((**current) == '{')
+    if ((*parser->current) == '{')
         return parse_dict(parser);
 
-    if ((**current) == '-' || is_digit(**current))
+    if ((*parser->current) == '-' || is_digit(*parser->current))
         return parse_number(parser);
 
-    if (is_alpha(**current))
+    if (is_alpha(*parser->current))
         return parse_symbol(parser);
 
-    if ((**current) == '"')
+    if ((*parser->current) == '"')
         return parse_string(parser);
 
-    if (at_term(**current))
-        return to_token(shift(current));
+    if (at_term(*parser->current))
+        return to_token(shift(parser, 1));
 
-    return error(ERR_PARSE, str_fmt(0, "Unexpected token: %s", parser->current));
+    return error(ERR_PARSE, str_fmt(0, "Unexpected token: '%s'", parser->current));
 }
 
 rf_object_t parse_program(parser_t *parser)
@@ -441,14 +452,17 @@ rf_object_t parse_program(parser_t *parser)
 
         if (is_error(&token))
         {
-            // err_msg = str_fmt(0, "%s:%d:%d: %s", parser->filename, parser->line, parser->column, object_fmt(&token));
-            // object_free(&token);
-            // return error(ERR_PARSE, err_msg);
             object_free(&list);
             return token;
         }
 
-        if (is_at(&token, '\0') || is_at_term(&token))
+        if (is_at_term(&token))
+        {
+            object_free(&list);
+            return error(ERR_PARSE, str_fmt(0, "There is no opening found for: '%c'", token.i64));
+        }
+
+        if (is_at(&token, '\0'))
             break;
 
         list_push(&list, token);
