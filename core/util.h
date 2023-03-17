@@ -25,6 +25,7 @@
 #define UTIL_H
 
 #include <stdio.h>
+#include <assert.h>
 #include <stdarg.h>
 #include "rayforce.h"
 
@@ -38,8 +39,11 @@
         fprintf(stderr, fmt, ##__VA_ARGS__); \
         fflush(stderr);                      \
     } while (0)
+
+#define debug_assert(x) (assert(x))
 #else
 #define debug(fmt, ...) (null_t)0
+#define debug_assert(x) (null_t)0
 #endif
 
 #define panic(x)                                                 \
