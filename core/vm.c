@@ -29,20 +29,30 @@
 #include "format.h"
 #include "util.h"
 
+#define push(v, x) (v->stack[v->sp++] = x)
+#define pop(v) (v->stack[--v->sp])
+
 vm_t *vm_create()
 {
     vm_t *vm;
 
     vm = (vm_t *)rayforce_malloc(sizeof(struct vm_t));
     memset(vm, 0, sizeof(struct vm_t));
-    vm->stack = list(0);
+
+    vm->stack = (rf_object_t *)mmap(NULL, VM_STACK_SIZE,
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK | MAP_GROWSDOWN,
+                                    -1, 0);
+
     return vm;
 }
 
 rf_object_t vm_exec(vm_t *vm, str_t code)
 {
     rf_object_t ob;
-    vm->ip = vm->sp = 0;
+
+    vm->ip = 0;
+    vm->sp = 0;
 
     // The indices of labels in the dispatch_table are the relevant opcodes
     static null_t *dispatch_table[] = {
@@ -54,17 +64,17 @@ rf_object_t vm_exec(vm_t *vm, str_t code)
 
 vm_halt:
     vm->halted = 1;
-    ob = vector_pop(&vm->stack);
+    ob = pop(vm);
     return ob;
 vm_push:
     vm->ip++;
     ob = *(rf_object_t *)(code + vm->ip);
-    vector_push(&vm->stack, ob);
+    push(vm, ob);
     vm->ip += sizeof(rf_object_t);
     dispatch();
 vm_pop:
     vm->ip++;
-    ob = vector_pop(&vm->stack);
+    ob = pop(vm);
     dispatch();
 }
 
@@ -72,8 +82,3 @@ null_t vm_free(vm_t *vm)
 {
     rayforce_free(vm);
 }
-
-// str_t vm_code_fmt(i8_t *code)
-// {
-//     // TODO
-// }

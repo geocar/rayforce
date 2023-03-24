@@ -25,8 +25,9 @@
 #define VM_H
 
 #include "rayforce.h"
+#include "mmap.h"
 
-#define VM_STACK_SIZE 4096
+#define VM_STACK_SIZE PAGE_SIZE * 4
 
 typedef enum vm_opcode_t
 {
@@ -40,19 +41,17 @@ typedef enum vm_opcode_t
 
 typedef struct vm_t
 {
-    i32_t ip;             // Instruction pointer
-    i32_t sp;             // Stack pointer
-    i8_t halted;          // Halt flag
-    rf_object_t regs[16]; // Registers of objects
-    rf_object_t stack;    // List of objects
+    i32_t ip;                       // Instruction pointer
+    i32_t sp;                       // Stack pointer
+    i8_t halted;                    // Halt flag
+    rf_object_t r0, r1, r2, r3, r4; // Registers of objects
+    rf_object_t *stack;             // Stack of objects
 } vm_t;
 
 vm_t *vm_create();
 rf_object_t vm_exec(vm_t *vm, str_t code);
 null_t vm_free(vm_t *vm);
 
-// void vm_init(VM *vm, int *code, int code_size, int nglobals);
-// void vm_print_instr(i16_t *code, int ip);
 // void vm_print_stack(int *stack, int count);
 
 #endif
