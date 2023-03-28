@@ -86,7 +86,7 @@ i8_t is_alphanum(i8_t c)
 
 i8_t is_op(i8_t c)
 {
-    return strchr("+-*/%&|^~<>!=", c);
+    return strchr("+-*/%&|^~<>!=", c) != NULL;
 }
 
 i8_t at_eof(i8_t c)

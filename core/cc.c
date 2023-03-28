@@ -27,23 +27,16 @@
 #include "alloc.h"
 #include "format.h"
 #include "util.h"
+#include "vector.h"
 
-#define push_opcode(x)                             \
-    if (offset >= len)                             \
-    {                                              \
-        len *= 2;                                  \
-        code = (str_t)rayforce_realloc(code, len); \
-    }                                              \
-    code[offset++] = x;
+#define push_opcode(x)       \
+    vector_reserve(code, 1); \
+    as_string(code)[offset++] = x;
 
-#define push_object(x)                                                   \
-    if (offset + sizeof(rf_object_t) >= len)                             \
-    {                                                                    \
-        len *= 2;                                                        \
-        code = (str_t)rayforce_realloc(code, len * sizeof(rf_object_t)); \
-    }                                                                    \
-    *(rf_object_t *)(code + offset) = x;                                 \
-    offset += sizeof(rf_object_t)
+#define push_object(x)                            \
+    vector_reserve(code, sizeof(rf_object_t));    \
+    *(rf_object_t *)(code->adt.ptr + offset) = x; \
+    offset += sizeof(rf_object_t);
 
 typedef struct dispatch_record_t
 {
@@ -59,15 +52,17 @@ typedef struct dispatch_record_t
 // clang-format off
 static dispatch_record_t _DISPATCH_TABLE[DISPATCH_TABLE_SIZE][DISPATCH_RECORD_SIZE] = {
     // Nilary
-    {{0}},
+    {
+        {"halt", {0},  TYPE_LIST, OP_HALT}
+    },
     // Unary
     {
-        {"-", {-TYPE_I64}, -TYPE_I64, OP_HALT}, 
-        {"halt", {0}, 0, OP_HALT},
+        {"-",    {-TYPE_I64}, -TYPE_I64,  OP_HALT},            
     },
     // Binary
     {
-        {"+", {-TYPE_I64, -TYPE_I64}, -TYPE_I64, OP_ADDI}, {"+", {-TYPE_F64, -TYPE_F64}, -TYPE_F64, OP_ADDF},
+        {"+", {-TYPE_I64, -TYPE_I64}, -TYPE_I64, OP_ADDI}, 
+        {"+", {-TYPE_F64, -TYPE_F64}, -TYPE_F64, OP_ADDF},
     },
     // Ternary
     {{0}},
@@ -76,14 +71,8 @@ static dispatch_record_t _DISPATCH_TABLE[DISPATCH_TABLE_SIZE][DISPATCH_RECORD_SI
 };
 // clang-format on
 
-i8_t cc_compile_code(rf_object_t *object, str_t *code, u32_t *len)
+i8_t cc_compile_code(rf_object_t *object, rf_object_t *code, u32_t len)
 {
-}
-
-rf_object_t cc_compile(rf_object_t *object)
-{
-    u32_t len = 2 * sizeof(rf_object_t);
-    str_t code = (str_t)rayforce_malloc(len);
     u32_t offset = 0, arity, i = 0, j = 0, match = 0;
     rf_object_t *car, err;
     dispatch_record_t *rec;
@@ -100,22 +89,24 @@ rf_object_t cc_compile(rf_object_t *object)
         car = &as_list(object)[0];
         if (car->type != -TYPE_SYMBOL)
         {
-            rayforce_free(code);
+            object_free(code);
             err = error(ERR_LENGTH, "compile list: expected symbol in a head");
             err.id = car->id;
-            return err;
+            *code = err;
+            return TYPE_ERROR;
         }
 
         arity = object->adt.len - 1;
         if (arity > 4)
         {
-            rayforce_free(code);
+            object_free(code);
             err = error(ERR_LENGTH, "compile list: too many arguments");
             err.id = object->id;
-            return err;
+            *code = err;
+            return TYPE_ERROR;
         }
 
-        while (rec = &_DISPATCH_TABLE[arity][i++])
+        while ((rec = &_DISPATCH_TABLE[arity][i++]))
         {
             if (i > DISPATCH_RECORD_SIZE)
                 break;
@@ -155,13 +146,20 @@ rf_object_t cc_compile(rf_object_t *object)
             err.id = object->id;
             push_object(err);
         }
-
-        push_opcode(OP_HALT);
-
-        // debug("CODE: %s\n", cc_code_fmt(code));
     }
 
-    return str(code, len);
+    // push_opcode(OP_HALT);
+
+    return code;
+}
+
+rf_object_t cc_compile(rf_object_t *object)
+{
+    u32_t len = 2 * sizeof(rf_object_t);
+    rf_object_t code = string(len);
+    cc_compile_code(object, &code, len);
+    // debug("CODE: %s\n", cc_code_fmt(as_string(&code)));
+    return code;
 }
 
 str_t cc_code_fmt(str_t code)

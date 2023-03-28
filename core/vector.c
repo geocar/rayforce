@@ -43,16 +43,29 @@
 #define capacity(x) (alignup(x, CAPACITY_FACTOR))
 
 /*
+ * Reserves memory for n elements
+ */
+#define reserve(vector, ty, n)                                                \
+    {                                                                         \
+        i64_t occup = (vector)->adt.len * sizeof(ty);                         \
+        i64_t cap = capacity(occup);                                          \
+        i64_t req_cap = n * sizeof(ty);                                       \
+        i64_t new_cap = capacity(cap + req_cap);                              \
+        if (cap > req_cap + occup)                                            \
+            ;                                                                 \
+        else if ((vector)->adt.len == 0)                                      \
+            (vector)->adt.ptr = rayforce_malloc(new_cap);                     \
+        else                                                                  \
+            (vector)->adt.ptr = rayforce_realloc((vector)->adt.ptr, new_cap); \
+    }
+
+/*
  * Appends object to the end of vector (dynamically grows vector if needed)
  */
-#define push(vector, type, value)                                                                      \
-    {                                                                                                  \
-        i64_t len = (vector)->adt.len;                                                                 \
-        if (len == 0)                                                                                  \
-            (vector)->adt.ptr = rayforce_malloc(CAPACITY_FACTOR * sizeof(type));                       \
-        else if (len == capacity(len))                                                                 \
-            (vector)->adt.ptr = rayforce_realloc((vector)->adt.ptr, capacity(len + 1) * sizeof(type)); \
-        ((type *)((vector)->adt.ptr))[(vector)->adt.len++] = value;                                    \
+#define push(vector, type, value)                                   \
+    {                                                               \
+        reserve(vector, type, 1);                                   \
+        ((type *)((vector)->adt.ptr))[(vector)->adt.len++] = value; \
     }
 
 #define pop(vector, type) ((type *)((vector)->adt.ptr))[--(vector)->adt.len]
@@ -185,6 +198,30 @@ extern rf_object_t vector_pop(rf_object_t *vector)
         return obj;
     case TYPE_LIST:
         return list_pop(vector);
+    default:
+        exit(1);
+    }
+}
+
+extern null_t vector_reserve(rf_object_t *vector, u32_t len)
+{
+    switch (vector->type)
+    {
+    case TYPE_I64:
+        reserve(vector, i64_t, len);
+        break;
+    case TYPE_F64:
+        reserve(vector, f64_t, len);
+        break;
+    case TYPE_SYMBOL:
+        reserve(vector, i64_t, len);
+        break;
+    case TYPE_LIST:
+        reserve(vector, rf_object_t, len);
+        break;
+    case TYPE_STRING:
+        reserve(vector, i8_t, len);
+        break;
     default:
         exit(1);
     }
