@@ -180,7 +180,7 @@ extern null_t object_free(rf_object_t *object)
 
     if (object->type == TYPE_ERROR)
     {
-        rayforce_free(object->adt.ptr);
+        // rayforce_free(object->adt.ptr);
         return;
     }
 

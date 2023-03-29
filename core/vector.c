@@ -87,14 +87,14 @@
     {                                           \
         rf_object_t *member;                    \
         i64_t i;                                \
-        i8_t type = &as_list(&l)[0];            \
+        i8_t type = as_list(&l)[0].type;        \
         v = vector_##t(0);                      \
                                                 \
         for (i = 0; i < l.adt.len; i++)         \
         {                                       \
             member = &as_list(&l)[i];           \
                                                 \
-            if (member->type != t)              \
+            if (member->type != type)           \
             {                                   \
                 object_free(&vec);              \
                 return list;                    \

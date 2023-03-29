@@ -29,17 +29,18 @@
 #include "util.h"
 #include "vector.h"
 
-#define push_opcode(c, x)                 \
-    {                                     \
-        vector_reserve(c, 1);             \
-        as_string(c)[(c)->adt.len++] = x; \
+#define push_opcode(c, x)                       \
+    {                                           \
+        vector_reserve(c, 1);                   \
+        as_string(c)[(c)->adt.len++] = (i8_t)x; \
     }
 
-#define push_object(c, x)                                  \
-    {                                                      \
-        vector_reserve(c, sizeof(rf_object_t));            \
-        *(rf_object_t *)(&as_string(c)[(c)->adt.len]) = x; \
-        (c)->adt.len += sizeof(rf_object_t);               \
+#define push_object(c, x)                                             \
+    {                                                                 \
+        vector_reserve(c, sizeof(rf_object_t));                       \
+        rf_object_t o = x;                                            \
+        memcpy((c)->adt.ptr + (c)->adt.len, &o, sizeof(rf_object_t)); \
+        (c)->adt.len += sizeof(rf_object_t);                          \
     }
 
 typedef struct dispatch_record_t
@@ -196,31 +197,31 @@ rf_object_t cc_compile(rf_object_t *list)
 
     rf_object_t code = string(0);
 
-    // for (u32_t i = 0; i < list->adt.len; i++)
-    //     cc_compile_code(&as_list(list)[i], &code);
+    for (u32_t i = 0; i < list->adt.len; i++)
+        cc_compile_code(&as_list(list)[i], &code);
 
-    // if (list->adt.len == 0)
-    // {
-    push_opcode(&code, OP_PUSH);
-    push_object(&code, null());
-    // }
+    if (list->adt.len == 0)
+    {
+        push_opcode(&code, OP_PUSH);
+        push_object(&code, null());
+    }
 
     push_opcode(&code, OP_HALT);
 
-    // debug("CODE: %s\n", cc_code_fmt(as_string(&code)));
+    printf("CODE: %s\n", cc_code_fmt(&code));
 
     return code;
 }
 
-str_t cc_code_fmt(str_t code)
+str_t cc_code_fmt(rf_object_t *code)
 {
-    i32_t p = 0, c = 0;
-    str_t ip = code;
+    i32_t p = 0, c = 0, len = code->adt.len;
+    str_t ip = code->adt.ptr;
     str_t s = str_fmt(0, "-- code:\n");
 
     p = strlen(s);
 
-    while (*ip != OP_HALT)
+    while ((ip - ((str_t)code->adt.ptr)) < len)
     {
         switch (*ip++)
         {
@@ -228,7 +229,7 @@ str_t cc_code_fmt(str_t code)
             p += str_fmt_into(0, p, &s, "%.4d: halt\n", c++);
             break;
         case OP_PUSH:
-            p += str_fmt_into(0, p, &s, "%.4d: push %p\n", c++, ((rf_object_t *)(ip + 1)));
+            p += str_fmt_into(0, p, &s, "%.4d: push %s\n", c++, object_fmt(((rf_object_t *)(ip + 1))));
             ip += sizeof(rf_object_t);
             break;
         case OP_POP:
