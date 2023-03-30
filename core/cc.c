@@ -132,17 +132,6 @@ i8_t cc_compile_code(rf_object_t *object, rf_object_t *code)
             return TYPE_ERROR;
         }
 
-        // compile arguments from right to left
-        for (j = arity; j > 0; j--)
-        {
-            type = cc_compile_code(&as_list(object)[j], code);
-
-            if (type == TYPE_ERROR)
-                return TYPE_ERROR;
-
-            arg_types[j - 1] = type;
-        }
-
         // special cases
         if (strcmp(symbols_get(car->i64), "time") == 0)
         {
@@ -159,6 +148,17 @@ i8_t cc_compile_code(rf_object_t *object, rf_object_t *code)
             cc_compile_code(&as_list(object)[1], code);
             push_opcode(code, OP_TIMER_GET);
             return -TYPE_F64;
+        }
+
+        // compile arguments from right to left
+        for (j = arity; j > 0; j--)
+        {
+            type = cc_compile_code(&as_list(object)[j], code);
+
+            if (type == TYPE_ERROR)
+                return TYPE_ERROR;
+
+            arg_types[j - 1] = type;
         }
 
         // try to find matching function prototype

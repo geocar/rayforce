@@ -30,7 +30,12 @@
  * Each vector capacity is always factor of 8
  * This allows to avoid storing capacity in vector
  */
-#define CAPACITY_FACTOR 32
+#define CAPACITY_FACTOR 16
+
+/*
+ * Allocate vector via mmap if it's size is greater than 32 Mb
+ */
+#define CAPACITY_MMAP 1024 * 1024 * 32
 
 /*
  * Aligns x to the nearest multiple of a
@@ -125,7 +130,13 @@ extern rf_object_t vector(i8_t type, i8_t size_of_val, i64_t len)
     if (len == 0)
         return v;
 
-    v.adt.ptr = rayforce_malloc(size_of_val * capacity(len));
+    i64_t cap = size_of_val * len;
+
+    if (cap < CAPACITY_MMAP)
+        v.adt.ptr = rayforce_malloc(capacity(cap));
+    else
+        v.adt.ptr = mmap(NULL, alignup(cap, PAGE_SIZE),
+                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     return v;
 }
