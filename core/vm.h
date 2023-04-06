@@ -53,6 +53,8 @@ typedef enum vm_opcode_t
     OP_CALL2,     // Call function with two arguments
     OP_CALL3,     // Call function with three arguments
     OP_CALL4,     // Call function with four arguments
+    OP_SET,       // Set global variable
+    OP_GET,       // Get global variable
 
     OP_INVALID, // Invalid opcode
 } vm_opcode_t;

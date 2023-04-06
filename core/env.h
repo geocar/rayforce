@@ -54,7 +54,7 @@ typedef struct env_t
 {
     rf_object_t instructions; // list, containing records of instructions
     rf_object_t functions;    // list, containing records of functions
-    rf_object_t variables;    // list, containing records of variables
+    rf_object_t variables;    // dict, containing mappings variables names to their values
 } env_t;
 
 env_t create_env();

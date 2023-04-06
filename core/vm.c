@@ -31,6 +31,8 @@
 #include "string.h"
 #include "ops.h"
 #include "env.h"
+#include "runtime.h"
+#include "dict.h"
 
 #define stack_push(v, x) (v->stack[v->sp++] = x)
 #define stack_pop(v) (v->stack[--v->sp])
@@ -56,7 +58,7 @@ vm_t *vm_create()
  */
 rf_object_t vm_exec(vm_t *vm, str_t code)
 {
-    rf_object_t x, y, z;
+    rf_object_t x, y, z, w, k, p, n, v;
     i32_t i;
 
     vm->ip = 0;
@@ -66,7 +68,8 @@ rf_object_t vm_exec(vm_t *vm, str_t code)
     static null_t *dispatch_table[] = {
         &&op_halt, &&op_push, &&op_pop, &&op_addi, &&op_addf, &&op_subi, &&op_subf,
         &&op_muli, &&op_mulf, &&op_divi, &&op_divf, &&op_sumi, &&op_like, &&op_type,
-        &&op_timer_set, &&op_timer_get, &&op_til, &&op_call1};
+        &&op_timer_set, &&op_timer_get, &&op_til, &&op_call1, &&op_call2, &&op_call3,
+        &&op_call4, &&op_set, &&op_get};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
 
@@ -187,6 +190,69 @@ op_call1:
         return z;
     }
     stack_push(vm, z);
+    dispatch();
+op_call2:
+    vm->ip++;
+    y = *(rf_object_t *)(code + vm->ip);
+    vm->ip += sizeof(rf_object_t);
+    x = stack_pop(vm);
+    z = stack_pop(vm);
+    binary_t g = (binary_t)y.i64;
+    w = g(&x, &z);
+    // TODO: unwind
+    if (w.type == TYPE_ERROR)
+    {
+        w.id = w.id;
+        return w;
+    }
+    stack_push(vm, w);
+    dispatch();
+op_call3:
+    vm->ip++;
+    y = *(rf_object_t *)(code + vm->ip);
+    vm->ip += sizeof(rf_object_t);
+    x = stack_pop(vm);
+    z = stack_pop(vm);
+    w = stack_pop(vm);
+    ternary_t h = (ternary_t)y.i64;
+    v = h(&x, &z, &w);
+    // TODO: unwind
+    if (v.type == TYPE_ERROR)
+    {
+        v.id = y.id;
+        return v;
+    }
+    stack_push(vm, v);
+    dispatch();
+op_call4:
+    vm->ip++;
+    y = *(rf_object_t *)(code + vm->ip);
+    vm->ip += sizeof(rf_object_t);
+    x = stack_pop(vm);
+    z = stack_pop(vm);
+    w = stack_pop(vm);
+    v = stack_pop(vm);
+    quaternary_t q = (quaternary_t)y.i64;
+    p = q(&x, &z, &w, &v);
+    // TODO: unwind
+    if (p.type == TYPE_ERROR)
+    {
+        p.id = y.id;
+        return p;
+    }
+    stack_push(vm, p);
+    dispatch();
+op_set:
+    vm->ip++;
+    y = stack_pop(vm);
+    x = stack_pop(vm);
+    dict_set(&runtime_get()->env.variables, x, y);
+    dispatch();
+op_get:
+    vm->ip++;
+    y = stack_pop(vm);
+    x = dict_get(&runtime_get()->env.variables, y);
+    stack_push(vm, x);
     dispatch();
 }
 
