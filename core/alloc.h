@@ -43,11 +43,11 @@ typedef struct alloc_t
 
 CASSERT(sizeof(struct alloc_t) % PAGE_SIZE == 0, alloc_h)
 
-extern null_t *rayforce_malloc(i32_t size);
-extern null_t *rayforce_realloc(null_t *ptr, i32_t size);
-extern null_t rayforce_free(null_t *block);
+extern null_t *rf_malloc(i32_t size);
+extern null_t *rf_realloc(null_t *ptr, i32_t size);
+extern null_t rf_free(null_t *block);
 
-extern alloc_t rayforce_alloc_init();
-extern null_t rayforce_alloc_cleanup(alloc_t alloc);
+extern alloc_t rf_alloc_init();
+extern null_t rf_alloc_cleanup(alloc_t alloc);
 
 #endif

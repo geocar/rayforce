@@ -32,9 +32,9 @@
 
 hash_table_t *ht_create(i64_t (*hasher)(null_t *a), i32_t (*compare)(null_t *a, null_t *b))
 {
-    hash_table_t *table = (hash_table_t *)rayforce_malloc(sizeof(hash_table_t));
+    hash_table_t *table = (hash_table_t *)rf_malloc(sizeof(hash_table_t));
 
-    bucket_t **buckets = (bucket_t **)rayforce_malloc(sizeof(bucket_t *) * DEFAULT_SIZE);
+    bucket_t **buckets = (bucket_t **)rf_malloc(sizeof(bucket_t *) * DEFAULT_SIZE);
     memset(buckets, 0, sizeof(bucket_t *) * DEFAULT_SIZE);
 
     table->cap = DEFAULT_SIZE;
@@ -58,7 +58,7 @@ null_t ht_free(hash_table_t *table)
         while (bucket)
         {
             next = bucket->next;
-            rayforce_free(bucket);
+            rf_free(bucket);
             bucket = next;
         }
     }
@@ -84,7 +84,7 @@ null_t *ht_insert(hash_table_t *table, null_t *key, null_t *val)
     }
 
     // Add new bucket to the end of the list
-    (*bucket) = (bucket_t *)rayforce_malloc(sizeof(bucket_t));
+    (*bucket) = (bucket_t *)rf_malloc(sizeof(bucket_t));
     (*bucket)->key = key;
     (*bucket)->val = val;
     (*bucket)->next = NULL;
@@ -95,7 +95,7 @@ null_t *ht_insert(hash_table_t *table, null_t *key, null_t *val)
 }
 
 /*
- * Does the same as ht_insert, but uses a function to set the object of the bucket.
+ * Does the same as ht_insert, but uses a function to set the rf_object of the bucket.
  */
 null_t *ht_insert_with(hash_table_t *table, null_t *key, null_t *val, null_t *(*func)(null_t *key, null_t *val, bucket_t *bucket))
 {
@@ -113,7 +113,7 @@ null_t *ht_insert_with(hash_table_t *table, null_t *key, null_t *val, null_t *(*
     }
 
     // Add new bucket to the end of the list
-    (*bucket) = (bucket_t *)rayforce_malloc(sizeof(bucket_t));
+    (*bucket) = (bucket_t *)rf_malloc(sizeof(bucket_t));
     (*bucket)->next = NULL;
 
     table->size++;
@@ -122,7 +122,7 @@ null_t *ht_insert_with(hash_table_t *table, null_t *key, null_t *val, null_t *(*
 }
 
 /*
- * Returns the object of the node with the given key.
+ * Returns the rf_object of the node with the given key.
  * Returns NULL if the key does not exist.
  */
 null_t *ht_get(hash_table_t *table, null_t *key)

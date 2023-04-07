@@ -42,7 +42,7 @@ vm_t *vm_create()
 {
     vm_t *vm;
 
-    vm = (vm_t *)rayforce_malloc(sizeof(struct vm_t));
+    vm = (vm_t *)rf_malloc(sizeof(struct vm_t));
     memset(vm, 0, sizeof(struct vm_t));
 
     vm->stack = (rf_object_t *)mmap(NULL, VM_STACK_SIZE,
@@ -58,7 +58,7 @@ vm_t *vm_create()
  */
 rf_object_t vm_exec(vm_t *vm, str_t code)
 {
-    rf_object_t x, y, z, w, k, p, n, v;
+    rf_object_t x, y, z, w, k, p, n, v, *addr;
     i32_t i;
 
     vm->ip = 0;
@@ -244,19 +244,21 @@ op_call4:
     dispatch();
 op_set:
     vm->ip++;
+    x = *(rf_object_t *)(code + vm->ip);
+    vm->ip += sizeof(rf_object_t);
     y = stack_pop(vm);
-    x = stack_pop(vm);
-    dict_set(&runtime_get()->env.variables, x, y);
+    env_set_variable(&runtime_get()->env, x, rf_object_clone(&y));
+    stack_push(vm, y);
     dispatch();
 op_get:
     vm->ip++;
-    y = stack_pop(vm);
-    x = dict_get(&runtime_get()->env.variables, y);
-    stack_push(vm, x);
+    addr = (*(rf_object_t *)(code + vm->ip)).i64;
+    vm->ip += sizeof(rf_object_t);
+    stack_push(vm, rf_object_clone(addr));
     dispatch();
 }
 
 null_t vm_free(vm_t *vm)
 {
-    rayforce_free(vm);
+    rf_free(vm);
 }

@@ -41,21 +41,21 @@ extern rf_object_t error(i8_t code, str_t message)
     return err;
 }
 
-extern rf_object_t i64(i64_t object)
+extern rf_object_t i64(i64_t rf_object)
 {
     rf_object_t scalar = {
         .type = -TYPE_I64,
-        .i64 = object,
+        .i64 = rf_object,
     };
 
     return scalar;
 }
 
-extern rf_object_t f64(f64_t object)
+extern rf_object_t f64(f64_t rf_object)
 {
     rf_object_t scalar = {
         .type = -TYPE_F64,
-        .f64 = object,
+        .f64 = rf_object,
     };
 
     return scalar;
@@ -88,10 +88,10 @@ extern rf_object_t null()
 extern rf_object_t table(rf_object_t keys, rf_object_t vals)
 {
     if (keys.type != TYPE_SYMBOL || vals.type != 0)
-        return error(ERR_TYPE, "Keys must be a symbol vector and objects must be list");
+        return error(ERR_TYPE, "Keys must be a symbol vector and rf_objects must be list");
 
     if (keys.adt->len != vals.adt->len)
-        return error(ERR_LENGTH, "Keys and objects must have the same length");
+        return error(ERR_LENGTH, "Keys and rf_objects must have the same length");
 
     // rf_object_t *v = as_list(&vals);
     // i64_t len = 0;
@@ -112,7 +112,7 @@ extern rf_object_t table(rf_object_t keys, rf_object_t vals)
     return table;
 }
 
-extern i8_t object_eq(rf_object_t *a, rf_object_t *b)
+extern i8_t rf_object_eq(rf_object_t *a, rf_object_t *b)
 {
     i64_t i;
 
@@ -154,48 +154,48 @@ extern i8_t object_eq(rf_object_t *a, rf_object_t *b)
     return 0;
 }
 
-extern rf_object_t object_clone(rf_object_t *object)
+extern rf_object_t rf_object_clone(rf_object_t *rf_object)
 {
     // TODO: fixme
-    return *object;
+    return *rf_object;
 
-    if (object->type < 0)
-        return *object;
+    if (rf_object->type < 0)
+        return *rf_object;
 
-    if (object->adt == NULL)
-        return *object;
+    if (rf_object->adt == NULL)
+        return *rf_object;
 
-    __atomic_fetch_add(&object->adt->rc, 1, __ATOMIC_RELAXED);
+    __atomic_fetch_add(&rf_object->adt->rc, 1, __ATOMIC_RELAXED);
 
-    return *object;
+    return *rf_object;
 }
 
-extern null_t object_free(rf_object_t *object)
+extern null_t rf_object_free(rf_object_t *rf_object)
 {
     // TODO: fixme
-    if (object->type < 0)
+    if (rf_object->type < 0)
         return;
 
-    if (object->adt == NULL)
+    if (rf_object->adt == NULL)
         return;
 
-    if (object->type == TYPE_ERROR)
+    if (rf_object->type == TYPE_ERROR)
     {
-        // rayforce_free(object->adt.ptr);
+        // rf_free(rf_object->adt.ptr);
         return;
     }
 
-    // i64_t rc = __atomic_sub_fetch(&object->adt.attrs->rc, 1, __ATOMIC_RELAXED);
+    // i64_t rc = __atomic_sub_fetch(&rf_object->adt.attrs->rc, 1, __ATOMIC_RELAXED);
 
-    // if (object->type == TYPE_LIST)
+    // if (rf_object->type == TYPE_LIST)
     // {
-    //     for (i64_t i = 0; i < object->adt.len; i++)
-    //         object_free(&as_list(object)[i]);
+    //     for (i64_t i = 0; i < rf_object->adt.len; i++)
+    //         rf_object_free(&as_list(rf_object)[i]);
     // }
 
     // if (rc == 0)
     // {
-    //     rayforce_free(object->adt.ptr);
-    //     rayforce_free(object->adt.attrs);
+    //     rf_free(rf_object->adt.ptr);
+    //     rf_free(rf_object->adt.attrs);
     // }
 }

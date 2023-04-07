@@ -30,10 +30,10 @@
 extern rf_object_t dict(rf_object_t keys, rf_object_t vals)
 {
     if (keys.type < 0 || vals.type < 0)
-        return error(ERR_TYPE, "Keys and objects must be lists");
+        return error(ERR_TYPE, "Keys and rf_objects must be lists");
 
     if (keys.adt->len != vals.adt->len)
-        return error(ERR_LENGTH, "Keys and objects must have the same length");
+        return error(ERR_LENGTH, "Keys and rf_objects must have the same length");
 
     rf_object_t dict = list(2);
 
@@ -52,12 +52,30 @@ extern rf_object_t dict_get(rf_object_t *dict, rf_object_t key)
 
     rf_object_t *keys = &as_list(dict)[0];
     rf_object_t *vals = &as_list(dict)[1];
+    rf_object_t val = null();
     i64_t index = vector_find(keys, key);
 
     if (index == keys->adt->len)
         return null();
 
-    return object_clone(&as_list(vals)[index]);
+    switch (vals->type)
+    {
+    case TYPE_I64:
+        val = i64(as_vector_i64(vals)[index]);
+        break;
+    case TYPE_F64:
+        val = f64(as_vector_f64(vals)[index]);
+        break;
+    case TYPE_SYMBOL:
+        val = i64(as_vector_i64(vals)[index]);
+        val.type = -TYPE_SYMBOL;
+        break;
+    case TYPE_LIST:
+        val = rf_object_clone(&as_list(vals)[index]);
+        break;
+    }
+
+    return val;
 }
 
 extern rf_object_t dict_set(rf_object_t *dict, rf_object_t key, rf_object_t val)
@@ -72,7 +90,7 @@ extern rf_object_t dict_set(rf_object_t *dict, rf_object_t key, rf_object_t val)
     if (index == keys->adt->len)
     {
         vector_push(keys, key);
-        vector_push(vals, object_clone(&val));
+        vector_push(vals, rf_object_clone(&val));
         return val;
     }
 
@@ -88,7 +106,7 @@ extern rf_object_t dict_set(rf_object_t *dict, rf_object_t key, rf_object_t val)
         as_vector_i64(vals)[index] = val.i64;
         break;
     case TYPE_LIST:
-        as_list(vals)[index] = object_clone(&val);
+        as_list(vals)[index] = rf_object_clone(&val);
         break;
     }
 

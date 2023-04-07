@@ -110,11 +110,11 @@ typedef struct rf_object_t
 
 } rf_object_t;
 
-CASSERT(sizeof(struct rf_object_t) == 16, rayforce_h)
+CASSERT(sizeof(struct rf_object_t) == 16, rf_h)
 
 // Constructors
-extern rf_object_t i64(i64_t object);                              // i64 scalar
-extern rf_object_t f64(f64_t object);                              // f64 scalar
+extern rf_object_t i64(i64_t rf_object);                           // i64 scalar
+extern rf_object_t f64(f64_t rf_object);                           // f64 scalar
 extern rf_object_t symbol(str_t ptr);                              // symbol
 extern rf_object_t vector(i8_t type, i8_t size_of_val, i64_t len); // vector of type
 extern rf_object_t string(i64_t len);                              // string (allocates len + 1 for \0 but sets len to a 'len')
@@ -127,32 +127,32 @@ extern rf_object_t string(i64_t len);                              // string (al
 extern rf_object_t null();                                    // null (as null list)
 extern rf_object_t table(rf_object_t keys, rf_object_t vals); // table
 extern rf_object_t dict(rf_object_t keys, rf_object_t vals);  // dict
-extern rf_object_t object_clone(rf_object_t *object);
+extern rf_object_t rf_object_clone(rf_object_t *rf_object);
 
 // Error
 extern rf_object_t error(i8_t code, str_t message);
 
 // Destructor
-extern null_t object_free(rf_object_t *object);
+extern null_t rf_object_free(rf_object_t *rf_object);
 
 // Accessors
-#define as_string(object) ((str_t)((object)->adt + 1))
-#define as_vector_i64(object) ((i64_t *)(as_string(object)))
-#define as_vector_f64(object) ((f64_t *)(as_string(object)))
-#define as_vector_symbol(object) ((i64_t *)(as_string(object)))
-#define as_list(object) ((rf_object_t *)(as_string(object)))
+#define as_string(rf_object) ((str_t)((rf_object)->adt + 1))
+#define as_vector_i64(rf_object) ((i64_t *)(as_string(rf_object)))
+#define as_vector_f64(rf_object) ((f64_t *)(as_string(rf_object)))
+#define as_vector_symbol(rf_object) ((i64_t *)(as_string(rf_object)))
+#define as_list(rf_object) ((rf_object_t *)(as_string(rf_object)))
 
 // Checkers
-#define is_null(object) ((object)->type == TYPE_LIST && (object)->adt == NULL)
-#define is_error(object) ((object)->type == TYPE_ERROR)
-#define is_scalar(object) ((object)->type < 0)
+#define is_null(rf_object) ((rf_object)->type == TYPE_LIST && (rf_object)->adt == NULL)
+#define is_error(rf_object) ((rf_object)->type == TYPE_ERROR)
+#define is_scalar(rf_object) ((rf_object)->type < 0)
 
 // Mutators
-extern i64_t vector_push(rf_object_t *vector, rf_object_t object);
+extern i64_t vector_push(rf_object_t *vector, rf_object_t rf_object);
 extern rf_object_t vector_pop(rf_object_t *vector);
 
 // Compare
-extern i8_t object_eq(rf_object_t *a, rf_object_t *b);
+extern i8_t rf_object_eq(rf_object_t *a, rf_object_t *b);
 
 // #ifdef __cplusplus
 // }

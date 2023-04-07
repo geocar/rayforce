@@ -52,14 +52,14 @@
         i64_t req_cap = n * sizeof(t) + sizeof(header_t);           \
         i64_t new_cap = capacity(cap + req_cap);                    \
         if (cap < req_cap + occup)                                  \
-            (v)->adt = rayforce_realloc((v)->adt, new_cap);         \
+            (v)->adt = rf_realloc((v)->adt, new_cap);               \
     }
 
 /*
- * Appends object to the end of vector (dynamically grows vector if needed)
+ * Appends rf_objectect to the end of vector (dynamically grows vector if needed)
  * v - vector to append to
- * t - type of object to append
- * x - object to append
+ * t - type of rf_objectect to append
+ * x - rf_objectect to append
  */
 #define push(v, t, x)                               \
     {                                               \
@@ -89,7 +89,7 @@
                                                 \
             if (member->type != type)           \
             {                                   \
-                object_free(&vec);              \
+                rf_object_free(&vec);           \
                 return list;                    \
             }                                   \
                                                 \
@@ -97,17 +97,17 @@
         }                                       \
     }
 
-extern rf_object_t list_flatten(rf_object_t object);
+extern rf_object_t list_flatten(rf_object_t rf_object);
 extern i64_t vector_i64_find(rf_object_t *vector, i64_t key);
 extern i64_t vector_f64_find(rf_object_t *vector, f64_t key);
 extern i64_t list_find(rf_object_t *vector, rf_object_t key);
 extern i64_t vector_find(rf_object_t *vector, rf_object_t key);
 extern rf_object_t vector_get(rf_object_t *vector, rf_object_t key);
-extern i64_t vector_push(rf_object_t *vector, rf_object_t object);
-extern i64_t vector_i64_push(rf_object_t *vector, i64_t object);
-extern i64_t vector_f64_push(rf_object_t *vector, f64_t object);
-extern i64_t vector_symbol_push(rf_object_t *vector, rf_object_t object);
-extern i64_t list_push(rf_object_t *vector, rf_object_t object);
+extern i64_t vector_push(rf_object_t *vector, rf_object_t rf_object);
+extern i64_t vector_i64_push(rf_object_t *vector, i64_t rf_object);
+extern i64_t vector_f64_push(rf_object_t *vector, f64_t rf_object);
+extern i64_t vector_symbol_push(rf_object_t *vector, rf_object_t rf_object);
+extern i64_t list_push(rf_object_t *vector, rf_object_t rf_object);
 extern i64_t vector_i64_pop(rf_object_t *vector);
 extern f64_t vector_f64_pop(rf_object_t *vector);
 extern rf_object_t list_pop(rf_object_t *vector);

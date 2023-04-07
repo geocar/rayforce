@@ -33,8 +33,8 @@
 typedef enum vm_opcode_t
 {
     OP_HALT = 0,  // Halt the VM
-    OP_PUSH,      // Push an object to the stack
-    OP_POP,       // Pop an object from the stack
+    OP_PUSH,      // Push an rf_object to the stack
+    OP_POP,       // Pop an rf_object from the stack
     OP_ADDI,      // Add two i64 from the stack
     OP_ADDF,      // Add two f64 from the stack
     OP_SUBI,      // Subtract two i64 from the stack
@@ -45,7 +45,7 @@ typedef enum vm_opcode_t
     OP_DIVF,      // Divide two f64 from the stack
     OP_SUMI,      // Sum i64 vector elements with scalar i64
     OP_LIKE,      // Compare string with regex
-    OP_TYPE,      // Get type of object
+    OP_TYPE,      // Get type of rf_object
     OP_TIMER_SET, // Start timer
     OP_TIMER_GET, // Get timer value
     OP_TIL,       // Create i64 vector of length n
@@ -64,9 +64,9 @@ typedef struct vm_t
     i32_t ip;           // Instruction pointer
     i32_t sp;           // Stack pointer
     i8_t halted;        // Halt flag
-    rf_object_t r[8];   // Registers of objects
+    rf_object_t r[8];   // Registers of rf_objects
     clock_t timer;      // Timer for execution time
-    rf_object_t *stack; // Stack of objects
+    rf_object_t *stack; // Stack of rf_objects
 } vm_t;
 
 vm_t *vm_create();

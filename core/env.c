@@ -23,6 +23,7 @@
 
 #include "env.h"
 #include "monad.h"
+#include "dict.h"
 
 #define REC(records, arity, name, ret, op, ...)                             \
     {                                                                       \
@@ -38,7 +39,6 @@ null_t init_instructions(rf_object_t *records)
     // Unary
     REC(records, 1, "type",  -TYPE_SYMBOL,  OP_TYPE, { TYPE_ANY                });
     REC(records, 1, "til" ,   TYPE_I64,     OP_TIL,  {-TYPE_I64                });
-    REC(records, 1, "get",    TYPE_ANY,     OP_GET,  {-TYPE_SYMBOL             });
     // Binary
     REC(records, 2, "+",     -TYPE_I64,     OP_ADDI, {-TYPE_I64,   -TYPE_I64   });
     REC(records, 2, "+",     -TYPE_F64,     OP_ADDF, {-TYPE_F64,   -TYPE_F64   });
@@ -50,7 +50,6 @@ null_t init_instructions(rf_object_t *records)
     REC(records, 2, "/",     -TYPE_F64,     OP_DIVF, {-TYPE_F64,   -TYPE_F64   });
     REC(records, 2, "sum",    TYPE_I64,     OP_SUMI, { TYPE_I64,   -TYPE_I64   });
     REC(records, 2, "like",  -TYPE_I64,     OP_LIKE, { TYPE_STRING, TYPE_STRING});
-    REC(records, 2, "set",    TYPE_ANY,     OP_SET,  {-TYPE_SYMBOL, TYPE_ANY   });
     // Ternary
     // Quaternary
 }
@@ -72,7 +71,7 @@ env_t create_env()
 {
     rf_object_t instructions = list(MAX_ARITY + 1);
     rf_object_t functions = list(MAX_ARITY + 1);
-    rf_object_t variables = dict(vector_symbol(0), list(0));
+    rf_object_t variables = dict(vector_symbol(0), vector_i64(0));
 
     for (i32_t i = 0; i <= MAX_ARITY; i++)
         as_list(&instructions)[i] = vector(TYPE_STRING, sizeof(env_record_t), 0);
@@ -90,4 +89,39 @@ env_t create_env()
     };
 
     return env;
+}
+
+null_t free_env(env_t *env)
+{
+
+    for (i32_t i = 0; i <= MAX_ARITY; i++)
+        rf_object_free(&as_list(&env->instructions)[i]);
+
+    for (i32_t i = 0; i <= MAX_ARITY; i++)
+        rf_object_free(&as_list(&env->functions)[i]);
+
+    rf_object_free(&env->instructions);
+    rf_object_free(&env->functions);
+    rf_object_free(&env->variables);
+}
+
+rf_object_t *env_get_variable(env_t *env, rf_object_t name)
+{
+    rf_object_t addr = dict_get(&env->variables, name);
+    if (is_null(&addr))
+        return NULL;
+
+    return (rf_object_t *)addr.i64;
+}
+
+null_t env_set_variable(env_t *env, rf_object_t name, rf_object_t value)
+{
+    rf_object_t *new_addr = (rf_object_t *)rf_malloc(sizeof(rf_object_t));
+    *new_addr = value;
+
+    rf_object_t *addr = env_get_variable(env, name);
+    if (addr)
+        rf_object_free(addr);
+
+    dict_set(&env->variables, name, i64((i64_t)new_addr));
 }

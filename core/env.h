@@ -62,4 +62,7 @@ env_t create_env();
 #define get_records_len(records, i) (as_list(records)[i].adt->len)
 #define get_record(records, i, j) (((env_record_t *)as_string((as_list(records) + i))) + j)
 
+rf_object_t *env_get_variable(env_t *env, rf_object_t name);
+null_t env_set_variable(env_t *env, rf_object_t name, rf_object_t value);
+
 #endif

@@ -32,7 +32,7 @@
 #include "env.h"
 #include "runtime.h"
 
-i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code);
+i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code);
 
 #define push_opcode(c, x)                        \
     {                                            \
@@ -40,7 +40,7 @@ i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code);
         as_string(c)[(c)->adt->len++] = (i8_t)x; \
     }
 
-#define push_object(c, x)                                   \
+#define push_rf_object(c, x)                                \
     {                                                       \
         vector_reserve(c, sizeof(rf_object_t));             \
         *(rf_object_t *)(as_string(c) + (c)->adt->len) = x; \
@@ -92,7 +92,7 @@ i8_t cc_compile_call(rf_object_t *car, i8_t *arg_types, i8_t arity, rf_object_t 
     push_opcode(code, OP_CALL1);
     fn = i64(rec->op);
     fn.id = car->id;
-    push_object(code, fn);
+    push_rf_object(code, fn);
     return rec->ret;
 }
 
@@ -109,53 +109,65 @@ i8_t cc_compile_instriction(rf_object_t *car, i8_t *arg_types, i8_t arity, rf_ob
     return rec->ret;
 }
 
-i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code)
+i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code)
 {
-    rf_object_t *car, err;
+    rf_object_t *car, err, *addr;
     i8_t type, arg_types[MAX_ARITY];
     u32_t i, arity;
 
-    switch (object->type)
+    switch (rf_object->type)
     {
     case -TYPE_I64:
         push_opcode(code, OP_PUSH);
-        push_object(code, *object);
+        push_rf_object(code, *rf_object);
         return -TYPE_I64;
 
     case -TYPE_F64:
         push_opcode(code, OP_PUSH);
-        push_object(code, *object);
+        push_rf_object(code, *rf_object);
         return -TYPE_F64;
 
     case -TYPE_SYMBOL:
-        push_opcode(code, OP_PUSH);
-        push_object(code, *object);
-        return -TYPE_SYMBOL;
+        addr = env_get_variable(&runtime_get()->env, *rf_object);
+
+        if (addr == NULL)
+        {
+            rf_object_free(code);
+            err = error(ERR_TYPE, "compile list: variable not set");
+            err.id = rf_object->id;
+            *code = err;
+            return TYPE_ERROR;
+        }
+
+        push_opcode(code, OP_GET);
+        push_rf_object(code, i64((i64_t)addr));
+
+        return addr->type;
 
     case TYPE_LIST:
-        if (object->adt->len == 0)
+        if (rf_object->adt->len == 0)
         {
             push_opcode(code, OP_PUSH);
-            push_object(code, object_clone(object));
+            push_rf_object(code, rf_object_clone(rf_object));
             return TYPE_LIST;
         }
 
-        car = &as_list(object)[0];
+        car = &as_list(rf_object)[0];
         if (car->type != -TYPE_SYMBOL)
         {
-            object_free(code);
+            rf_object_free(code);
             err = error(ERR_LENGTH, "compile list: expected symbol in a head");
             err.id = car->id;
             *code = err;
             return TYPE_ERROR;
         }
 
-        arity = object->adt->len - 1;
+        arity = rf_object->adt->len - 1;
         if (arity > 4)
         {
-            object_free(code);
+            rf_object_free(code);
             err = error(ERR_LENGTH, "compile list: too many arguments");
-            err.id = object->id;
+            err.id = rf_object->id;
             *code = err;
             return TYPE_ERROR;
         }
@@ -165,27 +177,70 @@ i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code)
         {
             if (arity != 1)
             {
-                object_free(code);
+                rf_object_free(code);
                 err = error(ERR_LENGTH, "compile list: time takes one argument");
-                err.id = object->id;
+                err.id = rf_object->id;
                 *code = err;
                 return TYPE_ERROR;
             }
 
             push_opcode(code, OP_TIMER_SET);
-            type = cc_compile_fn(&as_list(object)[1], code);
+            type = cc_compile_fn(&as_list(rf_object)[1], code);
 
             if (type == TYPE_ERROR)
                 return TYPE_ERROR;
 
             push_opcode(code, OP_TIMER_GET);
+
             return -TYPE_F64;
+        }
+
+        if (car->i64 == symbol("set").i64)
+        {
+            if (arity != 2)
+            {
+                rf_object_free(code);
+                err = error(ERR_LENGTH, "compile list: set takes two arguments");
+                err.id = rf_object->id;
+                *code = err;
+                return TYPE_ERROR;
+            }
+            if (as_list(rf_object)[1].type != -TYPE_SYMBOL)
+            {
+                rf_object_free(code);
+                err = error(ERR_LENGTH, "compile list: set takes symbol as first argument");
+                err.id = rf_object->id;
+                *code = err;
+                return TYPE_ERROR;
+            }
+
+            type = cc_compile_fn(&as_list(rf_object)[2], code);
+
+            if (type == TYPE_ERROR)
+                return TYPE_ERROR;
+
+            // check if variable is not set or has the same type
+            addr = env_get_variable(&runtime_get()->env, as_list(rf_object)[1]);
+
+            if (addr != NULL && type != addr->type)
+            {
+                rf_object_free(code);
+                err = error(ERR_TYPE, "compile list: variable type mismatch");
+                err.id = rf_object->id;
+                *code = err;
+                return TYPE_ERROR;
+            }
+
+            push_opcode(code, OP_SET);
+            push_rf_object(code, as_list(rf_object)[1]);
+
+            return type;
         }
 
         // compile arguments
         for (i = 1; i <= arity; i++)
         {
-            type = cc_compile_fn(&as_list(object)[i], code);
+            type = cc_compile_fn(&as_list(rf_object)[i], code);
 
             if (type == TYPE_ERROR)
                 return TYPE_ERROR;
@@ -203,16 +258,16 @@ i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code)
         if (type != TYPE_ERROR)
             return type;
 
-        object_free(code);
+        rf_object_free(code);
         err = error(ERR_LENGTH, "compile list: function proto or arity mismatch");
-        err.id = object->id;
+        err.id = rf_object->id;
         *code = err;
         return type;
 
     default:
         push_opcode(code, OP_PUSH);
-        push_object(code, object_clone(object));
-        return object->type;
+        push_rf_object(code, rf_object_clone(rf_object));
+        return rf_object->type;
     }
 }
 
@@ -232,7 +287,7 @@ rf_object_t cc_compile(rf_object_t *list)
     if (list->adt->len == 0)
     {
         push_opcode(&code, OP_PUSH);
-        push_object(&code, null());
+        push_rf_object(&code, null());
     }
 
     if (code.type != TYPE_ERROR)
@@ -259,7 +314,7 @@ str_t cc_code_fmt(rf_object_t *code)
             p += str_fmt_into(0, p, &s, "%.4d: halt\n", c++);
             break;
         case OP_PUSH:
-            p += str_fmt_into(0, p, &s, "%.4d: push %s\n", c++, object_fmt(((rf_object_t *)(ip + 1))));
+            p += str_fmt_into(0, p, &s, "%.4d: push %s\n", c++, rf_object_fmt(((rf_object_t *)(ip + 1))));
             ip += sizeof(rf_object_t);
             break;
         case OP_POP:

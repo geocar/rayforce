@@ -33,7 +33,7 @@
  */
 #define SIZE_TO_MMAP 1024 * 1024 * 32
 
-extern null_t *rayforce_malloc(i32_t size)
+extern null_t *rf_malloc(i32_t size)
 {
     if (size < SIZE_TO_MMAP)
         return malloc(size);
@@ -42,17 +42,17 @@ extern null_t *rayforce_malloc(i32_t size)
                 PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
-extern null_t rayforce_free(null_t *block)
+extern null_t rf_free(null_t *block)
 {
     free(block);
 }
 
-extern null_t *rayforce_realloc(null_t *ptr, i32_t size)
+extern null_t *rf_realloc(null_t *ptr, i32_t size)
 {
     return realloc(ptr, size);
 }
 
-extern alloc_t rayforce_alloc_init()
+extern alloc_t rf_alloc_init()
 {
     alloc_t alloc;
 
@@ -63,7 +63,7 @@ extern alloc_t rayforce_alloc_init()
     return alloc;
 }
 
-extern null_t rayforce_alloc_cleanup(alloc_t alloc)
+extern null_t rf_alloc_cleanup(alloc_t alloc)
 {
     symbols_free(alloc->symbols);
     // munmap(GLOBAL_A0, sizeof(struct alloc_t));

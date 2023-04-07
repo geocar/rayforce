@@ -76,7 +76,7 @@ null_t print_logo()
 {
     str_t logo = str_fmt(0, LOGO, VERSION);
     printf("%s%s%s", DARK_CYAN, logo, RESET);
-    rayforce_free(logo);
+    rf_free(logo);
 }
 
 null_t print_error(rf_object_t *error, str_t filename, str_t source, u32_t len)
@@ -203,7 +203,7 @@ null_t load_file(str_t filename)
     i32_t fd;
     str_t file, buf;
     struct stat st;
-    rf_object_t object;
+    rf_object_t rf_object;
 
     fd = open(filename, O_RDONLY); // open the file for reading
 
@@ -224,27 +224,27 @@ null_t load_file(str_t filename)
         return;
     }
 
-    object = parse(filename, file);
-    buf = object_fmt(&object);
+    rf_object = parse(filename, file);
+    buf = rf_object_fmt(&rf_object);
 
     // printf("%s%s%s\n", TOMATO, buf, RESET);
-    if (is_error(&object))
-        print_error(&object, filename, file, st.st_size);
+    if (is_error(&rf_object))
+        print_error(&rf_object, filename, file, st.st_size);
     else
         printf("%s\n", buf);
 
     munmap(file, st.st_size); // unmap the buffer
     close(fd);                // close the file
 
-    object_free(&object);
-    rayforce_free(buf);
+    rf_object_free(&rf_object);
+    rf_free(buf);
 }
 
 i32_t main(i32_t argc, str_t argv[])
 {
     rf_object_t args = parse_cmdline(argc, argv), parsed, executed, compiled;
     i8_t run = 1;
-    str_t line = (str_t)rayforce_malloc(LINE_SIZE), ptr; //, filename = NULL;
+    str_t line = (str_t)rf_malloc(LINE_SIZE), ptr; //, filename = NULL;
     vm_t *vm;
 
     memset(line, 0, LINE_SIZE);
@@ -255,7 +255,7 @@ i32_t main(i32_t argc, str_t argv[])
     vm = vm_create();
 
     // load_file("/tmp/test.ray");
-    object_free(&args);
+    rf_object_free(&args);
 
     while (run)
     {
@@ -265,7 +265,7 @@ i32_t main(i32_t argc, str_t argv[])
             break;
 
         parsed = parse("REPL", line);
-        // printf("%s\n", object_fmt(&parsed));
+        // printf("%s\n", rf_object_fmt(&parsed));
 
         if (is_error(&parsed))
         {
@@ -277,8 +277,8 @@ i32_t main(i32_t argc, str_t argv[])
         if (is_error(&compiled))
         {
             print_error(&compiled, "REPL", line, LINE_SIZE);
-            object_free(&parsed);
-            object_free(&compiled);
+            rf_object_free(&parsed);
+            rf_object_free(&compiled);
             continue;
         }
 
@@ -288,14 +288,14 @@ i32_t main(i32_t argc, str_t argv[])
         if (is_error(&executed))
             print_error(&executed, "REPL", line, LINE_SIZE);
         else
-            printf("%s\n", object_fmt(&executed));
+            printf("%s\n", rf_object_fmt(&executed));
 
-        object_free(&parsed);
-        object_free(&executed);
-        object_free(&compiled);
+        rf_object_free(&parsed);
+        rf_object_free(&executed);
+        rf_object_free(&compiled);
     }
 
-    rayforce_free(line);
+    rf_free(line);
     vm_free(vm);
 
     runtime_cleanup();

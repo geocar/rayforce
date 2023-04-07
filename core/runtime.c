@@ -28,10 +28,10 @@ runtime_t _RUNTIME = NULL;
 
 extern null_t runtime_init()
 {
-    alloc_t alloc = rayforce_alloc_init();
-    runtime_t runtime = rayforce_malloc(sizeof(struct runtime_t));
+    alloc_t alloc = rf_alloc_init();
+    runtime_t runtime = rf_malloc(sizeof(struct runtime_t));
     runtime->alloc = alloc;
-    runtime->debuginfo = rayforce_malloc(sizeof(struct debuginfo_t));
+    runtime->debuginfo = rf_malloc(sizeof(struct debuginfo_t));
     debuginfo_init(runtime->debuginfo);
     _RUNTIME = runtime;
     runtime->env = create_env();
@@ -40,8 +40,8 @@ extern null_t runtime_init()
 extern null_t runtime_cleanup()
 {
     alloc_t alloc = _RUNTIME->alloc;
-    rayforce_free(_RUNTIME);
-    rayforce_alloc_cleanup(alloc);
+    rf_free(_RUNTIME);
+    rf_alloc_cleanup(alloc);
 }
 
 extern runtime_t runtime_get()

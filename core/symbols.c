@@ -122,7 +122,7 @@ null_t *str_dup(null_t *key, null_t *val, bucket_t *bucket)
 
 symbols_t *symbols_create()
 {
-    symbols_t *symbols = (symbols_t *)rayforce_malloc(sizeof(symbols_t));
+    symbols_t *symbols = (symbols_t *)rf_malloc(sizeof(symbols_t));
 
     pool_node_t *node = pool_node_create();
     symbols->pool_node_0 = node;

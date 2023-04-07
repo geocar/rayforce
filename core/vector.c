@@ -30,7 +30,7 @@
  */
 extern rf_object_t vector(i8_t type, i8_t size_of_val, i64_t len)
 {
-    header_t *adt = rayforce_malloc(capacity(size_of_val * len + sizeof(header_t)));
+    header_t *adt = rf_malloc(capacity(size_of_val * len + sizeof(header_t)));
     adt->len = len;
     adt->attrs = 0;
     adt->rc = 1;
@@ -65,38 +65,38 @@ extern f64_t vector_f64_pop(rf_object_t *vector)
     return pop(vector, f64_t);
 }
 
-extern i64_t list_push(rf_object_t *list, rf_object_t object)
+extern i64_t list_push(rf_object_t *list, rf_object_t rf_object)
 {
-    push(list, rf_object_t, object);
+    push(list, rf_object_t, rf_object);
     return list->adt->len;
 }
 
 extern rf_object_t list_pop(rf_object_t *list)
 {
-    rf_object_t object = pop(list, rf_object_t);
-    return object_clone(&object);
+    rf_object_t rf_object = pop(list, rf_object_t);
+    return rf_object_clone(&rf_object);
 }
 
-extern i64_t vector_push(rf_object_t *vector, rf_object_t object)
+extern i64_t vector_push(rf_object_t *vector, rf_object_t rf_object)
 {
     i8_t type = vector->type;
 
-    if (type != 0 && type != -object.type)
+    if (type != 0 && type != -rf_object.type)
         panic("vector_push: type mismatch");
 
     switch (type)
     {
     case TYPE_I64:
-        vector_i64_push(vector, object.i64);
+        vector_i64_push(vector, rf_object.i64);
         break;
     case TYPE_F64:
-        vector_f64_push(vector, object.f64);
+        vector_f64_push(vector, rf_object.f64);
         break;
     case TYPE_SYMBOL:
-        vector_i64_push(vector, object.i64);
+        vector_i64_push(vector, rf_object.i64);
         break;
     case TYPE_LIST:
-        list_push(vector, object);
+        list_push(vector, rf_object);
         break;
     default:
         exit(1);
@@ -189,7 +189,7 @@ extern i64_t list_find(rf_object_t *list, rf_object_t key)
 
     for (i = 0; i < list->adt->len; i++)
     {
-        if (object_eq(&ptr[i], &key))
+        if (rf_object_eq(&ptr[i], &key))
             return i;
     }
 
@@ -251,7 +251,7 @@ extern rf_object_t list_flatten(rf_object_t list)
         return list;
     }
 
-    object_free(&list);
+    rf_object_free(&list);
 
     return vec;
 }

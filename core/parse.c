@@ -257,13 +257,13 @@ rf_object_t parse_vector(parser_t *parser)
     {
         if (is_error(&token))
         {
-            object_free(&vec);
+            rf_object_free(&vec);
             return token;
         }
 
         if (is_at(&token, '\0'))
         {
-            object_free(&vec);
+            rf_object_free(&vec);
             err = error(ERR_PARSE, "Expected ']'");
             err.id = span_commit(span);
             return err;
@@ -277,7 +277,7 @@ rf_object_t parse_vector(parser_t *parser)
                 vector_f64_push(&vec, (f64_t)token.i64);
             else
             {
-                object_free(&vec);
+                rf_object_free(&vec);
                 err = error(ERR_PARSE, "Invalid token in vector");
                 err.id = token.id;
                 return err;
@@ -298,7 +298,7 @@ rf_object_t parse_vector(parser_t *parser)
             }
             else
             {
-                object_free(&vec);
+                rf_object_free(&vec);
                 err = error(ERR_PARSE, "Invalid token in vector");
                 err.id = token.id;
                 return err;
@@ -313,7 +313,7 @@ rf_object_t parse_vector(parser_t *parser)
             }
             else
             {
-                object_free(&vec);
+                rf_object_free(&vec);
                 err = error(ERR_PARSE, "Invalid token in vector");
                 err.id = token.id;
                 return err;
@@ -321,7 +321,7 @@ rf_object_t parse_vector(parser_t *parser)
         }
         else
         {
-            object_free(&vec);
+            rf_object_free(&vec);
             err = error(ERR_PARSE, "Invalid token in vector");
             err.id = token.id;
             return err;
@@ -350,13 +350,13 @@ rf_object_t parse_list(parser_t *parser)
 
         if (is_error(&token))
         {
-            object_free(&lst);
+            rf_object_free(&lst);
             return token;
         }
 
         if (at_eof(*parser->current))
         {
-            object_free(&lst);
+            rf_object_free(&lst);
             err = error(ERR_PARSE, "Expected ')'");
             err.id = span_commit(span);
             return err;
@@ -364,7 +364,7 @@ rf_object_t parse_list(parser_t *parser)
 
         if (is_at_term(&token))
         {
-            object_free(&lst);
+            rf_object_free(&lst);
             err = error(ERR_PARSE, str_fmt(0, "There is no opening found for: '%c'", token.i64));
             err.id = token.id;
             return err;
@@ -394,15 +394,15 @@ rf_object_t parse_dict(parser_t *parser)
     {
         if (is_error(&token))
         {
-            object_free(&keys);
-            object_free(&vals);
+            rf_object_free(&keys);
+            rf_object_free(&vals);
             return token;
         }
 
         if (at_eof(*parser->current))
         {
-            object_free(&keys);
-            object_free(&vals);
+            rf_object_free(&keys);
+            rf_object_free(&vals);
             err = error(ERR_PARSE, "Expected '}'");
             err.id = span_commit(span);
             return err;
@@ -415,8 +415,8 @@ rf_object_t parse_dict(parser_t *parser)
 
         if (!is_at(&token, ':'))
         {
-            object_free(&keys);
-            object_free(&vals);
+            rf_object_free(&keys);
+            rf_object_free(&vals);
             err = error(ERR_PARSE, "Expected ':'");
             err.id = token.id;
             return err;
@@ -426,16 +426,16 @@ rf_object_t parse_dict(parser_t *parser)
 
         if (is_error(&token))
         {
-            object_free(&keys);
-            object_free(&vals);
+            rf_object_free(&keys);
+            rf_object_free(&vals);
             return token;
         }
 
         if (at_eof(*parser->current))
         {
-            object_free(&keys);
-            object_free(&vals);
-            err = error(ERR_PARSE, "Expected object folowing ':'");
+            rf_object_free(&keys);
+            rf_object_free(&vals);
+            err = error(ERR_PARSE, "Expected rf_object folowing ':'");
             err.id = span_commit(span);
             return err;
         }
@@ -518,13 +518,13 @@ rf_object_t parse_program(parser_t *parser)
 
         if (is_error(&token))
         {
-            object_free(&list);
+            rf_object_free(&list);
             return token;
         }
 
         if (is_at_term(&token))
         {
-            object_free(&list);
+            rf_object_free(&list);
             err = error(ERR_PARSE, str_fmt(0, "There is no opening found for: '%c'", token.i64));
             err.id = token.id;
             return err;
