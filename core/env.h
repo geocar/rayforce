@@ -31,6 +31,10 @@
 
 #define MAX_ARITY 4
 
+// offset in array of typenames for each type
+#define TYPE_OFFSET TYPE_SYMBOL
+#define MAX_TYPE TYPE_ERROR
+
 typedef rf_object_t (*nilary_t)();
 typedef rf_object_t (*unary_t)(rf_object_t *);
 typedef rf_object_t (*binary_t)(rf_object_t *, rf_object_t *);
@@ -45,7 +49,7 @@ typedef struct env_record_t
 {
     i64_t id;
     i64_t op;   // opcode or function ptr
-    u32_t args; // four argument types encoded in a one u32_t
+    i32_t args; // four argument types encoded in a one u32_t
     i8_t ret;
 } env_record_t;
 
@@ -54,8 +58,9 @@ typedef struct env_record_t
  */
 typedef struct env_t
 {
-    rf_object_t functions; // list, containing records of instructions/functions
-    rf_object_t variables; // dict, containing mappings variables names to their values
+    rf_object_t functions;     // list, containing records of instructions/functions
+    rf_object_t variables;     // dict, containing mappings variables names to their values
+    i64_t typenames[MAX_TYPE]; // array of symbols contains typenames, maps type id to type name
 } env_t;
 
 env_t create_env();
@@ -65,5 +70,7 @@ env_t create_env();
 
 rf_object_t *env_get_variable(env_t *env, rf_object_t name);
 null_t env_set_variable(env_t *env, rf_object_t name, rf_object_t value);
+extern i64_t env_get_typename_by_type(env_t *env, i8_t type);
+extern i8_t env_get_type_by_typename(env_t *env, i64_t name);
 
 #endif

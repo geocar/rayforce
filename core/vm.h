@@ -57,6 +57,7 @@ typedef enum vm_opcode_t
     OP_CALLN,     // Call function with n arguments
     OP_SET,       // Set global variable
     OP_GET,       // Get global variable
+    OP_CAST,      // Cast rf_object to another type
 
     OP_INVALID, // Invalid opcode
 } vm_opcode_t;

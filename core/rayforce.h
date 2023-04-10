@@ -30,21 +30,21 @@
 // #endif
 
 // A compile time assertion check
-#define CASSERT(predicate, file) _impl_CASSERT_LINE(predicate, __LINE__, file)
-#define _impl_PASTE(a, b) a##b
-#define _impl_CASSERT_LINE(predicate, line, file) \
-    typedef char _impl_PASTE(assertion_failed_##file##_, line)[2 * !!(predicate)-1];
+#define CASSERT(predicate, file) _IMPL_CASSERT_LINE(predicate, __LINE__, file)
+#define _IMPL_PASTE(a, b) a##b
+#define _IMPL_CASSERT_LINE(predicate, line, file) \
+    typedef char _IMPL_PASTE(assertion_failed_##file##_, line)[2 * !!(predicate)-1];
 
 #define UNUSED(x) (void)(x)
 
 // Type constants
-#define TYPE_ANY -1
-#define TYPE_LIST 0
-#define TYPE_I8 2
-#define TYPE_I64 3
-#define TYPE_F64 4
+#define TYPE_ANY 0
+#define TYPE_I8 1
+#define TYPE_I64 2
+#define TYPE_F64 3
+#define TYPE_SYMBOL 4
 #define TYPE_STRING 5
-#define TYPE_SYMBOL 6
+#define TYPE_LIST 97
 #define TYPE_TABLE 98
 #define TYPE_DICT 99
 #define TYPE_ERROR 127
@@ -67,6 +67,7 @@
 #define NULL_F64 ((f64_t)(0 / 0.0))
 
 typedef char i8_t;
+typedef unsigned char u8_t;
 typedef char *str_t;
 typedef short i16_t;
 typedef unsigned short u16_t;

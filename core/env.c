@@ -33,9 +33,9 @@
 #define REC(records, arity, name, ret, op, ...)                        \
     {                                                                  \
         i8_t _args[4] = __VA_ARGS__;                                   \
-        u32_t _pargs = 0;                                              \
-        for (u32_t i = 0; i < MAX_ARITY; i++)                          \
-            _pargs |= (u32_t)_args[i] << (MAX_ARITY - 1 - i) * 8;      \
+        i32_t _pargs = 0;                                              \
+        for (i32_t i = 0; i < MAX_ARITY; i++)                          \
+            _pargs |= (u8_t)_args[i] << (MAX_ARITY - 1 - i) * 8;       \
         env_record_t rec = {symbol(name).i64, (i64_t)op, _pargs, ret}; \
         push(&as_list(records)[arity], env_record_t, rec);             \
     }
@@ -48,7 +48,6 @@ null_t init_functions(rf_object_t *records)
     // Unary  
     REC(records, 1, "type",  -TYPE_SYMBOL,  OP_TYPE,   { TYPE_ANY                });
     REC(records, 1, "til" ,   TYPE_I64,     OP_TIL,    {-TYPE_I64                });
-    REC(records, 1, "flip",   TYPE_LIST,    rf_flip,   { TYPE_ANY                });
     // Binary
     REC(records, 2, "+",     -TYPE_I64,     OP_ADDI,   {-TYPE_I64,   -TYPE_I64   });
     REC(records, 2, "+",     -TYPE_F64,     OP_ADDF,   {-TYPE_F64,   -TYPE_F64   });
@@ -66,6 +65,20 @@ null_t init_functions(rf_object_t *records)
     // Nary
     REC(records, 5, "list",   TYPE_LIST,    rf_list,   { 0                       });
 }
+
+null_t init_typenames(i64_t *typenames)
+{
+    typenames[-TYPE_I64    + TYPE_OFFSET] = symbol("i64")   .i64;
+    typenames[-TYPE_F64    + TYPE_OFFSET] = symbol("f64")   .i64;
+    typenames[-TYPE_SYMBOL + TYPE_OFFSET] = symbol("symbol").i64;
+    typenames[TYPE_ANY     + TYPE_OFFSET] = symbol("Any")   .i64;
+    typenames[TYPE_I64     + TYPE_OFFSET] = symbol("I64")   .i64;
+    typenames[TYPE_F64     + TYPE_OFFSET] = symbol("F64")   .i64;
+    typenames[TYPE_SYMBOL  + TYPE_OFFSET] = symbol("Symbol").i64;
+    typenames[TYPE_STRING  + TYPE_OFFSET] = symbol("String").i64;
+    typenames[TYPE_LIST    + TYPE_OFFSET] = symbol("List")  .i64;
+    typenames[TYPE_DICT    + TYPE_OFFSET] = symbol("Dict")  .i64;
+}
 // clang-format on
 
 env_t create_env()
@@ -82,6 +95,8 @@ env_t create_env()
         .functions = functions,
         .variables = variables,
     };
+
+    init_typenames(env.typenames);
 
     return env;
 }
@@ -115,4 +130,18 @@ null_t env_set_variable(env_t *env, rf_object_t name, rf_object_t value)
         rf_object_free(addr);
 
     dict_set(&env->variables, name, i64((i64_t)new_addr));
+}
+
+extern i64_t env_get_typename_by_type(env_t *env, i8_t type)
+{
+    return env->typenames[type + TYPE_OFFSET];
+}
+
+extern i8_t env_get_type_by_typename(env_t *env, i64_t name)
+{
+    for (i32_t i = 0; i < MAX_TYPE; i++)
+        if (env->typenames[i] == name)
+            return i - TYPE_OFFSET;
+
+    return TYPE_ANY;
 }

@@ -26,6 +26,4 @@
 
 #include "rayforce.h"
 
-rf_object_t rf_flip(rf_object_t *x);
-
 #endif

@@ -420,29 +420,5 @@ extern str_t rf_object_fmt(rf_object_t *rf_object)
 
 extern str_t type_fmt(i8_t type)
 {
-    switch (type)
-    {
-    case -TYPE_I64:
-        return str_fmt(0, "i64");
-    case -TYPE_F64:
-        return str_fmt(0, "f64");
-    case -TYPE_SYMBOL:
-        return str_fmt(0, "s64");
-    case TYPE_I64:
-        return str_fmt(0, "i64[]");
-    case TYPE_F64:
-        return str_fmt(0, "f64[]");
-    case TYPE_SYMBOL:
-        return str_fmt(0, "s64[]");
-    case TYPE_STRING:
-        return str_fmt(0, "str");
-    case TYPE_LIST:
-        return str_fmt(0, "list");
-    case TYPE_DICT:
-        return str_fmt(0, "dict");
-    case TYPE_TABLE:
-        return str_fmt(0, "table");
-    default:
-        return str_fmt(0, "unknown");
-    }
+    return str_fmt(0, "%s", symbols_get(env_get_typename_by_type(&runtime_get()->env, type)));
 }

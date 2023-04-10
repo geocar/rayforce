@@ -21,9 +21,4 @@
  *   SOFTWARE.
  */
 
-#include "rayforce.h"
-#include "alloc.h"
-#include "vm.h"
-#include "ops.h"
 #include "util.h"
-#include "format.h"

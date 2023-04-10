@@ -33,12 +33,14 @@
 #include "env.h"
 #include "runtime.h"
 #include "dict.h"
+#include "cast.h"
 
 #define stack_push(v, x) (v->stack[v->sp++] = x)
 #define stack_pop(v) (v->stack[--v->sp])
 #define stack_peek(v) (&v->stack[v->sp - 1])
 
-vm_t *vm_create()
+vm_t *
+vm_create()
 {
     vm_t *vm;
 
@@ -76,7 +78,7 @@ rf_object_t vm_exec(vm_t *vm, str_t code)
         &&op_halt, &&op_push, &&op_pop, &&op_addi, &&op_addf, &&op_subi, &&op_subf,
         &&op_muli, &&op_mulf, &&op_divi, &&op_divf, &&op_sumi, &&op_like, &&op_type,
         &&op_timer_set, &&op_timer_get, &&op_til, &&op_call0, &&op_call1, &&op_call2,
-        &&op_call3, &&op_call4, &&op_calln, &&op_set, &&op_get};
+        &&op_call3, &&op_call4, &&op_calln, &&op_set, &&op_get, &&op_cast};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
 
@@ -296,6 +298,19 @@ op_get:
     addr = (rf_object_t *)((rf_object_t *)(code + vm->ip))->i64;
     vm->ip += sizeof(rf_object_t);
     stack_push(vm, rf_object_clone(addr));
+    dispatch();
+op_cast:
+    vm->ip++;
+    i = code[vm->ip++];
+    x2 = stack_pop(vm);
+    x1 = rf_cast(i, &x2);
+    // TODO: unwind
+    if (x1.type == TYPE_ERROR)
+    {
+        x1.id = x2.id;
+        return x1;
+    }
+    stack_push(vm, x1);
     dispatch();
 }
 
