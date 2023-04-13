@@ -60,6 +60,7 @@ vm_create()
  */
 rf_object_t vm_exec(vm_t *vm, str_t code)
 {
+    // TODO: decide where to store debuginfo for each function
     debuginfo_init(runtime_get()->debuginfo);
 
     rf_object_t x1, x2, x3, x4, x5, x6, *addr;
