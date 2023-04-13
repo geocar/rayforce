@@ -29,6 +29,5 @@
 extern i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt, ...);
 extern str_t str_fmt(i32_t limit, str_t fmt, ...);
 extern str_t rf_object_fmt(rf_object_t *rf_object);
-extern str_t type_fmt(i8_t type);
 
 #endif

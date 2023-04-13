@@ -60,9 +60,6 @@ vm_create()
  */
 rf_object_t vm_exec(vm_t *vm, str_t code)
 {
-    // TODO: decide where to store debuginfo for each function
-    debuginfo_init(runtime_get()->debuginfo);
-
     rf_object_t x1, x2, x3, x4, x5, x6, *addr;
     i64_t *v, t;
     i32_t i, l;
@@ -192,6 +189,7 @@ op_til:
     v = as_vector_i64(&x1);
     for (i = 0; i < x2.i64; i++)
         v[i] = i;
+    x1.id = x2.id;
     stack_push(vm, x1);
     dispatch();
 op_call0:
@@ -202,10 +200,7 @@ op_call0:
     x1 = f0();
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x2.id;
         return x1;
-    }
     stack_push(vm, x1);
     dispatch();
 op_call1:
@@ -217,10 +212,7 @@ op_call1:
     x1 = f1(&x2);
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x3.id;
         return x1;
-    }
     stack_push(vm, x1);
     dispatch();
 op_call2:
@@ -233,10 +225,7 @@ op_call2:
     x1 = f2(&x2, &x3);
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x4.id;
         return x1;
-    }
     stack_push(vm, x1);
     dispatch();
 op_call3:
@@ -250,10 +239,7 @@ op_call3:
     x1 = f3(&x2, &x3, &x4);
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x5.id;
         return x1;
-    }
     stack_push(vm, x1);
     dispatch();
 op_call4:
@@ -268,10 +254,7 @@ op_call4:
     x1 = f4(&x2, &x3, &x4, &x5);
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x6.id;
         return x1;
-    }
     stack_push(vm, x1);
     dispatch();
 op_calln:
@@ -284,10 +267,7 @@ op_calln:
     x1 = fn(addr, l);
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x2.id;
         return x1;
-    }
     vm->sp -= l;
     stack_push(vm, x1);
     dispatch();
@@ -312,10 +292,7 @@ op_cast:
     x1 = rf_cast(i, &x2);
     // TODO: unwind
     if (x1.type == TYPE_ERROR)
-    {
-        x1.id = x2.id;
         return x1;
-    }
     stack_push(vm, x1);
     dispatch();
 }

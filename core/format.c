@@ -108,15 +108,35 @@ extern i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, st
     return n;
 }
 
-extern str_t str_fmt(i32_t limit, str_t fmt, ...)
+str_t str_fmt(i32_t limit, str_t fmt, ...)
 {
-    str_t s = NULL;
-    i32_t len = 0, offset = 0, n;
-    va_list args;
-    va_start(args, fmt);
-    n = str_fmt_into(&s, &len, &offset, limit, fmt, args);
-    va_end(args);
-    return s;
+    i32_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
+    str_t p = rf_malloc(size);
+
+    while (1)
+    {
+        va_list args;
+        va_start(args, fmt);
+        n = vsnprintf(p, size, fmt, args);
+        va_end(args);
+
+        if (n < 0)
+            panic("str_fmt_into: OOM");
+
+        if (n < size)
+            break;
+
+        if (limit > 0)
+            return p;
+
+        size = n + 1;
+        p = rf_realloc(p, size);
+
+        if (p == NULL)
+            panic("str_fmt_into: OOM");
+    }
+
+    return p;
 }
 
 i32_t i64_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, i64_t val)
@@ -415,7 +435,7 @@ extern i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t ind
     }
 }
 
-extern str_t rf_object_fmt(rf_object_t *rf_object)
+str_t rf_object_fmt(rf_object_t *rf_object)
 {
     i32_t len = 0, offset = 0, limit = MAX_ROW_WIDTH;
     str_t dst = NULL;
@@ -424,9 +444,4 @@ extern str_t rf_object_fmt(rf_object_t *rf_object)
         panic("format: returns null");
 
     return dst;
-}
-
-extern str_t type_fmt(i8_t type)
-{
-    return str_fmt(0, "%s", symbols_get(env_get_typename_by_type(&runtime_get()->env, type)));
 }
