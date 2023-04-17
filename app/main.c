@@ -196,7 +196,7 @@ rf_object_t parse_cmdline(i32_t argc, str_t argv[])
     return dict(keys, vals);
 }
 
-null_t load_file(str_t filename)
+null_t load_file(str_t filename, debuginfo_t *debuginfo)
 {
     i32_t fd;
     str_t file, buf;
@@ -222,7 +222,10 @@ null_t load_file(str_t filename)
         return;
     }
 
-    rf_object = parse(filename, file);
+    debuginfo->filename = filename;
+    debuginfo->function = "";
+
+    rf_object = parse(filename, file, debuginfo);
     buf = rf_object_fmt(&rf_object);
 
     // printf("%s%s%s\n", TOMATO, buf, RESET);
@@ -245,23 +248,27 @@ i32_t main(i32_t argc, str_t argv[])
     rf_object_t args = parse_cmdline(argc, argv), parsed, executed, compiled;
     i8_t run = 1;
     str_t line = (str_t)rf_malloc(LINE_SIZE), ptr; //, filename = NULL;
+    debuginfo_t debuginfo = debuginfo_create("REPL", "");
     vm_t *vm;
 
     print_logo();
 
     vm = vm_create();
 
-    // load_file("/tmp/test.ray");
+    // load_file("/tmp/test.ray", &debuginfo);
     rf_object_free(&args);
 
     while (run)
     {
+        debuginfo.filename = "REPL";
+        debuginfo.function = "";
+
         printf("%s%s%s", GREEN, PROMPT, RESET);
         ptr = fgets(line, LINE_SIZE, stdin);
         if ((ptr) == NULL)
             break;
 
-        parsed = parse("REPL", line);
+        parsed = parse("REPL", line, &debuginfo);
         // printf("%s\n", rf_object_fmt(&parsed));
 
         if (is_error(&parsed))
@@ -270,7 +277,7 @@ i32_t main(i32_t argc, str_t argv[])
             continue;
         }
 
-        compiled = cc_compile(&parsed);
+        compiled = cc_compile_function("top-level", &parsed, &debuginfo);
         if (is_error(&compiled))
         {
             print_error(&compiled, "REPL", line, LINE_SIZE);

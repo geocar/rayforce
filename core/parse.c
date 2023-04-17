@@ -60,7 +60,7 @@ null_t span_extend(parser_t *parser, span_t *span)
 
 u32_t span_commit(parser_t *parser, span_t span)
 {
-    debuginfo_insert(&parser->debuginfo, parser->count, span);
+    debuginfo_insert(parser->debuginfo, parser->count, span);
     return parser->count++;
 }
 
@@ -556,12 +556,12 @@ rf_object_t parse_program(parser_t *parser)
     return list;
 }
 
-extern rf_object_t parse(str_t filename, str_t input)
+rf_object_t parse(str_t filename, str_t input, debuginfo_t *debuginfo)
 {
     rf_object_t prg;
 
     parser_t parser = {
-        .debuginfo = debuginfo_create(filename, ""),
+        .debuginfo = debuginfo,
         .input = input,
         .current = input,
         .line = 0,
@@ -571,7 +571,7 @@ extern rf_object_t parse(str_t filename, str_t input)
     prg = parse_program(&parser);
 
     if (is_error(&prg))
-        prg.adt->span = debuginfo_get(&parser.debuginfo, prg.id);
+        prg.adt->span = debuginfo_get(parser.debuginfo, prg.id);
 
     return prg;
 }

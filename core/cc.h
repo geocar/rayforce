@@ -25,8 +25,9 @@
 #define CC_H
 
 #include "rayforce.h"
+#include "debuginfo.h"
 
-rf_object_t cc_compile(rf_object_t *list);
+rf_object_t cc_compile_function(str_t name, rf_object_t *body, debuginfo_t *debuginfo);
 str_t cc_code_fmt(rf_object_t *code);
 
 #endif
