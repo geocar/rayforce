@@ -566,7 +566,5 @@ extern rf_object_t parse(str_t filename, str_t input)
     if (is_error(&prg))
         prg.adt->span = debuginfo_get(&parser.debuginfo, prg.id);
 
-    // debuginfo_get(&parser.debuginfo, prg.id);
-
     return prg;
 }
