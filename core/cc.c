@@ -33,7 +33,7 @@
 #include "runtime.h"
 #include "binary.h"
 
-i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code, debuginfo_t *cc_debuginfo, debuginfo_t *rt_debuginfo);
+i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code, debuginfo_t *cc_debuginfo, debuginfo_t *rt_debuginfo);
 
 #define push_opcode(d, p, k, c, x)                    \
     {                                                 \
@@ -134,10 +134,10 @@ i8_t cc_compile_op(rf_object_t *car, i32_t args, u32_t arity, rf_object_t *code,
  * return TYPE_ANY if it is not a special form
  * return type of the special form if it is a special form
  */
-i8_t cc_compile_special_forms(rf_object_t *rf_object, u32_t arity, rf_object_t *code, debuginfo_t *cc_debuginfo, debuginfo_t *rt_debuginfo)
+i8_t cc_compile_special_forms(rf_object_t *object, u32_t arity, rf_object_t *code, debuginfo_t *cc_debuginfo, debuginfo_t *rt_debuginfo)
 {
     i8_t type;
-    rf_object_t *car = &as_list(rf_object)[0], *addr, err;
+    rf_object_t *car = &as_list(object)[0], *addr, err;
 
     // compile special forms
     if (car->i64 == symbol("time").i64)
@@ -146,13 +146,13 @@ i8_t cc_compile_special_forms(rf_object_t *rf_object, u32_t arity, rf_object_t *
         {
             rf_object_free(code);
             err = error(ERR_LENGTH, "'time' takes one argument");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
 
         push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_TIMER_SET);
-        type = cc_compile_fn(&as_list(rf_object)[1], code, cc_debuginfo, rt_debuginfo);
+        type = cc_compile_fn(&as_list(object)[1], code, cc_debuginfo, rt_debuginfo);
 
         if (type == TYPE_ERROR)
             return TYPE_ERROR;
@@ -168,38 +168,38 @@ i8_t cc_compile_special_forms(rf_object_t *rf_object, u32_t arity, rf_object_t *
         {
             rf_object_free(code);
             err = error(ERR_LENGTH, "'set' takes two arguments");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
-        if (as_list(rf_object)[1].type != -TYPE_SYMBOL)
+        if (as_list(object)[1].type != -TYPE_SYMBOL)
         {
             rf_object_free(code);
             err = error(ERR_LENGTH, "'set' takes symbol as first argument");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
 
-        type = cc_compile_fn(&as_list(rf_object)[2], code, cc_debuginfo, rt_debuginfo);
+        type = cc_compile_fn(&as_list(object)[2], code, cc_debuginfo, rt_debuginfo);
 
         if (type == TYPE_ERROR)
             return TYPE_ERROR;
 
         // check if variable is not set or has the same type
-        addr = env_get_variable(&runtime_get()->env, as_list(rf_object)[1]);
+        addr = env_get_variable(&runtime_get()->env, as_list(object)[1]);
 
         if (addr != NULL && type != addr->type)
         {
             rf_object_free(code);
             err = error(ERR_TYPE, "variable type mismatch");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
 
         push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_SET);
-        push_rf_object(code, as_list(rf_object)[1]);
+        push_rf_object(code, as_list(object)[1]);
 
         return type;
     }
@@ -210,32 +210,32 @@ i8_t cc_compile_special_forms(rf_object_t *rf_object, u32_t arity, rf_object_t *
         {
             rf_object_free(code);
             err = error(ERR_LENGTH, "'cast' takes two arguments");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
 
-        if (as_list(rf_object)[1].type != -TYPE_SYMBOL)
+        if (as_list(object)[1].type != -TYPE_SYMBOL)
         {
             rf_object_free(code);
             err = error(ERR_LENGTH, "'cast' takes symbol as first argument");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
 
-        type = env_get_type_by_typename(&runtime_get()->env, as_list(rf_object)[1].i64);
+        type = env_get_type_by_typename(&runtime_get()->env, as_list(object)[1].i64);
 
         if (type == TYPE_ANY)
         {
             rf_object_free(code);
             err = error(ERR_TYPE, "'cast': unknown type");
-            err.id = as_list(rf_object)[1].id;
+            err.id = as_list(object)[1].id;
             *code = err;
             return TYPE_ERROR;
         }
 
-        if (cc_compile_fn(&as_list(rf_object)[2], code, cc_debuginfo, rt_debuginfo) == TYPE_ERROR)
+        if (cc_compile_fn(&as_list(object)[2], code, cc_debuginfo, rt_debuginfo) == TYPE_ERROR)
             return TYPE_ERROR;
 
         push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CAST);
@@ -247,61 +247,61 @@ i8_t cc_compile_special_forms(rf_object_t *rf_object, u32_t arity, rf_object_t *
     return TYPE_ANY;
 }
 
-i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code, debuginfo_t *cc_debuginfo, debuginfo_t *rt_debuginfo)
+i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code, debuginfo_t *cc_debuginfo, debuginfo_t *rt_debuginfo)
 {
     rf_object_t *car, err, *addr;
     i8_t type;
     u32_t i, arity;
     i32_t args = 0;
 
-    switch (rf_object->type)
+    switch (object->type)
     {
     case -TYPE_I64:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_PUSH);
-        push_rf_object(code, *rf_object);
+        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+        push_rf_object(code, *object);
         return -TYPE_I64;
 
     case -TYPE_F64:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_PUSH);
-        push_rf_object(code, *rf_object);
+        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+        push_rf_object(code, *object);
         return -TYPE_F64;
 
     case -TYPE_SYMBOL:
         // symbol is quoted
-        if (rf_object->flags == 1)
+        if (object->flags == 1)
         {
-            rf_object->flags = 0;
-            push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_PUSH);
-            push_rf_object(code, *rf_object);
+            object->flags = 0;
+            push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+            push_rf_object(code, *object);
             return -TYPE_SYMBOL;
         }
 
-        addr = env_get_variable(&runtime_get()->env, *rf_object);
+        addr = env_get_variable(&runtime_get()->env, *object);
 
         if (addr == NULL)
         {
             rf_object_free(code);
             err = error(ERR_TYPE, "unknown symbol");
-            err.id = rf_object->id;
+            err.id = object->id;
             *code = err;
             return TYPE_ERROR;
         }
 
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_GET);
+        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_GET);
         push_rf_object(code, i64((i64_t)addr));
 
         return addr->type;
 
     case TYPE_LIST:
-        if (rf_object->adt->len == 0 || rf_object->flags == 1)
+        if (object->adt->len == 0 || object->flags == 1)
         {
-            rf_object->flags = 0;
-            push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_PUSH);
-            push_rf_object(code, rf_object_clone(rf_object));
+            object->flags = 0;
+            push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+            push_rf_object(code, rf_object_clone(object));
             return TYPE_LIST;
         }
 
-        car = &as_list(rf_object)[0];
+        car = &as_list(object)[0];
         if (car->type != -TYPE_SYMBOL)
         {
             rf_object_free(code);
@@ -311,9 +311,9 @@ i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code, debuginfo_t *cc_de
             return TYPE_ERROR;
         }
 
-        arity = rf_object->adt->len - 1;
+        arity = object->adt->len - 1;
 
-        type = cc_compile_special_forms(rf_object, arity, code, cc_debuginfo, rt_debuginfo);
+        type = cc_compile_special_forms(object, arity, code, cc_debuginfo, rt_debuginfo);
 
         if (type == TYPE_ERROR)
             return type;
@@ -324,7 +324,7 @@ i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code, debuginfo_t *cc_de
         // compile arguments
         for (i = 1; i <= arity; i++)
         {
-            type = cc_compile_fn(&as_list(rf_object)[i], code, cc_debuginfo, rt_debuginfo);
+            type = cc_compile_fn(&as_list(object)[i], code, cc_debuginfo, rt_debuginfo);
 
             if (type == TYPE_ERROR)
                 return TYPE_ERROR;
@@ -341,14 +341,14 @@ i8_t cc_compile_fn(rf_object_t *rf_object, rf_object_t *code, debuginfo_t *cc_de
 
         rf_object_free(code);
         err = error(ERR_LENGTH, "function proto or arity mismatch");
-        err.id = rf_object->id;
+        err.id = object->id;
         *code = err;
         return type;
 
     default:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_PUSH);
-        push_rf_object(code, rf_object_clone(rf_object));
-        return rf_object->type;
+        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+        push_rf_object(code, rf_object_clone(object));
+        return object->type;
     }
 }
 

@@ -62,7 +62,7 @@ rf_object_t vm_exec(vm_t *vm, str_t code, debuginfo_t *debuginfo)
 {
     rf_object_t x1, x2, x3, x4, x5, x6, *addr;
     i64_t *v, t;
-    i32_t i, l;
+    i32_t i, l, b;
     nilary_t f0;
     unary_t f1;
     binary_t f2;
@@ -81,6 +81,13 @@ rf_object_t vm_exec(vm_t *vm, str_t code, debuginfo_t *debuginfo)
         &&op_call3, &&op_call4, &&op_calln, &&op_set, &&op_get, &&op_cast};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
+
+#define unwrap(x, y)                               \
+    if (x.type == TYPE_ERROR)                      \
+    {                                              \
+        x.adt->span = debuginfo_get(debuginfo, y); \
+        return x;                                  \
+    }
 
     dispatch();
 
@@ -193,7 +200,7 @@ op_til:
     stack_push(vm, x1);
     dispatch();
 op_call0:
-    vm->ip++;
+    b = vm->ip++;
     x2 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     f0 = (nilary_t)x2.i64;
@@ -204,39 +211,28 @@ op_call0:
     stack_push(vm, x1);
     dispatch();
 op_call1:
-    vm->ip++;
+    b = vm->ip++;
     x3 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     x2 = stack_pop(vm);
     f1 = (unary_t)x3.i64;
     x1 = f1(&x2);
-    // TODO: unwind
-    if (x1.type == TYPE_ERROR)
-    {
-        x1.adt->span = debuginfo_get(debuginfo, vm->ip - sizeof(rf_object_t) - 1);
-        return x1;
-    }
+    unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
 op_call2:
-    vm->ip++;
+    b = vm->ip++;
     x4 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     x3 = stack_pop(vm);
     x2 = stack_pop(vm);
     f2 = (binary_t)x4.i64;
     x1 = f2(&x2, &x3);
-    // TODO: unwind
-    if (x1.type == TYPE_ERROR)
-    {
-        debug("unwind");
-        x1.adt->span = debuginfo_get(debuginfo, vm->ip - sizeof(rf_object_t) - 1);
-        return x1;
-    }
+    unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
 op_call3:
-    vm->ip++;
+    b = vm->ip++;
     x5 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     x4 = stack_pop(vm);
@@ -244,13 +240,11 @@ op_call3:
     x2 = stack_pop(vm);
     f3 = (ternary_t)x5.i64;
     x1 = f3(&x2, &x3, &x4);
-    // TODO: unwind
-    if (x1.type == TYPE_ERROR)
-        return x1;
+    unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
 op_call4:
-    vm->ip++;
+    b = vm->ip++;
     x6 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     x5 = stack_pop(vm);
@@ -259,27 +253,23 @@ op_call4:
     x2 = stack_pop(vm);
     f4 = (quaternary_t)x6.i64;
     x1 = f4(&x2, &x3, &x4, &x5);
-    // TODO: unwind
-    if (x1.type == TYPE_ERROR)
-        return x1;
+    unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
 op_calln:
-    vm->ip++;
+    b = vm->ip++;
     l = code[vm->ip++];
     x2 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     fn = (nary_t)x2.i64;
     addr = (rf_object_t *)(&vm->stack[vm->sp - l]);
     x1 = fn(addr, l);
-    // TODO: unwind
-    if (x1.type == TYPE_ERROR)
-        return x1;
+    unwrap(x1, b);
     vm->sp -= l;
     stack_push(vm, x1);
     dispatch();
 op_set:
-    vm->ip++;
+    b = vm->ip++;
     x2 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
     x1 = stack_pop(vm);
@@ -287,22 +277,17 @@ op_set:
     stack_push(vm, x1);
     dispatch();
 op_get:
-    vm->ip++;
+    b = vm->ip++;
     addr = (rf_object_t *)((rf_object_t *)(code + vm->ip))->i64;
     vm->ip += sizeof(rf_object_t);
     stack_push(vm, rf_object_clone(addr));
     dispatch();
 op_cast:
-    vm->ip++;
+    b = vm->ip++;
     i = code[vm->ip++];
     x2 = stack_pop(vm);
     x1 = rf_cast(i, &x2);
-    // TODO: unwind
-    if (x1.type == TYPE_ERROR)
-    {
-        x1.adt->span = debuginfo_get(debuginfo, vm->ip - 2);
-        return x1;
-    }
+    unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
 }
