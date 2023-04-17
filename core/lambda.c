@@ -21,39 +21,4 @@
  *   SOFTWARE.
  */
 
-#include "debuginfo.h"
-
-i64_t i64_hash(null_t *val)
-{
-    return (i64_t)val;
-}
-
-i32_t i64_cmp(null_t *a, null_t *b)
-{
-    return !((i64_t)a == (i64_t)b);
-}
-
-debuginfo_t debuginfo_create(str_t filename, str_t function)
-{
-    debuginfo_t debuginfo = {
-        .filename = filename,
-        .function = function,
-        .spans = ht_create(&i64_hash, &i64_cmp),
-    };
-
-    return debuginfo;
-}
-
-null_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span)
-{
-    // u32_t index = debuginfo->count;
-    // debuginfo->span[index] = span;
-    // debuginfo->count++;
-    // return index;
-}
-
-span_t debuginfo_get(debuginfo_t *debuginfo, u32_t index)
-{
-    // return debuginfo->span[index];
-    return (span_t){0};
-}
+#include "lambda.h"

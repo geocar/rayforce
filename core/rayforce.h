@@ -79,13 +79,32 @@ typedef double f64_t;
 typedef void null_t;
 
 /*
- * Vector header
+ * Points to a actual error position in a source code
+ */
+typedef struct span_t
+{
+    u16_t start_line;
+    u16_t end_line;
+    u16_t start_column;
+    u16_t end_column;
+} span_t;
+
+CASSERT(sizeof(struct span_t) == 8, debuginfo_h)
+
+/*
+ * ADT header
  */
 typedef struct header_t
 {
     i64_t len;
     i64_t rc;
-    i64_t attrs;
+
+    union
+    {
+        i64_t attrs;
+        span_t span;
+    };
+
     union
     {
         i8_t code;
@@ -93,14 +112,11 @@ typedef struct header_t
     };
 } header_t;
 
-CASSERT(sizeof(struct header_t) == 32, vector_c)
+CASSERT(sizeof(struct header_t) == 32, rayforce_h)
 
 // Generic type
 typedef struct rf_object_t
 {
-    i8_t type, flags;
-    u32_t id;
-
     union
     {
         i8_t i8;
@@ -109,9 +125,14 @@ typedef struct rf_object_t
         header_t *adt;
     };
 
+    u32_t id;
+    u16_t tt;
+    i8_t type;
+    i8_t flags;
+
 } rf_object_t;
 
-CASSERT(sizeof(struct rf_object_t) == 16, rf_h)
+CASSERT(sizeof(struct rf_object_t) == 16, rayforce_h)
 
 // Constructors
 extern rf_object_t i64(i64_t rf_object);                           // i64 scalar

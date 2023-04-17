@@ -31,8 +31,6 @@ extern null_t runtime_init()
     alloc_t alloc = rf_alloc_init();
     runtime_t runtime = rf_malloc(sizeof(struct runtime_t));
     runtime->alloc = alloc;
-    runtime->debuginfo = rf_malloc(sizeof(struct debuginfo_t));
-    debuginfo_init(runtime->debuginfo);
     _RUNTIME = runtime;
     runtime->env = create_env();
 }
