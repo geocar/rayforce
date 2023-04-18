@@ -342,7 +342,7 @@ i8_t cc_compile_fn(rf_object_t *object, rf_object_t *code, debuginfo_t *cc_debug
 
         rf_object_free(code);
         err = error(ERR_LENGTH, "function proto or arity mismatch");
-        err.id = object->id;
+        err.id = car->id;
         *code = err;
         return type;
 
