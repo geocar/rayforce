@@ -36,12 +36,14 @@
 
 i8_t cc_compile_expr(cc_t *cc, rf_object_t *object);
 
-#define push_opcode(d, p, k, c, x)                    \
-    {                                                 \
-        span_t u = debuginfo_get(d, k);               \
-        debuginfo_insert(p, (u32_t)(c)->adt->len, u); \
-        vector_reserve(c, 1);                         \
-        as_string(c)[(c)->adt->len++] = (i8_t)x;      \
+#define push_opcode(c, k, v, x)                                   \
+    {                                                             \
+        debuginfo_t *d = (c)->debuginfo;                          \
+        debuginfo_t *p = &as_function(&(c)->function)->debuginfo; \
+        span_t u = debuginfo_get(d, k);                           \
+        debuginfo_insert(p, (u32_t)(v)->adt->len, u);             \
+        vector_reserve(v, 1);                                     \
+        as_string(v)[(v)->adt->len++] = (i8_t)x;                  \
     }
 
 #define push_rf_object(c, x)                                \
@@ -92,8 +94,6 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
 {
     i8_t type;
     rf_object_t *car = &as_list(object)[0], *addr, err;
-    debuginfo_t *cc_debuginfo = cc->debuginfo;
-    debuginfo_t *rt_debuginfo = &as_function(&cc->function)->debuginfo;
     rf_object_t *code = &as_function(&cc->function)->code;
 
     // compile special forms
@@ -108,13 +108,13 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
             return TYPE_ERROR;
         }
 
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_TIMER_SET);
+        push_opcode(cc, car->id, code, OP_TIMER_SET);
         type = cc_compile_expr(cc, &as_list(object)[1]);
 
         if (type == TYPE_ERROR)
             return TYPE_ERROR;
 
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_TIMER_GET);
+        push_opcode(cc, car->id, code, OP_TIMER_GET);
 
         return -TYPE_F64;
     }
@@ -155,7 +155,7 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
             return TYPE_ERROR;
         }
 
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_SET);
+        push_opcode(cc, car->id, code, OP_SET);
         push_rf_object(code, as_list(object)[1]);
 
         return type;
@@ -195,8 +195,8 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
         if (cc_compile_expr(cc, &as_list(object)[2]) == TYPE_ERROR)
             return TYPE_ERROR;
 
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CAST);
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, type);
+        push_opcode(cc, car->id, code, OP_CAST);
+        push_opcode(cc, car->id, code, type);
 
         return type;
     }
@@ -209,8 +209,6 @@ i8_t cc_compile_call(cc_t *cc, rf_object_t *car, i32_t args, u32_t arity)
     rf_object_t fn;
     u32_t found_arity = arity;
     rf_object_t *code = &as_function(&cc->function)->code;
-    debuginfo_t *cc_debuginfo = cc->debuginfo;
-    debuginfo_t *rt_debuginfo = &as_function(&cc->function)->debuginfo;
     env_record_t *rec = find_record(&runtime_get()->env.functions, car, args, &found_arity);
 
     if (!rec)
@@ -219,7 +217,7 @@ i8_t cc_compile_call(cc_t *cc, rf_object_t *car, i32_t args, u32_t arity)
     // It is an instruction
     if (rec->op < OP_INVALID)
     {
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, rec->op);
+        push_opcode(cc, car->id, code, rec->op);
         return rec->ret;
     }
 
@@ -227,23 +225,23 @@ i8_t cc_compile_call(cc_t *cc, rf_object_t *car, i32_t args, u32_t arity)
     switch (found_arity)
     {
     case 0:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CALL0);
+        push_opcode(cc, car->id, code, OP_CALL0);
         break;
     case 1:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CALL1);
+        push_opcode(cc, car->id, code, OP_CALL1);
         break;
     case 2:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CALL2);
+        push_opcode(cc, car->id, code, OP_CALL2);
         break;
     case 3:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CALL3);
+        push_opcode(cc, car->id, code, OP_CALL3);
         break;
     case 4:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CALL4);
+        push_opcode(cc, car->id, code, OP_CALL4);
         break;
     default:
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, OP_CALLN);
-        push_opcode(cc_debuginfo, rt_debuginfo, car->id, code, arity);
+        push_opcode(cc, car->id, code, OP_CALLN);
+        push_opcode(cc, car->id, code, arity);
     }
 
     fn = i64(rec->op);
@@ -259,18 +257,16 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
     u32_t i, arity;
     i32_t args = 0;
     rf_object_t *code = &as_function(&cc->function)->code;
-    debuginfo_t *cc_debuginfo = cc->debuginfo;
-    debuginfo_t *rt_debuginfo = &as_function(&cc->function)->debuginfo;
 
     switch (object->type)
     {
     case -TYPE_I64:
-        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+        push_opcode(cc, object->id, code, OP_PUSH);
         push_rf_object(code, *object);
         return -TYPE_I64;
 
     case -TYPE_F64:
-        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+        push_opcode(cc, object->id, code, OP_PUSH);
         push_rf_object(code, *object);
         return -TYPE_F64;
 
@@ -279,7 +275,7 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
         if (object->flags == 1)
         {
             object->flags = 0;
-            push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+            push_opcode(cc, object->id, code, OP_PUSH);
             push_rf_object(code, *object);
             return -TYPE_SYMBOL;
         }
@@ -295,7 +291,7 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
             return TYPE_ERROR;
         }
 
-        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_GET);
+        push_opcode(cc, object->id, code, OP_GET);
         push_rf_object(code, i64((i64_t)addr));
 
         return addr->type;
@@ -304,7 +300,7 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
         if (object->adt->len == 0 || object->flags == 1)
         {
             object->flags = 0;
-            push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+            push_opcode(cc, object->id, code, OP_PUSH);
             push_rf_object(code, rf_object_clone(object));
             return TYPE_LIST;
         }
@@ -354,7 +350,7 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
         return type;
 
     default:
-        push_opcode(cc_debuginfo, rt_debuginfo, object->id, code, OP_PUSH);
+        push_opcode(cc, object->id, code, OP_PUSH);
         push_rf_object(code, rf_object_clone(object));
         return object->type;
     }
@@ -375,8 +371,6 @@ rf_object_t cc_compile(rf_object_t *body, debuginfo_t *debuginfo)
 
     i32_t i;
     rf_object_t *code = &as_function(&cc.function)->code, err;
-    debuginfo_t *cc_debuginfo = cc.debuginfo;
-    debuginfo_t *rt_debuginfo = &as_function(&cc.function)->debuginfo;
 
     for (i = 0; i < body->adt->len; i++)
         cc_compile_expr(&cc, &as_list(body)[i]);
@@ -385,16 +379,16 @@ rf_object_t cc_compile(rf_object_t *body, debuginfo_t *debuginfo)
     {
         if (body->adt->len == 0)
         {
-            push_opcode(cc_debuginfo, rt_debuginfo, body->id, code, OP_PUSH);
+            push_opcode(&cc, body->id, code, OP_PUSH);
             push_rf_object(code, null());
         }
 
-        push_opcode(cc_debuginfo, rt_debuginfo, body->id, code, OP_HALT);
+        push_opcode(&cc, body->id, code, OP_HALT);
 
         return cc.function;
     }
 
-    code->adt->span = debuginfo_get(cc_debuginfo, code->id);
+    code->adt->span = debuginfo_get(cc.debuginfo, code->id);
     err = rf_object_clone(code);
     rf_object_free(&cc.function);
 
