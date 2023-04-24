@@ -91,7 +91,7 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
 
     // The indices of labels in the dispatch_table are the relevant opcodes
     static null_t *dispatch_table[] = {
-        &&op_halt, &&op_ret, &&op_push, &&op_pop, &&op_addi, &&op_addf, &&op_subi, &&op_subf,
+        &&op_halt, &&op_ret, &&op_push, &&op_pop, &&op_swapn, &&op_addi, &&op_addf, &&op_subi, &&op_subf,
         &&op_muli, &&op_mulf, &&op_divi, &&op_divf, &&op_sumi, &&op_like, &&op_type,
         &&op_timer_set, &&op_timer_get, &&op_til, &&op_call0, &&op_call1, &&op_call2,
         &&op_call3, &&op_call4, &&op_calln, &&op_callf, &&op_lset, &&op_gset, &&op_lload,
@@ -116,15 +116,14 @@ op_halt:
         return null();
 op_ret:
     vm->ip++;
-    x3 = stack_pop(vm);
-    x2 = stack_pop(vm);
-    x1 = stack_pop(vm);
-    ctx = *(ctx_t *)&x2;
+    x2 = stack_pop(vm); // return value
+    x1 = stack_pop(vm); // ctx
+    ctx = *(ctx_t *)&x1;
     vm->ip = ctx.ip;
     vm->bp = ctx.bp;
     f = ctx.addr;
     code = as_string(&f->code);
-    stack_push(vm, x3);
+    stack_push(vm, x2); // push back return value
     dispatch();
 op_push:
     vm->ip++;
@@ -135,6 +134,15 @@ op_push:
 op_pop:
     vm->ip++;
     x1 = stack_pop(vm);
+    dispatch();
+op_swapn:
+    vm->ip++;
+    l = code[vm->ip++];
+    vm->ip += sizeof(rf_object_t);
+    x1 = stack_pop(vm);
+    for (i = 0; i < l; i++)
+        x2 = stack_pop(vm);
+    stack_push(vm, x1);
     dispatch();
 op_addi:
     vm->ip++;

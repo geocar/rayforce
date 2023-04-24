@@ -95,7 +95,7 @@ env_record_t *find_record(rf_object_t *records, rf_object_t *car, i32_t args, u3
 i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
 {
     i8_t type;
-    rf_object_t *car = &as_list(object)[0], *addr, *b, fun, arg, err;
+    rf_object_t *car = &as_list(object)[0], *addr, *b, fun, err;
     function_t *func = as_function(&cc->function);
     rf_object_t *code = &func->code;
 
@@ -283,10 +283,11 @@ i8_t cc_compile_call(cc_t *cc, rf_object_t *car, i32_t args, u32_t arity)
 
 i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
 {
-    rf_object_t *car, err, *addr, arg;
+    rf_object_t *car, err, *addr, *arg_keys, *arg_vals;
     i8_t type = TYPE_ANY;
     u32_t i, arity;
     i32_t args = 0;
+    i64_t id, sym;
     rf_object_t *code = &as_function(&cc->function)->code;
     function_t *func = as_function(&cc->function);
 
@@ -315,14 +316,17 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
         // first try to search in the function args
         if (func->args.type == TYPE_DICT)
         {
-            arg = dict_get(&func->args, *object);
+            arg_keys = &as_list(&func->args)[0];
+            arg_vals = &as_list(&func->args)[1];
 
-            if (!is_null(&arg))
+            id = vector_i64_find(arg_keys, object->i64);
+
+            if (id < arg_vals->adt->len)
             {
-                type = env_get_type_by_typename(&runtime_get()->env, arg.i64);
-
+                sym = as_vector_i64(arg_vals)[id];
+                type = env_get_type_by_typename(&runtime_get()->env, sym);
                 push_opcode(cc, object->id, code, OP_LLOAD);
-                push_rf_object(code, i64((i64_t)-1));
+                push_rf_object(code, i64(-1 - id));
 
                 return type;
             }
@@ -397,6 +401,9 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
         {
             push_opcode(cc, car->id, code, OP_CALLF);
             push_rf_object(code, rf_object_clone(addr));
+            // Cleanup arguments from the stack after call
+            push_opcode(cc, car->id, code, OP_SWAPN);
+            push_opcode(cc, car->id, code, (i8_t)arity);
 
             return as_function(addr)->rettype;
         }
@@ -426,10 +433,18 @@ rf_object_t cc_compile_function(i8_t top, str_t name, rf_object_t args, rf_objec
 
     i8_t type, op;
     i32_t i;
-    rf_object_t *code = &as_function(&cc.function)->code, err;
+    rf_object_t *code = &as_function(&cc.function)->code, *b, err;
 
     for (i = 0; i < len; i++)
+    {
+        b = body + i;
+        if (b->type != TYPE_LIST)
+            continue;
+
         type = cc_compile_expr(&cc, body + i);
+        if (i < len - 1)
+            push_opcode(&cc, id, code, OP_POP);
+    }
 
     if (code->type != TYPE_ERROR)
     {
