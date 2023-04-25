@@ -27,5 +27,6 @@
 
 rf_object_t rf_dict(rf_object_t *x, rf_object_t *y)
 {
-    return dict(rf_object_clone(x), rf_object_clone(y));
+
+    return dict(list_flatten(rf_object_clone(x)), list_flatten(rf_object_clone(y)));
 }

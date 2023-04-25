@@ -96,7 +96,7 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
 {
     i8_t type;
     i64_t id;
-    rf_object_t *car = &as_list(object)[0], *addr, *b, fun, name, err;
+    rf_object_t *car = &as_list(object)[0], *addr, *b, args, fun, name, err;
     function_t *func = as_function(&cc->function);
     rf_object_t *code = &func->code;
 
@@ -329,6 +329,7 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
     u32_t i, arity;
     i32_t args = 0;
     i64_t id, sym;
+    env_t *env = &runtime_get()->env;
     rf_object_t *code = &as_function(&cc->function)->code;
     function_t *func = as_function(&cc->function);
 
@@ -441,6 +442,73 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
         if (type != TYPE_ANY)
             return type;
 
+        // Compile user function call
+        addr = env_get_variable(&runtime_get()->env, *car);
+        if (addr && addr->type == TYPE_FUNCTION)
+        {
+            func = as_function(addr);
+            if (func->args.type != TYPE_DICT)
+            {
+                rf_object_free(code);
+                err = error(ERR_TYPE, "expected dict as function arguments");
+                err.id = car->id;
+                *code = err;
+                return TYPE_ERROR;
+            }
+
+            arg_keys = &as_list(&func->args)[0];
+            arg_vals = &as_list(&func->args)[1];
+
+            if (arg_keys->adt->len != arity)
+            {
+                rf_object_free(code);
+                err = error(ERR_LENGTH, str_fmt(0, "arguments length mismatch: expected %d, got %d",
+                                                arg_keys->adt->len, arity));
+                err.id = car->id;
+                *code = err;
+                return TYPE_ERROR;
+            }
+
+            // compile arguments
+            for (i = 1; i <= arity; i++)
+            {
+                type = cc_compile_expr(cc, &as_list(object)[i]);
+
+                if (type == TYPE_ERROR)
+                    return TYPE_ERROR;
+
+                if (type != env_get_type_by_typename(env, as_vector_symbol(arg_vals)[i - 1]))
+                {
+                    rf_object_free(code);
+                    err = error(ERR_TYPE, str_fmt(0, "argument type mismatch: expected %s, got %s",
+                                                  symbols_get(as_vector_symbol(arg_vals)[i - 1]),
+                                                  symbols_get(env_get_typename_by_type(env, type))));
+                    err.id = as_list(object)[i].id;
+                    *code = err;
+                    return TYPE_ERROR;
+                }
+
+                // pack arguments only if function is not nary
+                if (arity <= MAX_ARITY)
+                    args |= (u8_t)type << (MAX_ARITY - i) * 8;
+            }
+
+            // reserve stack space for locals
+            if (func->locals.type == TYPE_DICT)
+            {
+                len = (i8_t)as_list(&func->locals)[0].adt->len;
+                push_opcode(cc, car->id, code, OP_RESERVE);
+                push_opcode(cc, car->id, code, len);
+            }
+            push_opcode(cc, car->id, code, OP_CALLF);
+            push_rf_object(code, rf_object_clone(addr));
+            // Cleanup arguments from the stack after call
+            push_opcode(cc, car->id, code, OP_SWAPN);
+            push_opcode(cc, car->id, code, (i8_t)arity + len);
+
+            return as_function(addr)->rettype;
+        }
+
         // compile arguments
         for (i = 1; i <= arity; i++)
         {
@@ -458,26 +526,6 @@ i8_t cc_compile_expr(cc_t *cc, rf_object_t *object)
 
         if (type != TYPE_ERROR)
             return type;
-
-        addr = env_get_variable(&runtime_get()->env, *car);
-        if (addr && addr->type == TYPE_FUNCTION)
-        {
-            // reserve stack space for locals
-            func = as_function(addr);
-            if (func->locals.type == TYPE_DICT)
-            {
-                len = (i8_t)as_list(&func->locals)[0].adt->len;
-                push_opcode(cc, car->id, code, OP_RESERVE);
-                push_opcode(cc, car->id, code, len);
-            }
-            push_opcode(cc, car->id, code, OP_CALLF);
-            push_rf_object(code, rf_object_clone(addr));
-            // Cleanup arguments from the stack after call
-            push_opcode(cc, car->id, code, OP_SWAPN);
-            push_opcode(cc, car->id, code, (i8_t)arity + len);
-
-            return as_function(addr)->rettype;
-        }
 
         rf_object_free(code);
         err = error(ERR_LENGTH, "function proto or arity mismatch");
