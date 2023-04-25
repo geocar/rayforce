@@ -288,6 +288,7 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
 
         arity -= 1;
         fun = cc_compile_function(false, "anonymous", rettype, rf_object_clone(b), b + 1, car->id, arity, cc->debuginfo);
+        // printf("%s\n", vm_code_fmt(&fun));
         push_opcode(cc, object->id, code, OP_PUSH);
         push_rf_object(code, fun);
         return TYPE_FUNCTION;
@@ -341,17 +342,6 @@ i8_t cc_compile_special_forms(cc_t *cc, rf_object_t *object, u32_t arity)
 
         if (type1 == TYPE_ERROR)
             return type1;
-
-        // if (type1 == TYPE_ANY)
-        // {
-        //     rf_object_free(code);
-        //     err = error(ERR_TYPE, str_fmt(0, "'if': different types of branches: '%s', '%s'",
-        //                                   symbols_get(env_get_typename_by_type(env, type)),
-        //                                   symbols_get(env_get_typename_by_type(env, type1))));
-        //     err.id = object->id;
-        //     *code = err;
-        //     return TYPE_ERROR;
-        // }
 
         if (type != type1)
         {
@@ -748,68 +738,4 @@ rf_object_t cc_compile(rf_object_t *body, debuginfo_t *debuginfo)
     i32_t len = body->adt->len;
 
     return cc_compile_function(true, "top-level", TYPE_ANY, null(), b, body->id, len, debuginfo);
-}
-
-/*
- * Format code object in a user readable form for debugging
- */
-str_t cc_code_fmt(rf_object_t *code)
-{
-    i32_t c = 0, l = 0, o = 0, len = code->adt->len;
-    str_t ip = as_string(code);
-    str_t s = NULL;
-
-    while ((ip - as_string(code)) < len)
-    {
-        switch (*ip)
-        {
-        case OP_HALT:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: halt\n", c++);
-            break;
-        case OP_PUSH:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: push %s\n", c++, rf_object_fmt(((rf_object_t *)(ip + 1))));
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_POP:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: pop\n", c++);
-            break;
-        case OP_ADDI:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: addi\n", c++);
-            break;
-        case OP_ADDF:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: addf\n", c++);
-            break;
-        case OP_SUMI:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: sumi\n", c++);
-            break;
-        case OP_CALL1:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: call1 %p\n", c++, ((rf_object_t *)(ip + 1))->i64);
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL2:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: call2 %p\n", c++, ((rf_object_t *)(ip + 1))->i64);
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL3:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: call3 %p\n", c++, ((rf_object_t *)(ip + 1))->i64);
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL4:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: call4 %p\n", c++, ((rf_object_t *)(ip + 1))->i64);
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALLN:
-            ip++;
-            str_fmt_into(&s, &l, &o, 0, "%.4d: calln %p\n", c++, ((rf_object_t *)(ip + 1))->i64);
-            ip += sizeof(rf_object_t);
-            break;
-        default:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: unknown %d\n", c++, *ip);
-            break;
-        }
-
-        ip++;
-    }
-
-    return s;
 }

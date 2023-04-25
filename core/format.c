@@ -34,7 +34,7 @@
 #include "ops.h"
 #include "function.h"
 
-#define MAX_ROW_WIDTH 20
+#define MAX_ROW_WIDTH 120
 #define FORMAT_TRAILER_SIZE 4
 #define F64_PRECISION 2
 #define TABLE_MAX_WIDTH 10  // Maximum number of columns
@@ -58,7 +58,7 @@ extern i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t ind
  * n < limit - fits into buffer
  * n < 0 - error
  */
-extern i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt, ...)
+i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt, ...)
 {
     i32_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
     str_t p;
@@ -429,7 +429,7 @@ i32_t function_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32
     return str_fmt_into(dst, len, offset, 0, "<function>");
 }
 
-extern i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, rf_object_t *rf_object)
+i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, rf_object_t *rf_object)
 {
     switch (rf_object->type)
     {

@@ -41,6 +41,16 @@
 #define stack_push(v, x) (v->stack[v->sp++] = x)
 #define stack_pop(v) (v->stack[--v->sp])
 #define stack_peek(v) (&v->stack[v->sp - 1])
+#define stack_unwind(v)        \
+    {                          \
+        debug("--stack");      \
+        while (v->sp > 0)      \
+        {                      \
+            x1 = stack_pop(v); \
+            debug_object(&x1); \
+        }                      \
+        debug("--");           \
+    }
 
 typedef struct ctx_t
 {
@@ -142,8 +152,7 @@ op_pop:
     dispatch();
 op_swapn:
     vm->ip++;
-    l = code[vm->ip++];
-    vm->ip += sizeof(rf_object_t);
+    l = (i32_t)code[vm->ip++];
     x1 = stack_pop(vm);
     for (i = 0; i < l; i++)
         x2 = stack_pop(vm);
@@ -175,7 +184,6 @@ op_jne:
 op_jmp:
     vm->ip++;
     x1 = *(rf_object_t *)(code + vm->ip);
-    debug("JMP: %lld", x1.i64);
     vm->ip = (i32_t)x1.i64;
     dispatch();
 op_addi:
@@ -413,4 +421,169 @@ null_t vm_free(vm_t *vm)
 {
     munmap(vm->stack, VM_STACK_SIZE);
     rf_free(vm);
+}
+
+/*
+ * Format code object in a user readable form for debugging
+ */
+str_t vm_code_fmt(rf_object_t *fun)
+{
+    function_t *f = as_function(fun);
+    str_t code = as_string(&f->code);
+    i32_t c = 0, l = 0, o = 0;
+    u32_t ip = 0, len = (u32_t)f->code.adt->len;
+    str_t s = NULL;
+
+    while (ip < len)
+    {
+        switch (code[ip])
+        {
+        case OP_HALT:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] halt\n", c++, ip++);
+            break;
+        case OP_RET:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] ret\n", c++, ip++);
+            break;
+        case OP_PUSH:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] push ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_RESERVE:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] reserve %d\n", c++, ip, code[ip + 1]);
+            ip += 2;
+            break;
+        case OP_POP:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] pop\n", c++, ip++);
+            break;
+        case OP_SWAPN:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] swapn %d\n", c++, ip, code[ip + 1]);
+            ip += 2;
+            break;
+        case OP_EQ:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] eq\n", c++, ip++);
+            break;
+        case OP_LT:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] lt\n", c++, ip++);
+            break;
+        case OP_JNE:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] jne ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_JMP:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] jmp ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_ADDI:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] addi\n", c++, ip++);
+            break;
+        case OP_ADDF:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] addf\n", c++, ip++);
+            break;
+        case OP_SUBI:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] subi\n", c++, ip++);
+            break;
+        case OP_SUBF:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] subf\n", c++, ip++);
+            break;
+        case OP_MULI:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] muli\n", c++, ip++);
+            break;
+        case OP_MULF:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] mulf\n", c++, ip++);
+            break;
+        case OP_DIVI:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] divi\n", c++, ip++);
+            break;
+        case OP_DIVF:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] divf\n", c++, ip++);
+            break;
+        case OP_SUMI:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] sumi\n", c++, ip++);
+            break;
+        case OP_LIKE:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] like\n", c++, ip++);
+            break;
+        case OP_TYPE:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] type\n", c++, ip++);
+            break;
+        case OP_TIMER_SET:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] timer_set\n", c++, ip++);
+            break;
+        case OP_TIMER_GET:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] timer_get\n", c++, ip++);
+            break;
+        case OP_TIL:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] til\n", c++, ip++);
+            break;
+        case OP_CALL0:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call0 ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_CALL1:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call1 ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_CALL2:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call2 ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_CALL3:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call3 ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_CALL4:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call4 ", c++, ip++);
+            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            str_fmt_into(&s, &l, &o, 0, "\n");
+            ip += sizeof(rf_object_t);
+            break;
+        case OP_CALLN:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] calln %d %p\n", c++, ip, code[ip], ((rf_object_t *)(code + ip + 1))->i64);
+            ip += 2 + sizeof(rf_object_t);
+            break;
+        case OP_CALLF:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] callf %p\n", c++, ip, ((rf_object_t *)(code + ip + 1))->i64);
+            ip += 1 + sizeof(rf_object_t);
+            break;
+        case OP_LSET:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] lset [%d]\n", c++, ip, (i32_t)((rf_object_t *)(code + ip + 1))->i64);
+            ip += 1 + sizeof(rf_object_t);
+            break;
+        case OP_GSET:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] gset %s\n", c++, ip, symbols_get(((rf_object_t *)(code + ip + 1))->i64));
+            ip += 1 + sizeof(rf_object_t);
+            break;
+        case OP_LLOAD:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] lload [%d]\n", c++, ip, (i32_t)((rf_object_t *)(code + ip + 1))->i64);
+            ip += 1 + sizeof(rf_object_t);
+            break;
+        case OP_GLOAD:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] gload %p\n", c++, ip, ((rf_object_t *)(code + ip + 1))->i64);
+            ip += 1 + sizeof(rf_object_t);
+            break;
+        case OP_CAST:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] cast %d\n", c++, ip, code[ip + 1]);
+            ip += 2;
+            break;
+        default:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: unknown %d\n", c++, ip++);
+            break;
+        }
+    }
+
+    return s;
 }

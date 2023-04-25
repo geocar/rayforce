@@ -280,7 +280,7 @@ i32_t main(i32_t argc, str_t argv[])
             continue;
         }
 
-        // printf("CODE: %s\n", cc_code_fmt(&compiled));
+        // printf("%s\n", vm_code_fmt(&compiled));
         executed = vm_exec(vm, &compiled);
 
         if (is_error(&executed))

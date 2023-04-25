@@ -40,6 +40,5 @@ typedef struct cc_t
 } cc_t;
 
 rf_object_t cc_compile(rf_object_t *body, debuginfo_t *debuginfo);
-str_t cc_code_fmt(rf_object_t *code);
 
 #endif
