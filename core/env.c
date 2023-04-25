@@ -58,7 +58,7 @@ null_t init_functions(rf_object_t *records)
     REC(records, 2, "/",     -TYPE_F64,     OP_DIVI,   {-TYPE_I64,   -TYPE_I64   });
     REC(records, 2, "/",     -TYPE_F64,     OP_DIVF,   {-TYPE_F64,   -TYPE_F64   });
     REC(records, 2, "sum",    TYPE_I64,     OP_SUMI,   { TYPE_I64,   -TYPE_I64   });
-    REC(records, 2, "like",  -TYPE_I64,     OP_LIKE,   { TYPE_STRING, TYPE_STRING});
+    REC(records, 2, "like",  -TYPE_BOOL,    OP_LIKE,   { TYPE_STRING, TYPE_STRING});
     REC(records, 2, "dict",   TYPE_DICT,    rf_dict,   { TYPE_ANY,    TYPE_ANY   });
     // Ternary
     // Quaternary
@@ -68,10 +68,12 @@ null_t init_functions(rf_object_t *records)
 
 null_t init_typenames(i64_t *typenames)
 {
+    typenames[-TYPE_BOOL   + TYPE_OFFSET] = symbol("bool").i64;
     typenames[-TYPE_I64    + TYPE_OFFSET] = symbol("i64").i64;
     typenames[-TYPE_F64    + TYPE_OFFSET] = symbol("f64").i64;
     typenames[-TYPE_SYMBOL + TYPE_OFFSET] = symbol("symbol").i64;
     typenames[TYPE_ANY     + TYPE_OFFSET] = symbol("Any").i64;
+    typenames[TYPE_BOOL    + TYPE_OFFSET] = symbol("Bool").i64;
     typenames[TYPE_I64     + TYPE_OFFSET] = symbol("I64").i64;
     typenames[TYPE_F64     + TYPE_OFFSET] = symbol("F64").i64;
     typenames[TYPE_SYMBOL  + TYPE_OFFSET] = symbol("Symbol").i64;

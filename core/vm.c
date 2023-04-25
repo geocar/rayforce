@@ -213,7 +213,7 @@ op_like:
     vm->ip++;
     x2 = stack_pop(vm);
     x1 = stack_pop(vm);
-    stack_push(vm, i64(string_match(as_string(&x1), as_string(&x2))));
+    stack_push(vm, bool(string_match(as_string(&x1), as_string(&x2))));
     dispatch();
 op_type:
     vm->ip++;

@@ -56,7 +56,7 @@ rf_object_t string_from_str(str_t str, i32_t len)
  * Note that this implementation assumes that the pattern and text strings do not contain any null characters ('\0').
  * If this is not the case, a more sophisticated implementation may be required.
  */
-i8_t string_match(str_t str, str_t pat)
+bool_t string_match(str_t str, str_t pat)
 {
     str_t end;
     i8_t inv = 0, match = 0;

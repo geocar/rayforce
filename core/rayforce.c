@@ -41,21 +41,31 @@ extern rf_object_t error(i8_t code, str_t message)
     return err;
 }
 
-extern rf_object_t i64(i64_t rf_object)
+extern rf_object_t bool(bool_t val)
 {
     rf_object_t scalar = {
-        .type = -TYPE_I64,
-        .i64 = rf_object,
+        .type = -TYPE_BOOL,
+        .i64 = val,
     };
 
     return scalar;
 }
 
-extern rf_object_t f64(f64_t rf_object)
+extern rf_object_t i64(i64_t val)
+{
+    rf_object_t scalar = {
+        .type = -TYPE_I64,
+        .i64 = val,
+    };
+
+    return scalar;
+}
+
+extern rf_object_t f64(f64_t val)
 {
     rf_object_t scalar = {
         .type = -TYPE_F64,
-        .f64 = rf_object,
+        .f64 = val,
     };
 
     return scalar;

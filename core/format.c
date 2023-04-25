@@ -140,6 +140,14 @@ str_t str_fmt(i32_t limit, str_t fmt, ...)
     return p;
 }
 
+i32_t bool_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, i64_t val)
+{
+    if (val == 0)
+        return str_fmt_into(dst, len, offset, limit, "%*.*s%s", indent, indent, PADDING, "false");
+    else
+        return str_fmt_into(dst, len, offset, limit, "%*.*s%s", indent, indent, PADDING, "true");
+}
+
 i32_t i64_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, i64_t val)
 {
     if (val == NULL_I64)
@@ -425,6 +433,8 @@ extern i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t ind
 {
     switch (rf_object->type)
     {
+    case -TYPE_BOOL:
+        return bool_fmt_into(dst, len, offset, indent, limit, rf_object->bool);
     case -TYPE_I64:
         return i64_fmt_into(dst, len, offset, indent, limit, rf_object->i64);
     case -TYPE_F64:

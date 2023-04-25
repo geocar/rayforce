@@ -39,7 +39,7 @@
 
 // Type constants
 #define TYPE_ANY 0
-#define TYPE_I8 1
+#define TYPE_BOOL 1
 #define TYPE_I64 2
 #define TYPE_F64 3
 #define TYPE_SYMBOL 4
@@ -66,9 +66,12 @@
 
 #define NULL_I64 ((i64_t)1 << 63)
 #define NULL_F64 ((f64_t)(0 / 0.0))
+#define true (char)1
+#define false (char)0
 
 typedef char i8_t;
 typedef unsigned char u8_t;
+typedef char bool_t;
 typedef char *str_t;
 typedef short i16_t;
 typedef unsigned short u16_t;
@@ -120,7 +123,7 @@ typedef struct rf_object_t
 {
     union
     {
-        i8_t i8;
+        bool_t bool;
         i64_t i64;
         f64_t f64;
         header_t *adt;
@@ -136,8 +139,9 @@ typedef struct rf_object_t
 CASSERT(sizeof(struct rf_object_t) == 16, rayforce_h)
 
 // Constructors
-extern rf_object_t i64(i64_t rf_object);                           // i64 scalar
-extern rf_object_t f64(f64_t rf_object);                           // f64 scalar
+extern rf_object_t bool(bool_t val);                               // bool scalar
+extern rf_object_t i64(i64_t val);                                 // i64 scalar
+extern rf_object_t f64(f64_t val);                                 // f64 scalar
 extern rf_object_t symbol(str_t ptr);                              // symbol
 extern rf_object_t vector(i8_t type, i8_t size_of_val, i64_t len); // vector of type
 extern rf_object_t string(i64_t len);                              // string (allocates len + 1 for \0 but sets len to a 'len')
