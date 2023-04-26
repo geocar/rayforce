@@ -37,9 +37,7 @@ typedef enum vm_opcode_t
     OP_HALT = 0,  // Halt the VM
     OP_RET,       // Return from function
     OP_PUSH,      // Push an rf_object to the stack
-    OP_RESERVE,   // Reserve n elements on the stack
     OP_POP,       // Pop an rf_object from the stack
-    OP_SWAPN,     // Pop n elements on the stack and push the first one back
     OP_EQ,        // Compare two objects from the stack
     OP_LT,        // Compare two objects from the stack
     OP_JNE,       // Jump if not equal
