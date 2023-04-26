@@ -237,8 +237,9 @@ rf_object_t parse_symbol(parser_t *parser, i8_t quote)
     }
 
     str_t pos = parser->current;
-    rf_object_t res, s;
+    rf_object_t res;
     span_t span = span_start(parser);
+    i64_t id;
 
     // Skip first char and proceed until the end of the symbol
     do
@@ -246,8 +247,9 @@ rf_object_t parse_symbol(parser_t *parser, i8_t quote)
         pos++;
     } while (is_alphanum(*pos) || is_op(*pos));
 
-    s = string_from_str(parser->current, pos - parser->current);
-    res = symbol(as_string(&s));
+    id = symbols_intern(parser->current, pos - parser->current);
+    res = i64(id);
+    res.type = -TYPE_SYMBOL;
     shift(parser, pos - parser->current);
     span_extend(parser, &span);
     res.id = span_commit(parser, span);

@@ -32,6 +32,12 @@
 #include "util.h"
 #include "runtime.h"
 
+typedef struct str_slice_t
+{
+    str_t str;
+    i64_t len;
+} str_slice_t;
+
 /*
  * Improved djb2 (contains length)
  * by Dan Bernstein
@@ -39,9 +45,9 @@
  */
 i64_t string_hash(null_t *val)
 {
-    rf_object_t *string = (rf_object_t *)val;
-    i32_t hash = 5381, len = string->adt->len, i;
-    str_t str = as_string(string);
+    str_slice_t *string = (str_slice_t *)val;
+    i32_t hash = 5381, len = string->len, i;
+    str_t str = string->str;
 
     for (i = 0; i < len; i++)
         hash += (hash << 5) + str[i];
@@ -60,23 +66,23 @@ i32_t i64_cmp(null_t *a, null_t *b)
 }
 
 /*
- * Compares rf_object_t string with null terminated string.
+ * Compares str_slice_t with null terminated string.
  * Returns 0 if equal, 1 if not equal.
  * Should not be used elsewere but symbols
  * a: raw C string already stored in a hash
- * b: rf_object_t string to be inserted
+ * b: str_slice_t string to be inserted
  */
 i32_t string_str_cmp(null_t *a, null_t *b)
 {
     str_t str_a = (str_t)a;
-    rf_object_t *str_b = (rf_object_t *)b;
+    str_slice_t *str_b = (str_slice_t *)b;
 
     i64_t len_a = strlen(str_a);
 
-    if (str_b->adt->len != len_a)
+    if (str_b->len != len_a)
         return 1;
 
-    return strncmp(as_string(str_b), str_a, len_a);
+    return strncmp(str_b->str, str_a, len_a);
 }
 
 /*
@@ -100,9 +106,9 @@ null_t *str_dup(null_t *key, null_t *val, bucket_t *bucket)
     alloc_t alloc = runtime_get()->alloc;
     symbols_t *symbols = alloc->symbols;
 
-    rf_object_t *string = (rf_object_t *)key;
-    i64_t len = string->adt->len;
-    str_t str = as_string(string);
+    str_slice_t *string = (str_slice_t *)key;
+    str_t str = string->str;
+    i64_t len = string->len;
 
     // Allocate new pool node
     if ((i64_t)symbols->strings_pool + len - (i64_t)symbols->pool_node > STRINGS_POOL_SIZE)
@@ -150,11 +156,12 @@ null_t symbols_free(symbols_t *symbols)
     ht_free(symbols->id_to_str);
 }
 
-i64_t symbols_intern(rf_object_t *string)
+i64_t symbols_intern(str_t s, i64_t len)
 {
     symbols_t *symbols = runtime_get()->alloc->symbols;
     i64_t id = symbols->str_to_id->size;
-    i64_t id_or_str = (i64_t)ht_insert_with(symbols->str_to_id, string, (null_t *)id, &str_dup);
+    str_slice_t str_slice = {s, len};
+    i64_t id_or_str = (i64_t)ht_insert_with(symbols->str_to_id, &str_slice, (null_t *)id, &str_dup);
     if (symbols->str_to_id->size == id)
         return id_or_str;
 

@@ -71,12 +71,9 @@ extern rf_object_t f64(f64_t val)
     return scalar;
 }
 
-extern rf_object_t symbol(str_t ptr)
+extern rf_object_t symbol(str_t s)
 {
-    // TODO: Do not allocate new string - it would be done by symbols_intern (if needed)
-    rf_object_t string = string_from_str(ptr, strlen(ptr));
-    // string.adt.ptr = ptr;
-    i64_t id = symbols_intern(&string);
+    i64_t id = symbols_intern(s, strlen(s));
     rf_object_t sym = {
         .type = -TYPE_SYMBOL,
         .i64 = id,
