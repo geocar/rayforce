@@ -570,7 +570,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
     {
         push_opcode(&cc, id, code, OP_PUSH);
         push_rf_object(code, null());
-        return cc.function;
+        goto end;
     }
 
     // Compile all arguments but the last one
@@ -598,6 +598,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
     }
     // --
 
+end:
     if (func->rettype != TYPE_ANY && func->rettype != type)
     {
         rf_object_free(&cc.function);
