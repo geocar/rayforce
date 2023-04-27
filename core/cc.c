@@ -55,6 +55,14 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
         (c)->adt->len += sizeof(rf_object_t);               \
     }
 
+#define ccerr(c, i, t, e)                                             \
+    {                                                                 \
+        rf_object_free(&(c)->function);                               \
+        (c)->function = error(t, e);                                  \
+        (c)->function.adt->span = debuginfo_get((c)->debuginfo, (i)); \
+        return TYPE_ERROR;                                            \
+    }
+
 env_record_t *find_record(rf_object_t *records, rf_object_t *car, i32_t args, u32_t *arity)
 {
     u32_t i = 0, records_len;
@@ -96,7 +104,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
 {
     i8_t type, type1, rettype = TYPE_ANY;
     i64_t id, lbl1, lbl2;
-    rf_object_t *car = &as_list(object)[0], *addr, *b, fun, name, err;
+    rf_object_t *car = &as_list(object)[0], *addr, *b, fun, name;
     function_t *func = as_function(&cc->function);
     rf_object_t *code = &func->code;
     env_t *env = &runtime_get()->env;
@@ -108,13 +116,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
             return TYPE_ANY;
 
         if (arity != 1)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'time' takes one argument");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'time' takes one argument");
 
         push_opcode(cc, car->id, code, OP_TIMER_SET);
         type = cc_compile_expr(false, cc, &as_list(object)[1]);
@@ -130,21 +132,10 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
     if (car->i64 == symbol("set").i64)
     {
         if (arity != 2)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'set' takes two arguments");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'set' takes two arguments");
+
         if (as_list(object)[1].type != -TYPE_SYMBOL)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'set' takes symbol as first argument");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_TYPE, "'set' takes symbol as first argument");
 
         type = cc_compile_expr(true, cc, &as_list(object)[2]);
 
@@ -155,13 +146,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
         addr = env_get_variable(&runtime_get()->env, as_list(object)[1]);
 
         if (addr != NULL && type != addr->type)
-        {
-            rf_object_free(code);
-            err = error(ERR_TYPE, "'set': variable type mismatch");
-            err.id = as_list(object)[1].id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_TYPE, "'set': variable type mismatch");
 
         push_opcode(cc, car->id, code, OP_GSET);
         push_rf_object(code, as_list(object)[1]);
@@ -175,21 +160,10 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
     if (car->i64 == symbol("let").i64)
     {
         if (arity != 2)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'let' takes two arguments");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'let' takes two arguments");
+
         if (as_list(object)[1].type != -TYPE_SYMBOL)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'let' takes symbol as first argument");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'let' takes symbol as first argument");
 
         type = cc_compile_expr(true, cc, &as_list(object)[2]);
 
@@ -218,33 +192,16 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
     if (car->i64 == symbol("cast").i64)
     {
         if (arity != 2)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'cast' takes two arguments");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'cast' takes two arguments");
 
         if (as_list(object)[1].type != -TYPE_SYMBOL)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'cast' takes symbol as first argument");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'cast' takes symbol as first argument");
 
         type = env_get_type_by_typename(env, as_list(object)[1].i64);
 
         if (type == TYPE_ANY)
-        {
-            rf_object_free(code);
-            err = error(ERR_TYPE, str_fmt(0, "'cast': unknown type '%s", symbols_get(as_list(object)[1].i64)));
-            err.id = as_list(object)[1].id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, as_list(object)[1].id, ERR_TYPE,
+                  str_fmt(0, "'cast': unknown type '%s", symbols_get(as_list(object)[1].i64)));
 
         if (cc_compile_expr(true, cc, &as_list(object)[2]) == TYPE_ERROR)
             return TYPE_ERROR;
@@ -261,13 +218,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
     if (car->i64 == symbol("fn").i64)
     {
         if (arity == 0)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'fn' expects dict with function arguments");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'fn' expects dict with function arguments");
 
         b = as_list(object) + 1;
 
@@ -277,30 +228,27 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
             rettype = env_get_type_by_typename(env, b->i64);
 
             if (rettype == TYPE_ANY)
-            {
-                rf_object_free(code);
-                err = error(ERR_TYPE, str_fmt(0, "'fn': unknown type '%s", symbols_get(as_list(object)[1].i64)));
-                err.id = as_list(object)[1].id;
-                *code = err;
-                return TYPE_ERROR;
-            }
+                ccerr(cc, as_list(object)[1].id, ERR_TYPE,
+                      str_fmt(0, "'fn': unknown type '%s", symbols_get(as_list(object)[1].i64)));
 
             arity -= 1;
             b += 1;
         }
 
         if (b->type != TYPE_DICT)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'fn' expects dict with function arguments");
-            err.id = b->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, b->id, ERR_LENGTH, "'fn' expects dict with function arguments");
 
         arity -= 1;
         fun = cc_compile_function(false, "anonymous", rettype, rf_object_clone(b), b + 1, car->id, arity, cc->debuginfo);
-        printf("%s\n", vm_code_fmt(&fun));
+
+        if (fun.type == TYPE_ERROR)
+        {
+            rf_object_free(&cc->function);
+            cc->function = fun;
+            return TYPE_ERROR;
+        }
+
+        // printf("%s\n", vm_code_fmt(&fun));
         push_opcode(cc, object->id, code, OP_PUSH);
         push_rf_object(code, fun);
         return TYPE_FUNCTION;
@@ -309,13 +257,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
     if (car->i64 == symbol("if").i64)
     {
         if (arity < 2 || arity > 3)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "'if' takes at 2 .. 3 arguments");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "'if' expects 2 .. 3 arguments");
 
         type = cc_compile_expr(true, cc, &as_list(object)[1]);
 
@@ -323,13 +265,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
             return type;
 
         if (type != -TYPE_BOOL)
-        {
-            rf_object_free(code);
-            err = error(ERR_TYPE, "'if': condition must have a bool result");
-            err.id = as_list(object)[1].id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_TYPE, "'if': condition must have a bool result");
 
         push_opcode(cc, car->id, code, OP_JNE);
         lbl1 = code->adt->len;
@@ -356,22 +292,15 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
                 return type1;
 
             if (type != type1)
-            {
-                rf_object_free(code);
-                err = error(ERR_TYPE, str_fmt(0, "'if': different types of branches: '%s', '%s'",
-                                              symbols_get(env_get_typename_by_type(env, type)),
-                                              symbols_get(env_get_typename_by_type(env, type1))));
-                err.id = object->id;
-                *code = err;
-                return TYPE_ERROR;
-            }
+                ccerr(cc, object->id, ERR_TYPE,
+                      str_fmt(0, "'if': different types of branches: '%s', '%s'",
+                              symbols_get(env_get_typename_by_type(env, type)),
+                              symbols_get(env_get_typename_by_type(env, type1))));
 
             ((rf_object_t *)(as_string(code) + lbl2))->i64 = code->adt->len;
         }
         else
-        {
             ((rf_object_t *)(as_string(code) + lbl1))->i64 = code->adt->len;
-        }
 
         return type;
     }
@@ -427,7 +356,7 @@ i8_t cc_compile_call(cc_t *cc, rf_object_t *car, i32_t args, u32_t arity)
 
 i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
 {
-    rf_object_t *car, err, *addr, *arg_keys, *arg_vals;
+    rf_object_t *car, *addr, *arg_keys, *arg_vals;
     i8_t type = TYPE_ANY, len = 0;
     u32_t i, arity;
     i32_t args = 0;
@@ -503,13 +432,7 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         addr = env_get_variable(&runtime_get()->env, *object);
 
         if (addr == NULL)
-        {
-            rf_object_free(code);
-            err = error(ERR_TYPE, "unknown symbol");
-            err.id = object->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, object->id, ERR_TYPE, "unknown symbol");
 
         push_opcode(cc, object->id, code, OP_GLOAD);
         push_rf_object(code, i64((i64_t)addr));
@@ -527,13 +450,7 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
 
         car = &as_list(object)[0];
         if (car->type != -TYPE_SYMBOL)
-        {
-            rf_object_free(code);
-            err = error(ERR_LENGTH, "expected symbol as first argument");
-            err.id = car->id;
-            *code = err;
-            return TYPE_ERROR;
-        }
+            ccerr(cc, car->id, ERR_LENGTH, "expected symbol as first argument");
 
         arity = object->adt->len - 1;
 
@@ -549,13 +466,7 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         if (car->i64 == symbol("self").i64)
         {
             if (cc->top_level)
-            {
-                rf_object_free(code);
-                err = error(ERR_TYPE, "'self' has no meaning at top level");
-                err.id = car->id;
-                *code = err;
-                return TYPE_ERROR;
-            }
+                ccerr(cc, car->id, ERR_TYPE, "'self' has no meaning at top level");
 
             addr = &cc->function;
         }
@@ -568,26 +479,14 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         {
             func = as_function(addr);
             if (func->args.type != TYPE_DICT)
-            {
-                rf_object_free(code);
-                err = error(ERR_TYPE, "expected dict as function arguments");
-                err.id = car->id;
-                *code = err;
-                return TYPE_ERROR;
-            }
+                ccerr(cc, car->id, ERR_TYPE, "expected dict as function arguments");
 
             arg_keys = &as_list(&func->args)[0];
             arg_vals = &as_list(&func->args)[1];
 
             if (arg_keys->adt->len != arity)
-            {
-                rf_object_free(code);
-                err = error(ERR_LENGTH, str_fmt(0, "arguments length mismatch: expected %d, got %d",
-                                                arg_keys->adt->len, arity));
-                err.id = car->id;
-                *code = err;
-                return TYPE_ERROR;
-            }
+                ccerr(cc, car->id, ERR_LENGTH,
+                      str_fmt(0, "arguments length mismatch: expected %d, got %d", arg_keys->adt->len, arity));
 
             // compile arguments
             for (i = 1; i <= arity; i++)
@@ -598,15 +497,10 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
                     return TYPE_ERROR;
 
                 if (type != env_get_type_by_typename(env, as_vector_symbol(arg_vals)[i - 1]))
-                {
-                    rf_object_free(code);
-                    err = error(ERR_TYPE, str_fmt(0, "argument type mismatch: expected %s, got %s",
-                                                  symbols_get(as_vector_symbol(arg_vals)[i - 1]),
-                                                  symbols_get(env_get_typename_by_type(env, type))));
-                    err.id = as_list(object)[i].id;
-                    *code = err;
-                    return TYPE_ERROR;
-                }
+                    ccerr(cc, car->id, ERR_TYPE,
+                          str_fmt(0, "argument type mismatch: expected %s, got %s",
+                                  symbols_get(as_vector_symbol(arg_vals)[i - 1]),
+                                  symbols_get(env_get_typename_by_type(env, type))));
 
                 // pack arguments only if function is not nary
                 if (arity <= MAX_ARITY)
@@ -645,11 +539,7 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         if (type != TYPE_ERROR)
             return type;
 
-        rf_object_free(code);
-        err = error(ERR_LENGTH, "function has not found");
-        err.id = car->id;
-        *code = err;
-        return type;
+        ccerr(cc, car->id, ERR_LENGTH, "function has not found");
 
     default:
         push_opcode(cc, object->id, code, OP_PUSH);
@@ -694,12 +584,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
         type = cc_compile_expr(false, &cc, b);
 
         if (type == TYPE_ERROR)
-        {
-            code->adt->span = debuginfo_get(cc.debuginfo, code->id);
-            err = rf_object_clone(code);
-            rf_object_free(&cc.function);
-            return err;
-        }
+            return cc.function;
     }
 
     // Compile last argument
@@ -709,9 +594,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
     if (type == TYPE_ERROR)
     {
         code->adt->span = debuginfo_get(cc.debuginfo, code->id);
-        err = rf_object_clone(code);
-        rf_object_free(&cc.function);
-        return err;
+        return cc.function;
     }
     // --
 
