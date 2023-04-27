@@ -560,7 +560,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
         .function = function(rettype, args, null(), string(0), debuginfo_new(debuginfo->filename, name)),
     };
 
-    i8_t type;
+    i8_t l = 0, type;
     i32_t i;
     function_t *func = as_function(&cc.function);
     rf_object_t *code = &func->code, *b, err;
@@ -612,32 +612,20 @@ epilogue:
 
     func->rettype = type;
 
-    if (top)
-    {
-        push_opcode(&cc, id, code, OP_HALT);
-    }
-    else
+    if (!top)
     {
         push_opcode(&cc, id, code, OP_RET);
+
         // locals len
-        if (func->locals.type == TYPE_DICT)
-        {
-            push_opcode(&cc, id, code, (i8_t)as_list(&func->locals)[0].adt->len);
-        }
-        else
-        {
-            push_opcode(&cc, id, code, 0);
-        }
+        l = (func->locals.type == TYPE_DICT) ? (i8_t)as_list(&func->locals)[0].adt->len : 0;
+        push_opcode(&cc, id, code, l);
+
         // args len
-        if (func->args.type == TYPE_DICT)
-        {
-            push_opcode(&cc, id, code, (i8_t)as_list(&func->args)[0].adt->len);
-        }
-        else
-        {
-            push_opcode(&cc, id, code, 0);
-        }
+        l = (func->args.type == TYPE_DICT) ? (i8_t)as_list(&func->args)[0].adt->len : 0;
+        push_opcode(&cc, id, code, l);
     }
+    else
+        push_opcode(&cc, id, code, OP_HALT);
 
     return cc.function;
 }
