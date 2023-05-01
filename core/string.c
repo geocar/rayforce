@@ -44,8 +44,10 @@ extern rf_object_t string(i64_t len)
  */
 rf_object_t string_from_str(str_t str, i32_t len)
 {
-    rf_object_t s = string(len);
-    memcpy(as_string(&s), str, len);
+    rf_object_t s = string(len + 1);
+    if (len > 0)
+        strncpy(as_string(&s), str, len + 1);
+
     return s;
 }
 
