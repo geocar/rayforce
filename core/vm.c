@@ -328,11 +328,11 @@ op_call3:
     x2 = stack_pop(vm);
     f3 = (ternary_t)x5.i64;
     x1 = f3(&x2, &x3, &x4);
-    unwrap(x1, b);
-    stack_push(vm, x1);
     rf_object_free(&x2);
     rf_object_free(&x3);
     rf_object_free(&x4);
+    unwrap(x1, b);
+    stack_push(vm, x1);
     dispatch();
 op_call4:
     b = vm->ip++;
@@ -344,12 +344,12 @@ op_call4:
     x2 = stack_pop(vm);
     f4 = (quaternary_t)x6.i64;
     x1 = f4(&x2, &x3, &x4, &x5);
-    unwrap(x1, b);
-    stack_push(vm, x1);
     rf_object_free(&x2);
     rf_object_free(&x3);
     rf_object_free(&x4);
     rf_object_free(&x5);
+    unwrap(x1, b);
+    stack_push(vm, x1);
     dispatch();
 op_calln:
     b = vm->ip++;
@@ -359,8 +359,9 @@ op_calln:
     fn = (nary_t)x2.i64;
     addr = (rf_object_t *)(&vm->stack[vm->sp - l]);
     x1 = fn(addr, l);
+    for (i = 0; i < l; i++)
+        stack_pop_free(vm); // pop args
     unwrap(x1, b);
-    vm->sp -= l;
     stack_push(vm, x1);
     dispatch();
 op_callf:

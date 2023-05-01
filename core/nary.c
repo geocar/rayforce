@@ -27,6 +27,7 @@
 #include "alloc.h"
 #include "nary.h"
 #include "format.h"
+#include "util.h"
 
 rf_object_t rf_list(rf_object_t *x, u32_t n)
 {
@@ -45,11 +46,15 @@ rf_object_t rf_list(rf_object_t *x, u32_t n)
 rf_object_t rf_format(rf_object_t *x, u32_t n)
 {
     str_t s = rf_object_fmt_n(x, n);
+    rf_object_t ret;
 
     if (!s)
         return error(ERR_TYPE, "malformed format string");
 
-    return string_from_str(s, strlen(s));
+    ret = string_from_str(s, strlen(s));
+    rf_free(s);
+
+    return ret;
 }
 
 rf_object_t rf_print(rf_object_t *x, u32_t n)

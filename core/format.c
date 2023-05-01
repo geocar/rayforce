@@ -507,29 +507,30 @@ str_t rf_object_fmt(rf_object_t *rf_object)
 str_t rf_object_fmt_n(rf_object_t *x, u32_t n)
 {
     u32_t i;
-    i32_t l = 0, o = 0;
-    str_t s = NULL, p, tok = NULL;
+    i32_t l = 0, o = 0, sz = 0;
+    str_t s = NULL, p, start = NULL, end = NULL;
+    rf_object_t *b = x;
 
     if (n == 0)
         return NULL;
 
     if (n == 1)
-        return rf_object_fmt(x);
+        return rf_object_fmt(b);
 
-    if (x->type != TYPE_STRING)
+    if (b->type != TYPE_STRING)
         return NULL;
 
-    p = as_string(x);
-    tok = strtok(p, "%");
+    p = as_string(b);
+    sz = strlen(p);
+    start = p;
+    n -= 1;
 
-    for (i = 1; i < n; i++)
+    for (i = 0; i < n; i++)
     {
-        if (tok)
-            str_fmt_into(&s, &l, &o, 0, tok);
+        b += 1;
+        end = memchr(start, '%', sz);
 
-        tok = strtok(NULL, "%");
-
-        if (!tok && i < n - 1)
+        if (!end)
         {
             if (s)
                 rf_free(s);
@@ -537,8 +538,24 @@ str_t rf_object_fmt_n(rf_object_t *x, u32_t n)
             return NULL;
         }
 
-        rf_object_fmt_into(&s, &l, &o, 0, 0, x + i);
+        if (end > start)
+            str_fmt_into(&s, &l, &o, (end - start) + 1, "%s", start);
+
+        sz -= (end + 1 - start);
+        start = end + 1;
+
+        rf_object_fmt_into(&s, &l, &o, 0, 0, b);
     }
+
+    if (sz > 0 && memchr(start, '%', sz))
+    {
+        if (s)
+            rf_free(s);
+
+        return NULL;
+    }
+
+    str_fmt_into(&s, &l, &o, end - start, "%s", start);
 
     return s;
 }
