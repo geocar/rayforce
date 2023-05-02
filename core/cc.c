@@ -104,20 +104,12 @@ env_record_t *find_record(rf_object_t *records, rf_object_t *car, i32_t args, u3
     return NULL;
 }
 
-/*
- * Special forms are those that are not in a table of functions because of their special nature.
- * return TYPE_ERROR if there is an error
- * return TYPE_ANY if it is not a special form
- * return type of the special form if it is a special form
- */
-i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+i8_t cc_compile_time(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
 {
-    i8_t type, type1, rettype = TYPE_ANY;
-    i64_t id, lbl1, lbl2;
-    rf_object_t *car = &as_list(object)[0], *addr, *b, fun, name;
+    i8_t type;
+    rf_object_t *car = &as_list(object)[0];
     function_t *func = as_function(&cc->function);
     rf_object_t *code = &func->code;
-    env_t *env = &runtime_get()->env;
 
     // compile special forms
     if (car->i64 == symbol("time").i64)
@@ -138,6 +130,17 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
 
         return -TYPE_F64;
     }
+
+    return TYPE_ANY;
+}
+
+i8_t cc_compile_set(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i8_t type;
+    i64_t id;
+    rf_object_t *car = &as_list(object)[0], *addr, name;
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
 
     if (car->i64 == symbol("set").i64)
     {
@@ -199,6 +202,17 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
         return type;
     }
 
+    return TYPE_ANY;
+}
+
+i8_t cc_compile_cast(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i8_t type;
+    rf_object_t *car = &as_list(object)[0];
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
+    env_t *env = &runtime_get()->env;
+
     if (car->i64 == symbol("cast").i64)
     {
         if (arity != 2)
@@ -225,6 +239,19 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
         return type;
     }
 
+    return TYPE_ANY;
+}
+
+i8_t cc_compile_fn(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    UNUSED(has_consumer);
+
+    i8_t type = TYPE_ANY;
+    rf_object_t *car = &as_list(object)[0], *b, fun;
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
+    env_t *env = &runtime_get()->env;
+
     if (car->i64 == symbol("fn").i64)
     {
         if (arity == 0)
@@ -235,9 +262,9 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
         // first argument is return type
         if (b->type == -TYPE_SYMBOL)
         {
-            rettype = env_get_type_by_typename(env, b->i64);
+            type = env_get_type_by_typename(env, b->i64);
 
-            if (rettype == TYPE_ANY)
+            if (type == TYPE_ANY)
                 ccerr(cc, as_list(object)[1].id, ERR_TYPE,
                       str_fmt(0, "'fn': unknown type '%s", symbols_get(as_list(object)[1].i64)));
 
@@ -249,7 +276,7 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
             cerr(cc, b->id, ERR_LENGTH, "'fn' expects dict with function arguments");
 
         arity -= 1;
-        fun = cc_compile_function(false, "anonymous", rettype, rf_object_clone(b), b + 1, car->id, arity, cc->debuginfo);
+        fun = cc_compile_function(false, "anonymous", type, rf_object_clone(b), b + 1, car->id, arity, cc->debuginfo);
 
         if (fun.type == TYPE_ERROR)
         {
@@ -265,6 +292,18 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
         func->stack_size++;
         return TYPE_FUNCTION;
     }
+
+    return TYPE_ANY;
+}
+
+i8_t cc_compile_cond(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i8_t type, type1;
+    i64_t lbl1, lbl2;
+    rf_object_t *car = &as_list(object)[0];
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
+    env_t *env = &runtime_get()->env;
 
     if (car->i64 == symbol("if").i64)
     {
@@ -318,6 +357,41 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
     }
 
     return TYPE_ANY;
+}
+
+/*
+ * Special forms are those that are not in a table of functions because of their special nature.
+ * return TYPE_ERROR if there is an error
+ * return TYPE_ANY if it is not a special form
+ * return type of the special form if it is a special form
+ */
+i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i8_t type;
+
+    type = cc_compile_time(has_consumer, cc, object, arity);
+
+    if (type != TYPE_ANY)
+        return type;
+
+    type = cc_compile_set(has_consumer, cc, object, arity);
+
+    if (type != TYPE_ANY)
+        return type;
+
+    type = cc_compile_cast(has_consumer, cc, object, arity);
+
+    if (type != TYPE_ANY)
+        return type;
+
+    type = cc_compile_fn(has_consumer, cc, object, arity);
+
+    if (type != TYPE_ANY)
+        return type;
+
+    type = cc_compile_cond(has_consumer, cc, object, arity);
+
+    return type;
 }
 
 i8_t cc_compile_call(cc_t *cc, rf_object_t *car, i32_t args, u32_t arity)
