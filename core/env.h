@@ -30,7 +30,6 @@
 #include "vector.h"
 
 #define MAX_ARITY 4
-
 // offset in array of typenames for each type
 #define TYPE_OFFSET TYPE_SYMBOL
 #define MAX_TYPE (TYPE_ERROR + TYPE_OFFSET)

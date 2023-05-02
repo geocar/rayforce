@@ -3,3 +3,7 @@
     (if (< x 2) 
         1 
         (+ (self (- x 1)) (self (- x 2))))))
+
+;; (try (fib 6)
+;;     (catch e 
+;;         (print "E:%", e)))

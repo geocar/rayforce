@@ -26,6 +26,16 @@
 
 #include "rayforce.h"
 
+// internal types definitions:
+//
+// parser token type
+#define TYPE_TOKEN (TYPE_ERROR + 1)
+// vm context type
+#define TYPE_CTX (TYPE_ERROR + 2)
+// trap type
+#define TYPE_TRAP (TYPE_ERROR + 3)
+// --
+
 #define ADDI64(x, y) (((x | y) & NULL_I64) ? NULL_I64 : (x + y))
 #define SUBI64(x, y) (((x | y) & NULL_I64) ? NULL_I64 : (x - y))
 #define DIVI64(x, y) (((x | y) & NULL_I64) ? NULL_F64 : ((f64_t)x / (f64_t)y))

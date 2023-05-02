@@ -359,6 +359,69 @@ i8_t cc_compile_cond(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t a
     return TYPE_NULL;
 }
 
+i8_t cc_compile_trap(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i8_t type, type1;
+    i64_t lbl1, lbl2;
+    rf_object_t *car = &as_list(object)[0];
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
+    env_t *env = &runtime_get()->env;
+
+    if (car->i64 == symbol("try").i64)
+    {
+        if (arity != 2)
+            cerr(cc, car->id, ERR_LENGTH, "'trap' expects 2 arguments");
+
+        type = cc_compile_expr(true, cc, &as_list(object)[1]);
+
+        if (type == TYPE_ERROR)
+            return type;
+
+        if (type != -TYPE_BOOL)
+            cerr(cc, car->id, ERR_TYPE, "'if': condition must have a bool result");
+
+        push_opcode(cc, car->id, code, OP_JNE);
+        lbl1 = code->adt->len;
+        push_rf_object(code, i64(0));
+
+        // true branch
+        type = cc_compile_expr(has_consumer, cc, &as_list(object)[2]);
+
+        if (type == TYPE_ERROR)
+            return type;
+
+        // there is else branch
+        if (arity == 3)
+        {
+            push_opcode(cc, car->id, code, OP_JMP);
+            lbl2 = code->adt->len;
+            push_rf_object(code, i64(0));
+            ((rf_object_t *)(as_string(code) + lbl1))->i64 = code->adt->len;
+
+            // false branch
+            type1 = cc_compile_expr(has_consumer, cc, &as_list(object)[3]);
+
+            if (type1 == TYPE_ERROR)
+                return type1;
+
+            if (type != type1)
+                ccerr(cc, object->id, ERR_TYPE,
+                      str_fmt(0, "'if': different types of branches: '%s', '%s'",
+                              symbols_get(env_get_typename_by_type(env, type)),
+                              symbols_get(env_get_typename_by_type(env, type1))));
+
+            ((rf_object_t *)(as_string(code) + lbl2))->i64 = code->adt->len;
+        }
+        else
+            ((rf_object_t *)(as_string(code) + lbl1))->i64 = code->adt->len;
+
+        return type;
+    }
+
+    return TYPE_NULL;
+}
+
 /*
  * Special forms are those that are not in a table of functions because of their special nature.
  * return TYPE_ERROR if there is an error

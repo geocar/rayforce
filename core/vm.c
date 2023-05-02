@@ -36,8 +36,6 @@
 #include "cast.h"
 #include "function.h"
 
-#define TYPE_CTX (TYPE_ERROR + 2)
-
 #define stack_push(v, x) (v->stack[v->sp++] = x)
 #define stack_pop(v) (v->stack[--v->sp])
 #define stack_peek(v) (&v->stack[v->sp - 1])

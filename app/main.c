@@ -300,7 +300,7 @@ i32_t main(i32_t argc, str_t argv[])
     parser_t parser = parser_new();
     vm_t *vm;
 
-    // print_logo();
+    print_logo();
 
     vm = vm_new();
 
