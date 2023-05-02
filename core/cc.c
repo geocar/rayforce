@@ -213,19 +213,19 @@ i8_t cc_compile_cast(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t a
     rf_object_t *code = &func->code;
     env_t *env = &runtime_get()->env;
 
-    if (car->i64 == symbol("cast").i64)
+    if (car->i64 == symbol("as").i64)
     {
         if (arity != 2)
-            cerr(cc, car->id, ERR_LENGTH, "'cast' takes two arguments");
+            cerr(cc, car->id, ERR_LENGTH, "'as' takes two arguments");
 
         if (as_list(object)[1].type != -TYPE_SYMBOL)
-            cerr(cc, car->id, ERR_LENGTH, "'cast' takes symbol as first argument");
+            cerr(cc, car->id, ERR_LENGTH, "'as' takes symbol as first argument");
 
         type = env_get_type_by_typename(env, as_list(object)[1].i64);
 
         if (type == TYPE_NULL)
             ccerr(cc, as_list(object)[1].id, ERR_TYPE,
-                  str_fmt(0, "'cast': unknown type '%s", symbols_get(as_list(object)[1].i64)));
+                  str_fmt(0, "'as': unknown type '%s", symbols_get(as_list(object)[1].i64)));
 
         if (cc_compile_expr(true, cc, &as_list(object)[2]) == TYPE_ERROR)
             return TYPE_ERROR;
