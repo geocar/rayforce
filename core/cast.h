@@ -118,6 +118,11 @@ static inline __attribute__((always_inline)) rf_object_t rf_cast(i8_t type, rf_o
             as_vector_f64(&x)[i] = as_list(y)[i].f64;
         }
         break;
+    case m(TYPE_BOOL, TYPE_I64):
+        x = vector_bool(y->adt->len);
+        for (i = 0; i < y->adt->len; i++)
+            as_vector_bool(&x)[i] = as_list(y)[i].i64 != 0;
+        break;
     default:
         msg = str_fmt(0, "invalid conversion from '%s' to '%s'",
                       symbols_get(env_get_typename_by_type(&runtime_get()->env, y->type)),

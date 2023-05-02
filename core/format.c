@@ -293,6 +293,9 @@ i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
         // Dispatch keys type
         switch (keys->type)
         {
+        case TYPE_BOOL:
+            m += bool_fmt_into(dst, len, offset, indent, limit, as_vector_bool(keys)[i]);
+            break;
         case TYPE_I64:
             m += i64_fmt_into(dst, len, offset, indent, limit, as_vector_i64(keys)[i]);
             break;
@@ -312,6 +315,9 @@ i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
         // Dispatch rf_objects type
         switch (vals->type)
         {
+        case TYPE_BOOL:
+            m += bool_fmt_into(dst, len, offset, 0, limit, as_vector_bool(vals)[i]);
+            break;
         case TYPE_I64:
             m += i64_fmt_into(dst, len, offset, 0, limit, as_vector_i64(vals)[i]);
             break;
@@ -378,6 +384,9 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t 
 
             switch (column->type)
             {
+            case TYPE_BOOL:
+                maxn(n, bool_fmt_into(&s, &l, &o, 0, MAX_ROW_WIDTH, as_vector_bool(column)[j]));
+                break;
             case TYPE_I64:
                 maxn(n, i64_fmt_into(&s, &l, &o, 0, MAX_ROW_WIDTH, as_vector_i64(column)[j]));
                 break;
