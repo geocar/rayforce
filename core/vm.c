@@ -256,12 +256,13 @@ op_sumi:
     vm->ip++;
     x3 = stack_pop(vm);
     x2 = stack_pop(vm);
-    x2 = rf_object_cow(&x2);
-    l = x2.adt->len;
-    v = as_vector_i64(&x2);
+    x1 = rf_object_cow(&x2);
+    l = x1.adt->len;
+    v = as_vector_i64(&x1);
     for (i = 0; i < l; i++)
         v[i] = ADDI64(v[i], x3.i64);
-    stack_push(vm, x2);
+    stack_push(vm, x1);
+    rf_object_free(&x2);
     dispatch();
 op_like:
     vm->ip++;

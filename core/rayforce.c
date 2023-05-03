@@ -346,7 +346,7 @@ rf_object_t rf_object_cow(rf_object_t *object)
         return *object;
 
     if (rf_object_rc(object) == 1)
-        return *object;
+        return rf_object_clone(object);
 
     static null_t *types_table[] = {
         &&type_any, &&type_bool, &&type_i64, &&type_f64, &&type_symbol, &&type_string,
