@@ -35,6 +35,7 @@ typedef struct cc_t
     bool_t top_level;       // is this top level function?
     rf_object_t *body;      // body of function being compiled (list of expressions)
     rf_object_t function;   // function being compiled
+    rf_object_t self_calls; // vector of self calls adresses to update correct locals size
     debuginfo_t *debuginfo; // debuginfo from parse phase
 
 } cc_t;

@@ -206,9 +206,6 @@ rf_object_t rf_object_clone(rf_object_t *object)
     if (object->type < TYPE_NULL)
         return *object;
 
-    if (object->adt == NULL)
-        return *object;
-
     rc_inc(object);
 
     static null_t *types_table[] = {
@@ -256,9 +253,6 @@ null_t rf_object_free(rf_object_t *object)
     str_t code;
 
     if (object->type < 0)
-        return;
-
-    if (object->adt == NULL)
         return;
 
     rc_dec(rc, object);

@@ -77,7 +77,6 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
 {
     function_t *f = as_function(fun);
     str_t code = as_string(&f->code);
-    debuginfo_t *debuginfo = &f->debuginfo;
     rf_object_t x1, x2, x3, x4, x5, x6, *addr;
     i64_t *v, t;
     i32_t i, l, b;
@@ -91,7 +90,7 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
 
     vm->ip = 0;
     vm->sp = 0;
-    vm->bp = 0;
+    vm->bp = -1;
 
     // The indices of labels in the dispatch_table are the relevant opcodes
     static null_t *dispatch_table[] = {
@@ -103,42 +102,51 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
 
-#define unwrap(x, y)                                                    \
-    {                                                                   \
-        rf_object_t o = x;                                              \
-        if (o.type == TYPE_ERROR)                                       \
-        {                                                               \
-            o.adt->span = debuginfo_get(debuginfo, y);                  \
-            vm->acc = o;                                                \
-            u8_t n = 0;                                                 \
-            while (vm->sp)                                              \
-            {                                                           \
-                x1 = stack_pop(vm);                                     \
-                if (vm->sp == vm->bp)                                   \
-                {                                                       \
-                    memcpy(&ctx, &x1, sizeof(ctx_t));                   \
-                    if (!ctx.addr)                                      \
-                    {                                                   \
-                        vm->bp = ctx.bp;                                \
-                        vm->ip = ctx.ip;                                \
-                        goto op_dispatch;                               \
-                    }                                                   \
-                    vm->ip = ctx.ip;                                    \
-                    vm->bp = ctx.bp;                                    \
-                    f = ctx.addr;                                       \
-                    code = as_string(&f->code);                         \
-                    if (n < vm->trace)                                  \
-                    {                                                   \
-                        printf("at %s:%d\n", f->debuginfo.filename, 1); \
-                        n++;                                            \
-                    }                                                   \
-                    continue;                                           \
-                }                                                       \
-                                                                        \
-                rf_object_free(&x1);                                    \
-            }                                                           \
-            return o;                                                   \
-        }                                                               \
+#define unwrap(x, y)                                                                                               \
+    {                                                                                                              \
+        rf_object_t o = x;                                                                                         \
+        if (o.type == TYPE_ERROR)                                                                                  \
+        {                                                                                                          \
+            o.adt->span = debuginfo_get(&f->debuginfo, y);                                                         \
+            u8_t n = 0;                                                                                            \
+            while (vm->sp)                                                                                         \
+            {                                                                                                      \
+                x1 = stack_pop(vm);                                                                                \
+                if (vm->sp == vm->bp)                                                                              \
+                {                                                                                                  \
+                    memcpy(&ctx, &x1, sizeof(ctx_t));                                                              \
+                    if (!ctx.addr)                                                                                 \
+                    {                                                                                              \
+                        vm->bp = ctx.bp;                                                                           \
+                        vm->ip = ctx.ip;                                                                           \
+                        vm->acc = o;                                                                               \
+                        goto op_dispatch;                                                                          \
+                    }                                                                                              \
+                    if (n < vm->trace)                                                                             \
+                    {                                                                                              \
+                        printf("-> %s:[%d:%d:%d:%d]\n", f->debuginfo.filename,                                     \
+                               o.adt->span.start_line + 1, o.adt->span.end_line + 1, o.adt->span.start_column + 1, \
+                               o.adt->span.end_column + 1);                                                        \
+                        n++;                                                                                       \
+                    }                                                                                              \
+                    vm->ip = ctx.ip;                                                                               \
+                    vm->bp = ctx.bp;                                                                               \
+                    f = ctx.addr;                                                                                  \
+                    code = as_string(&f->code);                                                                    \
+                    continue;                                                                                      \
+                }                                                                                                  \
+                                                                                                                   \
+                if (vm->sp == 0)                                                                                   \
+                {                                                                                                  \
+                    printf("-> %s:[%d:%d:%d:%d]\n", f->debuginfo.filename,                                         \
+                           o.adt->span.start_line + 1, o.adt->span.end_line + 1, o.adt->span.start_column + 1,     \
+                           o.adt->span.end_column + 1);                                                            \
+                }                                                                                                  \
+                                                                                                                   \
+                rf_object_free(&x1);                                                                               \
+            }                                                                                                      \
+            return o;                                                                                              \
+        }                                                                                                          \
     }
 
 op_dispatch:
@@ -427,17 +435,13 @@ op_lset:
     b = vm->ip++;
     t = ((rf_object_t *)(code + vm->ip))->i64;
     vm->ip += sizeof(rf_object_t);
-    x1 = stack_pop(vm);
-    vm->stack[vm->bp + t] = rf_object_clone(&x1);
-    stack_push(vm, x1);
+    vm->stack[vm->bp + t] = rf_object_clone(stack_peek(vm));
     dispatch();
 op_gset:
     b = vm->ip++;
     x2 = *(rf_object_t *)(code + vm->ip);
     vm->ip += sizeof(rf_object_t);
-    x1 = stack_pop(vm);
-    env_set_variable(&runtime_get()->env, x2, rf_object_clone(&x1));
-    stack_push(vm, x1);
+    env_set_variable(&runtime_get()->env, x2, rf_object_clone(stack_peek(vm)));
     dispatch();
 op_lload:
     b = vm->ip++;
