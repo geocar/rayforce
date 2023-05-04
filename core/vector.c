@@ -26,12 +26,19 @@
 #include "util.h"
 
 /*
+ * Allocate via mmap if size is greater than 32 Mb
+ */
+#define SIZE_TO_MMAP 1024 * 1024 * 32
+
+/*
  * Creates new vector of type type
  */
 rf_object_t vector(i8_t type, i8_t size_of_val, i64_t len)
 {
     header_t *adt = rf_malloc(size_of_val * len + sizeof(header_t));
 
+    // return mmap(NULL, ALIGNUP(size, PAGE_SIZE),
+    //             PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     adt->len = len;
     adt->attrs = 0;
     adt->rc = 1;

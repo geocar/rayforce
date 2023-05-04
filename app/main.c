@@ -320,7 +320,7 @@ i32_t main(i32_t argc, str_t argv[])
     vm_t *vm;
     file_t file;
 
-    print_logo();
+    // print_logo();
 
     vm = vm_new();
 
