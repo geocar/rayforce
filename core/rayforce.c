@@ -267,41 +267,41 @@ type_any:
     return;
 type_bool:
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_i64:
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_f64:
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_symbol:
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_string:
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_list:
     for (i = 0; i < object->adt->len; i++)
         rf_object_free(&as_list(object)[i]);
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_dict:
     rf_object_free(&as_list(object)[0]);
     rf_object_free(&as_list(object)[1]);
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_table:
     rf_object_free(&as_list(object)[0]);
     rf_object_free(&as_list(object)[1]);
     if (rc == 0)
-        rf_free(object->adt);
+        vector_free(object);
     return;
 type_function:
     if (rc == 0)

@@ -135,7 +135,10 @@ null_t *str_dup(null_t *key, null_t *val, bucket_t *bucket)
 
 symbols_t *symbols_new()
 {
-    symbols_t *symbols = (symbols_t *)rf_malloc(sizeof(symbols_t));
+    symbols_t *symbols = (symbols_t *)mmap(NULL, sizeof(symbols_t),
+                                           PROT_READ | PROT_WRITE,
+                                           MAP_ANONYMOUS | MAP_PRIVATE,
+                                           -1, 0);
 
     pool_node_t *node = pool_node_new();
     symbols->pool_node_0 = node;

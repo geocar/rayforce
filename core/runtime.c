@@ -44,7 +44,7 @@ null_t runtime_init(u16_t slaves)
 null_t runtime_cleanup()
 {
     symbols_free(_RUNTIME->symbols);
-    rf_free(_RUNTIME->symbols);
+    munmap(_RUNTIME->symbols, sizeof(symbols_t));
     free_env(&_RUNTIME->env);
     munmap(_RUNTIME, ALIGNUP(sizeof(struct runtime_t), PAGE_SIZE));
     rf_alloc_cleanup();

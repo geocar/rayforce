@@ -58,13 +58,21 @@ vm_t *vm_new()
 {
     vm_t *vm;
 
-    vm = (vm_t *)rf_malloc(sizeof(struct vm_t));
+    vm = (vm_t *)mmap(NULL, sizeof(struct vm_t),
+                      PROT_READ | PROT_WRITE,
+                      MAP_ANONYMOUS | MAP_PRIVATE,
+                      -1, 0);
     memset(vm, 0, sizeof(struct vm_t));
     vm->trace = 0;
     vm->acc = null();
+    // vm->stack = (rf_object_t *)mmap(NULL, VM_STACK_SIZE,
+    //                                 PROT_READ | PROT_WRITE,
+    //                                 MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK | MAP_GROWSDOWN,
+    //                                 -1, 0);
+
     vm->stack = (rf_object_t *)mmap(NULL, VM_STACK_SIZE,
                                     PROT_READ | PROT_WRITE,
-                                    MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK | MAP_GROWSDOWN,
+                                    MAP_ANONYMOUS | MAP_PRIVATE,
                                     -1, 0);
 
     return vm;

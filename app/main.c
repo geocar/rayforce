@@ -310,18 +310,28 @@ null_t int_handler(i32_t sig)
 
 i32_t main(i32_t argc, str_t argv[])
 {
-    signal(SIGINT, int_handler);
+    struct sigaction sa;
+
+    sa.sa_handler = int_handler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+
+    if (sigaction(SIGINT, &sa, NULL) == -1)
+        perror("Error: cannot handle SIGINT");
 
     runtime_init(0);
 
     rf_object_t args = parse_cmdline(argc, argv), filename;
-    str_t line = (str_t)rf_malloc(LINE_SIZE), ptr;
+    str_t line, ptr;
     parser_t parser = parser_new();
     vm_t *vm;
     file_t file;
 
     // print_logo();
-
+    line = (str_t)mmap(NULL, LINE_SIZE,
+                       PROT_READ | PROT_WRITE,
+                       MAP_ANONYMOUS | MAP_PRIVATE,
+                       -1, 0);
     vm = vm_new();
 
     // load file
@@ -343,7 +353,7 @@ i32_t main(i32_t argc, str_t argv[])
     {
         printf("%s%s%s", GREEN, PROMPT, RESET);
         ptr = fgets(line, LINE_SIZE, stdin);
-        if ((ptr) == NULL)
+        if (!ptr)
             break;
 
         repl("top-level", &parser, vm, line, LINE_SIZE);
@@ -351,7 +361,7 @@ i32_t main(i32_t argc, str_t argv[])
 
     rf_object_free(&args);
     parser_free(&parser);
-    rf_free(line);
+    munmap(line, LINE_SIZE);
     vm_free(vm);
 
     runtime_cleanup();

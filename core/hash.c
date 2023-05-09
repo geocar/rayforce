@@ -32,9 +32,15 @@
 
 hash_table_t *ht_new(i32_t size, i64_t (*hasher)(null_t *a), i32_t (*compare)(null_t *a, null_t *b))
 {
-    hash_table_t *table = (hash_table_t *)rf_malloc(sizeof(hash_table_t));
+    hash_table_t *table = (hash_table_t *)mmap(NULL, sizeof(hash_table_t),
+                                               PROT_READ | PROT_WRITE,
+                                               MAP_ANONYMOUS | MAP_PRIVATE,
+                                               -1, 0);
 
-    bucket_t **buckets = (bucket_t **)rf_malloc(sizeof(bucket_t *) * size);
+    bucket_t **buckets = (bucket_t **)mmap(NULL, sizeof(bucket_t *) * size,
+                                           PROT_READ | PROT_WRITE,
+                                           MAP_ANONYMOUS | MAP_PRIVATE,
+                                           -1, 0);
     memset(buckets, 0, sizeof(bucket_t *) * size);
 
     table->cap = size;
@@ -63,7 +69,7 @@ null_t ht_free(hash_table_t *table)
         }
     }
 
-    rf_free(table->buckets);
+    munmap(table->buckets, sizeof(bucket_t *) * table->cap);
 }
 
 /*

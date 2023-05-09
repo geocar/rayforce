@@ -31,12 +31,17 @@
 #define MAX_ORDER 10
 #define MIN_ALLOC ((i64_t)1 << MIN_ORDER)
 #define MAX_ALLOC ((i64_t)1 << MAX_ORDER)
-#define POOL_SIZE (MAX_ALLOC * 2)
-#define CELL_COUNT (MAX_ORDER + 2)
+#define POOL_SIZE (1024 * 1024)
+
+typedef struct node_t
+{
+    null_t *block;
+    struct node_t *next;
+} node_t;
 
 typedef struct alloc_t
 {
-    null_t *freelist[CELL_COUNT];
+    node_t *freelist[MAX_ORDER + 2];
     u8_t pool[POOL_SIZE];
 } __attribute__((aligned(PAGE_SIZE))) * alloc_t;
 
