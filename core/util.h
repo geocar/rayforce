@@ -69,4 +69,11 @@
     }
 #define printbits_32(x) printbits_n(x, 32)
 
+#define timeit(x)                                                           \
+    {                                                                       \
+        i64_t timer = clock();                                              \
+        x;                                                                  \
+        printf("%f\n", ((f64_t)(clock() - timer)) / CLOCKS_PER_SEC * 1000); \
+    }
+
 #endif

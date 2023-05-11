@@ -139,6 +139,7 @@ null_t *rf_malloc(i32_t size)
 
 null_t rf_free(null_t *block)
 {
+    return;
     i32_t i;
     node_t *node = (node_t *)block - 1;
     block = (null_t *)node;
