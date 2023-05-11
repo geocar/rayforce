@@ -49,7 +49,7 @@ null_t init_functions(rf_object_t *records)
     REC(records, 0, "env",    TYPE_DICT,    rf_env,    { 0                       });
     // Unary  
     REC(records, 1, "type",  -TYPE_SYMBOL,  OP_TYPE,   { TYPE_NULL                });
-    REC(records, 1, "til" ,   TYPE_I64,     OP_TIL,    {-TYPE_I64                 });
+    REC(records, 1, "til" ,   TYPE_I64,     rf_til,    {-TYPE_I64                 });
     REC(records, 1, "trace" , TYPE_I64,     OP_TRACE,  {TYPE_NULL                 });
 
     // Binary

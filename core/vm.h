@@ -55,7 +55,6 @@ typedef enum vm_opcode_t
     OP_TYPE,      // Get type of rf_object
     OP_TIMER_SET, // Start timer
     OP_TIMER_GET, // Get timer value
-    OP_TIL,       // Create i64 vector of length n
     OP_CALL0,     // Call function with no arguments
     OP_CALL1,     // Call function with one argument
     OP_CALL2,     // Call function with two arguments

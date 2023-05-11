@@ -27,3 +27,16 @@
 #include "ops.h"
 #include "util.h"
 #include "format.h"
+
+rf_object_t rf_til(rf_object_t *x)
+{
+    i32_t i, l = (i32_t)x->i64;
+    i64_t *v;
+    rf_object_t vec = vector_i64(l);
+
+    v = as_vector_i64(&vec);
+    for (i = 0; i < l; i++)
+        v[i] = i;
+
+    return vec;
+}

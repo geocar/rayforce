@@ -26,4 +26,6 @@
 
 #include "rayforce.h"
 
+rf_object_t rf_til(rf_object_t *x);
+
 #endif

@@ -56,23 +56,18 @@ CASSERT(sizeof(ctx_t) == sizeof(rf_object_t), vm_c)
 
 vm_t *vm_new()
 {
-    vm_t *vm;
+    vm_t *vm = (vm_t *)mmap(NULL, sizeof(struct vm_t),
+                            PROT_READ | PROT_WRITE,
+                            MAP_ANONYMOUS | MAP_PRIVATE,
+                            -1, 0);
 
-    vm = (vm_t *)mmap(NULL, sizeof(struct vm_t),
-                      PROT_READ | PROT_WRITE,
-                      MAP_ANONYMOUS | MAP_PRIVATE,
-                      -1, 0);
     memset(vm, 0, sizeof(struct vm_t));
+
     vm->trace = 0;
     vm->acc = null();
-    // vm->stack = (rf_object_t *)mmap(NULL, VM_STACK_SIZE,
-    //                                 PROT_READ | PROT_WRITE,
-    //                                 MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK | MAP_GROWSDOWN,
-    //                                 -1, 0);
-
     vm->stack = (rf_object_t *)mmap(NULL, VM_STACK_SIZE,
                                     PROT_READ | PROT_WRITE,
-                                    MAP_ANONYMOUS | MAP_PRIVATE,
+                                    MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK | MAP_GROWSDOWN,
                                     -1, 0);
 
     return vm;
@@ -104,7 +99,7 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
     static null_t *dispatch_table[] = {
         &&op_halt, &&op_ret, &&op_push, &&op_pop, &&op_eq, &&op_lt, &&op_jne,
         &&op_jmp, &&op_addi, &&op_addf, &&op_subi, &&op_subf, &&op_muli, &&op_mulf, &&op_divi, &&op_divf,
-        &&op_sumi, &&op_like, &&op_type, &&op_timer_set, &&op_timer_get, &&op_til, &&op_call0,
+        &&op_sumi, &&op_like, &&op_type, &&op_timer_set, &&op_timer_get, &&op_call0,
         &&op_call1, &&op_call2, &&op_call3, &&op_call4, &&op_calln, &&op_callf, &&op_lset, &&op_gset,
         &&op_lload, &&op_gload, &&op_cast, &&op_try, &&op_catch, &&op_throw, &&op_trace};
 
@@ -310,16 +305,6 @@ op_timer_set:
 op_timer_get:
     vm->ip++;
     stack_push(vm, f64((((f64_t)(clock() - vm->timer)) / CLOCKS_PER_SEC) * 1000));
-    dispatch();
-op_til:
-    vm->ip++;
-    x2 = stack_pop(vm);
-    x1 = vector_i64(x2.i64);
-    v = as_vector_i64(&x1);
-    for (i = 0; i < (i32_t)x2.i64; i++)
-        v[i] = i;
-    x1.id = x2.id;
-    stack_push(vm, x1);
     dispatch();
 op_call0:
     b = vm->ip++;
@@ -596,9 +581,6 @@ str_t vm_code_fmt(rf_object_t *fun)
             break;
         case OP_TIMER_GET:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] timer_get\n", c++, ip++);
-            break;
-        case OP_TIL:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] til\n", c++, ip++);
             break;
         case OP_CALL0:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call0 ", c++, ip++);
