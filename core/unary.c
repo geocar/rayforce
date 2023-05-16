@@ -27,6 +27,7 @@
 #include "ops.h"
 #include "util.h"
 #include "format.h"
+#include "sort.h"
 
 rf_object_t rf_til_i64(rf_object_t *x)
 {
@@ -214,4 +215,12 @@ rf_object_t rf_not_Bool(rf_object_t *x)
         ov[i] = !iv[i];
 
     return res;
+}
+
+rf_object_t rf_asc_I64(rf_object_t *x)
+{
+    rf_object_t vec = rf_object_cow(x);
+    rf_sort(&vec);
+
+    return vec;
 }

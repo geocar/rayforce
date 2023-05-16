@@ -846,20 +846,29 @@ rf_object_t rf_find_I64_i64(rf_object_t *x, rf_object_t *y)
 rf_object_t rf_find_I64_I64(rf_object_t *x, rf_object_t *y)
 {
     i64_t xl = x->adt->len, yl = y->adt->len, i, j;
-    rf_object_t vec = vector_i64(yl);
-    i64_t *iv1 = as_vector_i64(x), *iv2 = as_vector_i64(y), *ov = as_vector_i64(&vec);
+    rf_object_t vec = vector_i64(yl), found;
+    i64_t *iv1 = as_vector_i64(x), *iv2 = as_vector_i64(y),
+          *ov = as_vector_i64(&vec), *fv, min = 0, max = 0;
 
-    for (i = 0; i < xl; i++)
-    {
-        for (j = 0; j < yl; j++)
-            if (iv1[j] == iv2[i])
-                break;
+    // for (i = 0; i < xl; i++)
+    // {
+    //     if (iv1[i] < min)
+    //         min = iv1[i];
+    //     if (iv1[i] > max)
+    //         max = iv1[i];
+    // }
 
-        if (j == xl)
-            ov[i] = NULL_I64;
-        else
-            ov[i] = j;
-    }
+    // j = max - min + 1;
+    // found = vector_i64(j);
+    // fv = as_vector_i64(&found);
+    // memset(fv, 0, sizeof(i64_t) * j);
+
+    // for (i = 0; i < yl; i++)
+    // {
+
+    // }
+
+    rf_object_free(&found);
 
     return vec;
 }

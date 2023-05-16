@@ -21,25 +21,13 @@
  *   SOFTWARE.
  */
 
-#ifndef MONAD_H
-#define MONAD_H
+#ifndef SORT_H
+#define SORT_H
 
 #include "rayforce.h"
 
-rf_object_t rf_til_i64(rf_object_t *x);
-rf_object_t rf_distinct_i64(rf_object_t *x);
-rf_object_t rf_sum_I64(rf_object_t *x);
-rf_object_t rf_avg_I64(rf_object_t *x);
-rf_object_t rf_min_I64(rf_object_t *x);
-rf_object_t rf_max_I64(rf_object_t *x);
-rf_object_t rf_sum_F64(rf_object_t *x);
-rf_object_t rf_avg_F64(rf_object_t *x);
-rf_object_t rf_min_F64(rf_object_t *x);
-rf_object_t rf_max_F64(rf_object_t *x);
-rf_object_t rf_count(rf_object_t *x);
-rf_object_t rf_not_bool(rf_object_t *x);
-rf_object_t rf_not_Bool(rf_object_t *x);
-rf_object_t rf_asc_I64(rf_object_t *x);
-rf_object_t rf_desc_I64(rf_object_t *x);
+null_t quicksort(i64_t array[], i64_t left, i64_t right);
+void radixsort(long int arr[], int n);
+null_t rf_sort(rf_object_t *arr);
 
 #endif
