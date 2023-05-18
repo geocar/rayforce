@@ -28,6 +28,7 @@
 #include "util.h"
 #include "format.h"
 #include "sort.h"
+#include "vector.h"
 
 rf_object_t rf_til_i64(rf_object_t *x)
 {
@@ -42,6 +43,7 @@ rf_object_t rf_til_i64(rf_object_t *x)
     for (i = 0; i < l; i++)
         v[i] = i;
 
+    vec.adt->attrs = VEC_ATTR_ASC | VEC_ATTR_DISTINCT | VEC_ATTR_WITHOUT_NULLS;
     return vec;
 }
 
@@ -54,6 +56,9 @@ rf_object_t rf_distinct_i64(rf_object_t *x)
 
     if (l == 0)
         return vector_i64(0);
+
+    if (x->adt->attrs & VEC_ATTR_DISTINCT)
+        return rf_object_clone(x);
 
     max = min = xi[0];
 
@@ -103,7 +108,7 @@ rf_object_t rf_sum_I64(rf_object_t *x)
 rf_object_t rf_avg_I64(rf_object_t *x)
 {
     i32_t i;
-    i64_t l = x->adt->len, sum = 0, *v = as_vector_i64(x);
+    i64_t l = x->adt->len, sum = 0, *v = __builtin_assume_aligned(as_vector_i64(x), 16);
 
     for (i = 0; i < l; i++)
         sum += v[i];
@@ -114,11 +119,41 @@ rf_object_t rf_avg_I64(rf_object_t *x)
 rf_object_t rf_min_I64(rf_object_t *x)
 {
     i32_t i;
-    i64_t l = x->adt->len, min = x->adt->len ? as_vector_i64(x)[0] : 0, *v = as_vector_i64(x);
+    i64_t l = x->adt->len, min = 0,
+          *v = as_vector_i64(x);
+
+    if (!l)
+        return i64(NULL_I64);
+
+    // vectorized version when we exactly know that there are no nulls
+    if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+    {
+        if (x->adt->attrs & VEC_ATTR_ASC)
+            return i64(v[0]);
+        if (x->adt->attrs & VEC_ATTR_DESC)
+            return i64(v[l - 1]);
+        min = v[0];
+        for (i = 1; i < l; i++)
+            if (v[i] < min)
+                min = v[i];
+
+        return i64(min);
+    }
+
+    // scalar version
+    // find first nonnull value
+    for (i = 0; i < l; i++)
+        if (v[i] ^ NULL_I64)
+        {
+            min = v[i];
+            break;
+        }
 
     for (i = 0; i < l; i++)
-        if (v[i] < min)
-            min = v[i];
+    {
+        if (v[i] ^ NULL_I64)
+            min = v[i] < min ? v[i] : min;
+    }
 
     return i64(min);
 }

@@ -865,9 +865,9 @@ rf_object_t rf_find_I64_I64(rf_object_t *x, rf_object_t *y)
 #define mask -1ll
 #define normalize(k) ((u64_t)(k - min))
 
-    // if range fits in 1 mb, use vector positions instead of hash table
+    // if range fits in 64 mb, use vector positions instead of hash table
     range = max - min + 1;
-    if (range < 1024 * 1024)
+    if (range < 1024 * 1024 * 64)
     {
         found = vector_i64(range);
         fv = as_vector_i64(&found);
@@ -967,5 +967,6 @@ rf_object_t rf_rand_i64_i64(rf_object_t *x, rf_object_t *y)
         ov[i] = seed % range;
     }
 
+    vec.adt->attrs |= VEC_ATTR_WITHOUT_NULLS;
     return vec;
 }

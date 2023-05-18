@@ -29,6 +29,12 @@
 #include "ops.h"
 #include "util.h"
 
+#define VEC_ATTR_WITHOUT_NULLS 1ull << 63
+#define VEC_ATTR_ASC (1ull << 62)
+#define VEC_ATTR_DESC (1ull << 61)
+#define VEC_ATTR_DISTINCT (1ull << 60)
+#define VEC_ATTR_MASK 0xFF << 55
+
 /*
  * Each vector capacity is always factor of 8
  * This allows to avoid storing capacity in vector

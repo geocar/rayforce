@@ -107,17 +107,11 @@ typedef struct header_t
 {
     i64_t len;
     i64_t rc;
-
-    union
-    {
-        i64_t attrs;
-        span_t span;
-    };
-
+    span_t span;
     union
     {
         i8_t code;
-        i64_t pad;
+        i64_t attrs;
     };
 } header_t;
 

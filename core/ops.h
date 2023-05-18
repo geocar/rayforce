@@ -39,20 +39,20 @@
 // none type
 #define TYPE_NONE (TYPE_ERROR + 5)
 // --
-
-#define ADDI64(x, y) (((x | y) & NULL_I64) ? NULL_I64 : (x + y))
+#define IS_NULL_I64(x) (((x) >> 63) & 1)
+#define ADDI64(x, y) ((((x) + (y)) & ~((i64_t)IS_NULL_I64(x) | (i64_t)IS_NULL_I64(y))) | ((i64_t)IS_NULL_I64(x) | (i64_t)IS_NULL_I64(y)) << 63)
 #define ADDF64(x, y) (x + y)
-#define SUBI64(x, y) (((x | y) & NULL_I64) ? NULL_I64 : (x - y))
+#define SUBI64(x, y) ((x == NULL_I64 || y == NULL_I64) ? NULL_I64 : (x - y))
 #define SUBF64(x, y) (x - y)
-#define DIVI64(x, y) (((x | y) & NULL_I64) ? NULL_F64 : ((f64_t)(x) / (f64_t)(y)))
-#define DIVF64(x, y) (x / y)
-#define MULI64(x, y) (((x | y) & NULL_I64) ? NULL_I64 : (x * y))
+#define MULI64(x, y) ((((x) * (y)) & ~((i64_t)IS_NULL_I64(x) | (i64_t)IS_NULL_I64(y))) | ((i64_t)IS_NULL_I64(x) | (i64_t)IS_NULL_I64(y)) << 63)
 #define MULF64(x, y) (x * y)
+#define DIVI64(x, y) ((x == NULL_I64 || y == NULL_I64) ? NULL_F64 : ((f64_t)(x) / (f64_t)(y)))
+#define DIVF64(x, y) (x / y)
 #define MAXI64(x, y) (x > y ? x : y)
 #define MAXF64(x, y) (x > y ? x : y)
+#define MINI64(x, y) (IS_NULL_I64(y) || (!IS_NULL_I64(x) && (x < y)) ? x : y)
 #define MINI64(x, y) (x < y ? x : y)
 #define MINF64(x, y) (x < y ? x : y)
-
 /*
  * Aligns x to the nearest multiple of a
  */
