@@ -108,5 +108,18 @@ rf_object_t rf_find_Char_char(rf_object_t *x, rf_object_t *y);
 rf_object_t rf_find_Char_Char(rf_object_t *x, rf_object_t *y);
 rf_object_t rf_find_F64_f64(rf_object_t *x, rf_object_t *y);
 rf_object_t rf_find_F64_F64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_Bool_bool(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_Bool_Bool(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_bool_Bool(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_I64_i64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_I64_I64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_i64_I64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_F64_f64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_F64_F64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_f64_F64(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_Char_char(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_Char_Char(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_char_Char(rf_object_t *x, rf_object_t *y);
+rf_object_t rf_concat_List_List(rf_object_t *x, rf_object_t *y);
 
 #endif

@@ -132,6 +132,19 @@ null_t init_functions(rf_object_t *records)
     REC(records, 2, "find",     -TYPE_I64,        rf_find_F64_f64,         { TYPE_F64,    -TYPE_F64    });
     REC(records, 2, "find",      TYPE_I64,        rf_find_I64_I64,         { TYPE_I64,     TYPE_I64    });
     REC(records, 2, "find",      TYPE_I64,        rf_find_F64_F64,         { TYPE_F64,     TYPE_F64    });
+    REC(records, 2, "concat",    TYPE_BOOL,       rf_concat_Bool_bool,     { TYPE_BOOL,   -TYPE_BOOL   });
+    REC(records, 2, "concat",    TYPE_BOOL,       rf_concat_Bool_Bool,     { TYPE_BOOL,    TYPE_BOOL   });
+    REC(records, 2, "concat",    TYPE_BOOL,       rf_concat_bool_Bool,     {-TYPE_BOOL,    TYPE_BOOL   });
+    REC(records, 2, "concat",    TYPE_I64,        rf_concat_I64_i64,       { TYPE_I64,    -TYPE_I64    });
+    REC(records, 2, "concat",    TYPE_I64,        rf_concat_I64_I64,       { TYPE_I64,     TYPE_I64    });
+    REC(records, 2, "concat",    TYPE_I64,        rf_concat_i64_I64,       {-TYPE_I64,     TYPE_I64    });
+    REC(records, 2, "concat",    TYPE_F64,        rf_concat_F64_f64,       { TYPE_F64,    -TYPE_F64    });
+    REC(records, 2, "concat",    TYPE_F64,        rf_concat_F64_F64,       { TYPE_F64,     TYPE_F64    });
+    REC(records, 2, "concat",    TYPE_F64,        rf_concat_f64_F64,       {-TYPE_F64,     TYPE_F64    });
+    REC(records, 2, "concat",    TYPE_CHAR,       rf_concat_Char_char,     { TYPE_CHAR,   -TYPE_CHAR   });
+    REC(records, 2, "concat",    TYPE_CHAR,       rf_concat_Char_Char,     { TYPE_CHAR,    TYPE_CHAR   });
+    REC(records, 2, "concat",    TYPE_CHAR,       rf_concat_char_Char,     {-TYPE_CHAR,    TYPE_CHAR   });
+    REC(records, 2, "concat",    TYPE_LIST,       rf_concat_List_List,     { TYPE_LIST,    TYPE_LIST   });
 
     // Ternary  
     REC(records, 3, "rand",      TYPE_I64,        rf_rand_i64_i64_i64,     {-TYPE_I64,    -TYPE_I64, -TYPE_I64 });
