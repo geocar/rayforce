@@ -39,6 +39,7 @@
 #define stack_push(v, x) (v->stack[v->sp++] = x)
 #define stack_pop(v) (v->stack[--v->sp])
 #define stack_peek(v) (&v->stack[v->sp - 1])
+#define stack_peek_n(v, n) (&v->stack[v->sp - 1 - n])
 #define stack_pop_free(v)             \
     {                                 \
         rf_object_t o = stack_pop(v); \
@@ -76,7 +77,7 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
     str_t code = as_string(&f->code);
     rf_object_t x1, x2, x3, x4, x5, x6, *addr;
     i64_t t;
-    i32_t i, l, b;
+    i32_t i, l, c, b;
     nilary_t f0;
     unary_t f1;
     binary_t f2;
@@ -93,7 +94,8 @@ rf_object_t vm_exec(vm_t *vm, rf_object_t *fun)
     static null_t *dispatch_table[] = {
         &&op_halt, &&op_ret, &&op_push, &&op_pop, &&op_jne, &&op_jmp, &&op_type, &&op_timer_set, &&op_timer_get,
         &&op_call0, &&op_call1, &&op_call2, &&op_call3, &&op_call4, &&op_calln, &&op_callf, &&op_lset, &&op_gset,
-        &&op_lload, &&op_gload, &&op_cast, &&op_try, &&op_catch, &&op_throw, &&op_trace};
+        &&op_lload, &&op_gload, &&op_cast, &&op_try, &&op_catch, &&op_throw, &&op_trace,
+        &&op_alloc, &&op_map, &&op_collect};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
 
@@ -390,6 +392,36 @@ op_trace:
     x1 = stack_pop(vm);
     vm->trace = (u8_t)x1.i64;
     dispatch();
+op_alloc:
+    b = vm->ip++;
+    vm->counter = stack_peek(vm)->adt->len;
+    // allocate result and write to a preserved space on the stack
+    x1 = vector_i64(vm->counter);
+    *stack_peek_n(vm, 1) = x1;
+    stack_push(vm, bool(vm->counter > 0));
+    dispatch();
+op_map:
+    b = vm->ip++;
+    // argument len
+    addr = stack_peek_n(vm, 1);
+    l = addr->adt->len;
+    // push argument
+    stack_push(vm, i64(as_vector_i64(addr)[l - vm->counter]));
+    // push function
+    x1 = rf_object_clone(stack_peek_n(vm, 1));
+    stack_push(vm, x1);
+    dispatch();
+op_collect:
+    b = vm->ip++;
+    // get the result from another iteration
+    x1 = stack_pop(vm);
+    addr = stack_peek_n(vm, 1);
+    l = addr->adt->len;
+    as_vector_i64(addr)[l - vm->counter--] = x1.i64;
+    // push counter comparison value
+    x1 = bool(vm->counter == 0);
+    stack_push(vm, x1);
+    dispatch();
 }
 
 null_t vm_free(vm_t *vm)
@@ -522,6 +554,15 @@ str_t vm_code_fmt(rf_object_t *fun)
             break;
         case OP_TRACE:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] trace\n", c++, ip++);
+            break;
+        case OP_ALLOC:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] alloc\n", c++, ip++);
+            break;
+        case OP_MAP:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] map\n", c++, ip++);
+            break;
+        case OP_COLLECT:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] collect\n", c++, ip++);
             break;
         default:
             str_fmt_into(&s, &l, &o, 0, "%.4d: unknown %d\n", c++, ip++);

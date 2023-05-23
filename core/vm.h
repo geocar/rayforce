@@ -59,6 +59,9 @@ typedef enum vm_opcode_t
     OP_CATCH,     // Catch an error from vm register and push it onto the stack
     OP_THROW,     // Throw an error
     OP_TRACE,     // Print stack trace (limit)
+    OP_ALLOC,     // Allocate rf_object
+    OP_MAP,       // Map function over array
+    OP_COLLECT,   // Collect array of results
 
     OP_INVALID, // Invalid opcode
 } vm_opcode_t;
@@ -73,6 +76,7 @@ typedef struct vm_t
     i32_t sp;           // Stack pointer
     i32_t bp;           // Base pointer (beginning on stack frame)
     i64_t timer;        // Timer for execution time
+    i64_t counter;      // Iteration counter
     rf_object_t acc;    // Accumulator
     rf_object_t *stack; // Stack of arguments
 } vm_t;

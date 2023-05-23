@@ -482,44 +482,63 @@ i8_t cc_compile_catch(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t 
     return TYPE_NONE;
 }
 
-// i8_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
-// {
-//     i8_t type;
-//     rf_object_t *car = &as_list(object)[0];
-//     function_t *func = as_function(&cc->function);
-//     rf_object_t *code = &func->code;
-//     env_t *env = &runtime_get()->env;
+i8_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i8_t type;
+    rf_object_t *car = &as_list(object)[0], *addr;
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
+    env_t *env = &runtime_get()->env;
+    i64_t lbl1, lbl2;
 
-//     if (car->i64 == symbol("map").i64)
-//     {
-//         if (arity != 2)
-//             cerr(cc, car->id, ERR_LENGTH, "'map' takes two arguments");
+    if (car->i64 == symbol("map").i64)
+    {
+        if (arity != 2)
+            cerr(cc, car->id, ERR_LENGTH, "'map' takes two arguments");
 
-//         type = compile_expr(true, cc, &as_list(object)[1]);
+        // reserve space for map result
+        push_opcode(cc, car->id, code, OP_PUSH);
+        push_rf_object(code, null());
 
-//         if (as_list(object)[1].type != -TYPE_SYMBOL)
-//             cerr(cc, car->id, ERR_LENGTH, "'as' takes symbol as first argument");
+        // compile arg
+        type = cc_compile_expr(true, cc, &as_list(object)[2]);
 
-//         type = env_get_type_by_typename(env, as_list(object)[1].i64);
+        if (type == TYPE_ERROR)
+            return type;
 
-//         if (type == TYPE_NONE)
-//             ccerr(cc, as_list(object)[1].id, ERR_TYPE,
-//                   str_fmt(0, "'as': unknown type '%s", symbols_get(as_list(object)[1].i64)));
+        push_opcode(cc, car->id, code, OP_ALLOC);
+        // additional check for zero length argument
+        push_opcode(cc, car->id, code, OP_JNE);
+        lbl1 = code->adt->len;
+        push_rf_object(code, i64(0));
 
-//         if (cc_compile_expr(true, cc, &as_list(object)[2]) == TYPE_ERROR)
-//             return TYPE_ERROR;
+        // compile function
+        type = cc_compile_expr(true, cc, &as_list(object)[1]);
 
-//         push_opcode(cc, car->id, code, OP_CAST);
-//         push_opcode(cc, car->id, code, type);
+        if (type != TYPE_FUNCTION)
+            cerr(cc, car->id, ERR_LENGTH, "'map' takes function as first argument");
 
-//         if (!has_consumer)
-//             push_opcode(cc, car->id, code, OP_POP);
+        addr = peek_rf_object(code);
+        func = as_function(addr);
 
-//         return type;
-//     }
+        lbl2 = code->adt->len;
+        push_opcode(cc, car->id, code, OP_MAP);
+        push_opcode(cc, car->id, code, OP_CALLF);
+        push_opcode(cc, car->id, code, OP_COLLECT);
+        push_opcode(cc, car->id, code, OP_JNE);
+        push_rf_object(code, i64(lbl2));
+        // pop function
+        push_opcode(cc, car->id, code, OP_POP);
+        ((rf_object_t *)(as_string(code) + lbl1))->i64 = code->adt->len;
 
-//     return TYPE_NONE;
-// }
+        // additional one for ctx
+        func->stack_size += 2;
+
+        return type;
+    }
+
+    return TYPE_NONE;
+}
 
 /*
  * Special forms are those that are not in a table of functions because of their special nature.
@@ -567,6 +586,11 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
         return type;
 
     type = cc_compile_throw(has_consumer, cc, object, arity);
+
+    if (type != TYPE_NONE)
+        return type;
+
+    type = cc_compile_map(has_consumer, cc, object, arity);
 
     if (type != TYPE_NONE)
         return type;
