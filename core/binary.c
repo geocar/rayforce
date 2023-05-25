@@ -971,6 +971,15 @@ rf_object_t rf_rand_i64_i64(rf_object_t *x, rf_object_t *y)
     return vec;
 }
 
+rf_object_t rf_concat_bool_bool(rf_object_t *x, rf_object_t *y)
+{
+    rf_object_t vec = vector_bool(2);
+    as_vector_bool(&vec)[0] = x->bool;
+    as_vector_bool(&vec)[1] = y->bool;
+
+    return vec;
+}
+
 rf_object_t rf_concat_Bool_bool(rf_object_t *x, rf_object_t *y)
 {
     rf_object_t vec = vector_bool(x->adt->len + 1);
@@ -999,6 +1008,15 @@ rf_object_t rf_concat_bool_Bool(rf_object_t *x, rf_object_t *y)
     rf_object_t vec = vector_bool(2);
     as_vector_bool(&vec)[0] = x->bool;
     as_vector_bool(&vec)[1] = y->bool;
+
+    return vec;
+}
+
+rf_object_t rf_concat_i64_i64(rf_object_t *x, rf_object_t *y)
+{
+    rf_object_t vec = vector_i64(2);
+    as_vector_i64(&vec)[0] = x->i64;
+    as_vector_i64(&vec)[1] = y->i64;
 
     return vec;
 }
@@ -1050,6 +1068,15 @@ rf_object_t rf_concat_i64_I64(rf_object_t *x, rf_object_t *y)
     return vec;
 }
 
+rf_object_t rf_concat_f64_f64(rf_object_t *x, rf_object_t *y)
+{
+    rf_object_t vec = vector_f64(2);
+    as_vector_i64(&vec)[0] = x->f64;
+    as_vector_i64(&vec)[1] = y->f64;
+
+    return vec;
+}
+
 rf_object_t rf_concat_F64_f64(rf_object_t *x, rf_object_t *y)
 {
     i64_t i, l = x->adt->len;
@@ -1095,6 +1122,15 @@ rf_object_t rf_concat_f64_F64(rf_object_t *x, rf_object_t *y)
         ov[i + 1] = iv[i];
 
     ov[0] = x->f64;
+
+    return vec;
+}
+
+rf_object_t rf_concat_char_char(rf_object_t *x, rf_object_t *y)
+{
+    rf_object_t vec = string(2);
+    as_string(&vec)[0] = x->schar;
+    as_string(&vec)[1] = y->schar;
 
     return vec;
 }

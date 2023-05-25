@@ -404,7 +404,7 @@ op_alloc:
     c = code[vm->ip++];
     vm->counter = stack_peek(vm)->adt->len;
     // allocate result and write to a preserved space on the stack
-    x1 = vector(type, size_of(type), vm->counter);
+    x1 = vector(type, size_of_element(type), vm->counter);
     *stack_peek_n(vm, c) = x1;
     stack_push(vm, bool(vm->counter > 0));
     dispatch();

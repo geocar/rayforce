@@ -542,7 +542,7 @@ i8_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t ar
         func = as_function(addr);
 
         // specify type for alloc result as return type of the function
-        *(i8_t *)(as_string(code) + lbl0) = -func->rettype;
+        *(i8_t *)(as_string(code) + lbl0) = func->rettype < 0 ? -func->rettype : TYPE_LIST;
 
         arg_keys = &as_list(&func->args)[0];
         arg_vals = &as_list(&func->args)[1];
@@ -588,6 +588,18 @@ i8_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t ar
     return TYPE_NONE;
 }
 
+// i8_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+// {
+//     UNUSED(has_consumer);
+
+//     i8_t type, *args;
+//     rf_object_t *car, *addr, *arg_keys, *arg_vals;
+//     function_t *func = as_function(&cc->function);
+//     rf_object_t *code = &func->code;
+//     env_t *env = &runtime_get()->env;
+
+//     return TYPE_NONE;
+// }
 /*
  * Special forms are those that are not in a table of functions because of their special nature.
  * return TYPE_ERROR if there is an error
@@ -642,6 +654,11 @@ i8_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t *object
 
     if (type != TYPE_NONE)
         return type;
+
+    // type = cc_compile_select(has_consumer, cc, object, arity);
+
+    // if (type != TYPE_NONE)
+    //     return type;
 
     return type;
 }

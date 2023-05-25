@@ -47,7 +47,7 @@ u64_t next_power_of_two_u64(u64_t n)
     return 1UL << (64 - __builtin_clzl(n));
 }
 
-i64_t size_of(i8_t type)
+i64_t size_of_element(i8_t type)
 {
     switch (type)
     {
