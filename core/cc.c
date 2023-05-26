@@ -817,8 +817,6 @@ i8_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         return addr->type;
 
     case TYPE_LIST:
-        if (!has_consumer)
-            return TYPE_NONE;
         if (object->adt->len == 0 || object->flags == 1)
         {
             lst = rf_object_clone(object);

@@ -1,10 +1,8 @@
 ;; Author: 0x0L
 (set fib (fn i64 {x: i64} 
-    (if (< x 1) 
-        0 
-        (if (< x 2)
-            1
-            (+ (self (- x 1))  (self (- x 2)))))))
+    (if (< x 2) 
+        1 
+        (+ (self (- x 1))  (self (- x 2))))))
 
 ;; (try (fib 6)
 ;;     (catch e 
