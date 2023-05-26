@@ -235,8 +235,8 @@ op_call1:
     x2 = stack_pop(vm);
     f1 = (unary_t)x3.i64;
     x1 = f1(&x2);
-    unwrap(x1, b);
     rf_object_free(&x2);
+    unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
 op_call2:
@@ -247,10 +247,10 @@ op_call2:
     x2 = stack_pop(vm);
     f2 = (binary_t)x4.i64;
     x1 = f2(&x2, &x3);
-    unwrap(x1, b);
-    stack_push(vm, x1);
     rf_object_free(&x2);
     rf_object_free(&x3);
+    unwrap(x1, b);
+    stack_push(vm, x1);
     dispatch();
 op_call3:
     b = vm->ip++;
@@ -366,9 +366,9 @@ op_cast:
     i = code[vm->ip++];
     x2 = stack_pop(vm);
     x1 = rf_cast(i, &x2);
+    rf_object_free(&x2);
     unwrap(x1, b);
     stack_push(vm, x1);
-    rf_object_free(&x2);
     dispatch();
 op_try:
     b = vm->ip++;
