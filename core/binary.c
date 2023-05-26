@@ -935,35 +935,34 @@ rf_object_t rf_find_I64_I64(rf_object_t *x, rf_object_t *y)
 
 #define mask -1ll
 #define normalize(k) ((u64_t)(k - min))
-
     // if range fits in 64 mb, use vector positions instead of hash table
     range = max - min + 1;
-    if (range < 1024 * 1024 * 64)
-    {
-        found = vector_i64(range);
-        fv = as_vector_i64(&found);
-        memset(fv, 255, sizeof(i64_t) * range);
+    // if (range < 1024 * 1024 * 64)
+    // {
+    //     found = vector_i64(range);
+    //     fv = as_vector_i64(&found);
+    //     memset(fv, 255, sizeof(i64_t) * range);
 
-        for (i = 0; i < xl; i++)
-        {
-            n = normalize(iv1[i]);
-            if (fv[n] == mask)
-                fv[n] = i;
-        }
+    //     for (i = 0; i < xl; i++)
+    //     {
+    //         n = normalize(iv1[i]);
+    //         if (fv[n] == mask)
+    //             fv[n] = i;
+    //     }
 
-        for (i = 0; i < yl; i++)
-        {
-            n = normalize(iv2[i]);
-            if (iv2[i] < min || iv2[i] > max || fv[n] == mask)
-                ov[i] = NULL_I64;
-            else
-                ov[i] = fv[n];
-        }
+    //     for (i = 0; i < yl; i++)
+    //     {
+    //         n = normalize(iv2[i]);
+    //         if (iv2[i] < min || iv2[i] > max || fv[n] == mask)
+    //             ov[i] = NULL_I64;
+    //         else
+    //             ov[i] = fv[n];
+    //     }
 
-        rf_object_free(&found);
+    //     rf_object_free(&found);
 
-        return vec;
-    }
+    //     return vec;
+    // }
 
     range = xl;
 

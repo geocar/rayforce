@@ -98,7 +98,8 @@ null_t *ht_insert(hash_table_t *table, null_t *key, null_t *val)
     // Table's size is always a power of 2
     u64_t factor = table->size - 1,
           index = table->hasher(key) & factor;
-    u32_t distance = 0;
+    u32_t distance = 0, temp_distance;
+    null_t *temp_key, *temp_val;
 
     while (distance < table->size)
     {
@@ -113,6 +114,7 @@ null_t *ht_insert(hash_table_t *table, null_t *key, null_t *val)
             table->buckets[index].key = key;
             table->buckets[index].val = val;
             table->buckets[index].state = STATE_OCCUPIED;
+            table->buckets[index].distance = distance;
             table->count++;
             return val;
         }
@@ -120,9 +122,9 @@ null_t *ht_insert(hash_table_t *table, null_t *key, null_t *val)
         if (table->buckets[index].distance < distance)
         {
             // Swap places
-            null_t *temp_key = table->buckets[index].key;
-            null_t *temp_val = table->buckets[index].val;
-            u64_t temp_distance = table->buckets[index].distance;
+            temp_key = table->buckets[index].key;
+            temp_val = table->buckets[index].val;
+            temp_distance = table->buckets[index].distance;
 
             table->buckets[index].key = key;
             table->buckets[index].val = val;
@@ -271,7 +273,7 @@ bool_t ht_update(hash_table_t *table, null_t *key, null_t *val)
 
 /*
  * Returns the rf_object of the node with the given key.
- * Returns NULL if the key does not exist.
+ * Returns -1 if the key does not exist.
  */
 null_t *ht_get(hash_table_t *table, null_t *key)
 {
@@ -289,5 +291,5 @@ null_t *ht_get(hash_table_t *table, null_t *key)
         distance++;
     }
 
-    return (null_t *)-1;
+    return (null_t *)-127;
 }
