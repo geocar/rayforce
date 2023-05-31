@@ -107,6 +107,7 @@
         }                                     \
     }
 
+i64_t size_of_val(i8_t type);
 rf_object_t list_flatten(rf_object_t *object);
 i64_t vector_find(rf_object_t *vector, rf_object_t *key);
 rf_object_t vector_get(rf_object_t *vector, i64_t index);
