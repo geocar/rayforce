@@ -48,71 +48,90 @@ rf_object_t rf_til_i64(rf_object_t *x)
     return vec;
 }
 
+u64_t trim_hash(null_t *val)
+{
+    i64_t key = (i64_t)val;
+    return (u64_t)(key >> 32);
+}
+
 rf_object_t rf_distinct_I64(rf_object_t *x)
 {
-    // i32_t i, j = 0, mask_size;
-    // i64_t min, max, l = x->adt->len, *xi = as_vector_i64(x), *vi;
-    // rf_object_t mask, vec;
-    // bool_t *m;
+#define normalize(k) ((u64_t)(k - min))
 
-    // if (l == 0)
-    //     return vector_i64(0);
-
-    // if (x->adt->attrs & VEC_ATTR_DISTINCT)
-    //     return rf_object_clone(x);
-
-    // max = min = xi[0];
-
-    // for (i = 0; i < l; i++)
-    // {
-    //     if (xi[i] < min)
-    //         min = xi[i];
-    //     else if (xi[i] > max)
-    //         max = xi[i];
-    // }
-
-    // mask_size = max - min + 1;
-
-    // mask = vector_bool(mask_size);
-    // m = as_vector_bool(&mask);
-    // memset(m, 0, mask_size);
-
-    // vec = vector_i64(l);
-    // vi = as_vector_i64(&vec);
-
-    // for (i = 0; i < l; i++)
-    // {
-    //     if (!m[xi[i]])
-    //     {
-    //         vi[j++] = xi[i];
-    //         m[xi[i]] = true;
-    //     }
-    // }
-
-    // rf_object_free(&mask);
-    // vector_shrink(&vec, j);
-
-    i64_t i, j = 0, xl = x->adt->len, *iv1 = as_vector_i64(x), *ov;
-    rf_object_t vec;
+    u64_t i, j = 0, xl = x->adt->len;
+    i64_t n, range, min, max, *iv1 = as_vector_i64(x), *ov;
+    rf_object_t mask, vec;
+    bool_t *m;
     ht_t *ht;
     bucket_t *b;
 
-    ht = ht_new(xl, i64_hash, i64_cmp);
+    if (xl == 0)
+        return vector_i64(0);
+
+    if (x->adt->attrs & VEC_ATTR_DISTINCT)
+        return rf_object_clone(x);
+
+    max = min = iv1[0];
 
     for (i = 0; i < xl; i++)
-        ht_insert(ht, (null_t *)(iv1[i]), (null_t *)i);
+    {
+        if (iv1[i] < min)
+            min = iv1[i];
+        else if (iv1[i] > max)
+            max = iv1[i];
+    }
 
-    vec = vector_i64(ht->count);
-    ov = as_vector_i64(&vec);
+    range = max - min + 1;
+
+    // if range fits in 64 mb, use vector positions instead of hash table
+    if (range < 1024 * 1024 * 64)
+    {
+        mask = vector_bool(range);
+        m = as_vector_bool(&mask);
+
+        memset(m, 0, range);
+
+        vec = vector_i64(xl);
+        ov = as_vector_i64(&vec);
+
+        for (i = 0; i < xl; i++)
+        {
+            n = normalize(iv1[i]);
+            if (!m[n])
+            {
+                ov[j++] = n;
+                m[n] = true;
+            }
+        }
+
+        rf_object_free(&mask);
+        vector_shrink(&vec, j);
+
+        vec.adt->attrs |= VEC_ATTR_WITHOUT_NULLS | VEC_ATTR_DISTINCT;
+
+        return vec;
+    }
+    debug("ht new");
+    // if (range > 1 << 30)
+    // ht = ht_new(xl, &trim_hash, &i64_cmp);
+    // else
+    ht = ht_new(xl, &i64_hash, &i64_cmp);
+
+    for (i = 0; i < xl; i++)
+        ht_insert(ht, (null_t *)(normalize(iv1[i])), (null_t *)i);
+    debug("insert done");
+    // vec = vector_i64(ht->count);
+    // ov = as_vector_i64(&vec);
 
     i = j = 0;
-    while ((b = ht_next_bucket(ht, &i)))
-        ov[j++] = (i64_t)b->key;
-
+    // while ((b = ht_next_bucket(ht, &i)))
+    //     ov[j++] = (i64_t)b->key;
+    debug("search done");
     ht_free(ht);
 
-    return vec;
+    return i64(0);
 }
+
 rf_object_t rf_group_I64(rf_object_t *x)
 {
     i64_t i, j = 0, n = 0, l, xl = x->adt->len, *iv1 = as_vector_i64(x), *kv;
@@ -125,7 +144,7 @@ rf_object_t rf_group_I64(rf_object_t *x)
     vals = list(xl);
     vv = as_list(&vals);
 
-    ht = ht_new(xl, i64_hash, i64_cmp);
+    ht = ht_new(xl, &i64_hash, &i64_cmp);
 
     for (i = 0; i < xl; i++)
     {
@@ -139,20 +158,20 @@ rf_object_t rf_group_I64(rf_object_t *x)
             v.adt->len = 1;
             vv[j++] = v;
         }
-        // else
-        // {
-        //     l = vv[n].adt->len;
-        //     if (l < cap)
-        //         as_vector_i64(&vv[n])[l] = i;
-        //     else
-        //     {
-        //         cap *= 2;
-        //         vector_grow(&vv[n], cap);
-        //         as_vector_i64(&vv[n])[l] = i;
-        //     }
+        else
+        {
+            l = vv[n].adt->len;
+            if (l < cap)
+                as_vector_i64(&vv[n])[l] = i;
+            else
+            {
+                cap *= 2;
+                vector_grow(&vv[n], cap);
+                as_vector_i64(&vv[n])[l] = i;
+            }
 
-        //     vv[n].adt->len = l + 1;
-        // }
+            vv[n].adt->len = l + 1;
+        }
     }
 
     ht_free(ht);

@@ -61,7 +61,7 @@ null_t rehash(ht_t *table)
     // Double the table size.
     table->size *= 2;
     table->buckets = (bucket_t *)rf_malloc(table->size * sizeof(struct bucket_t));
-    memset(table->buckets, 0, sizeof(bucket_t) * table->size);
+    memset(table->buckets, 0, table->size * sizeof(struct bucket_t));
 
     for (i = 0; i < old_size; i++)
     {
