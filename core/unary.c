@@ -111,18 +111,17 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
     //     return vec;
     // }
 
-    debug("START!!!!!!!!!!!!!!!!!!!!!!!!");
-
     ht = ht_new(xl, &i64_hash, &i64_cmp);
 
     for (i = 0; i < xl; i++)
-        ht_insert(ht, iv1[i], i);
+        ht_insert(ht, normalize(iv1[i]), i);
 
     vec = vector_i64(ht->count);
-    debug("HT SIZE: %d", ht->count);
+    ov = as_vector_i64(&vec);
     i = j = n = 0;
-    // for (; n != NULL_I64; n = ht_next_key(ht, &i))
-    //     as_vector_i64(&vec)[j++] = n + min;
+
+    while ((n = ht_next_key(ht, &i)) != NULL_I64)
+        ov[j++] = n + min;
 
     ht_free(ht);
 

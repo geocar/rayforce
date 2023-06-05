@@ -33,6 +33,7 @@
 
 ht_t *ht_new(i64_t size, u64_t (*hasher)(i64_t a), i32_t (*compare)(i64_t a, i64_t b))
 {
+    size = next_power_of_two_u64(size);
     i64_t i, *kv;
     ht_t *table = (ht_t *)rf_malloc(sizeof(struct ht_t));
 
@@ -85,23 +86,32 @@ null_t rehash(ht_t *table)
     rf_object_free(&old_vals);
 }
 
-// null_t rehash_with(ht_t *table, null_t *seed, null_t *(*func)(null_t *key, null_t *val, null_t *seed, bucket_t *bucket))
-// {
-//     u64_t i, old_size = table->size;
-//     bucket_t *old_buckets = table->buckets;
+null_t rehash_with(ht_t *table, null_t *seed, i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
+{
+    i64_t i, old_size = table->size;
+    rf_object_t old_keys = table->keys;
+    rf_object_t old_vals = table->vals;
+    i64_t *ok = as_vector_i64(&old_keys), *ov = as_vector_i64(&old_vals), *kv;
 
-//     // Double the table size.
-//     table->size *= 2;
-//     table->buckets = (bucket_t *)rf_malloc(table->size * sizeof(struct bucket_t));
+    // Double the table size.
+    table->size *= 2;
+    table->keys = vector_i64(table->size);
+    table->vals = vector_i64(table->size);
 
-//     for (i = 0; i < old_size; i++)
-//     {
-//         if (old_buckets[i].state == STATE_OCCUPIED)
-//             ht_insert_with(table, old_buckets[i].key, old_buckets[i].val, seed, func);
-//     }
+    for (i = 0; i < old_size; i++)
+    {
+        if (as_vector_i64(&old_keys)[i] != NULL_I64)
+            ht_insert_with(table, ok[i], ov[i], seed, func);
+    }
 
-//     rf_free(old_buckets);
-// }
+    kv = as_vector_i64(&table->keys);
+
+    for (; i < table->size; i++)
+        kv[i] = NULL_I64;
+
+    rf_object_free(&old_keys);
+    rf_object_free(&old_vals);
+}
 
 /*
  * Inserts new node or returns existing node.
@@ -117,7 +127,6 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
     i64_t *vals = as_vector_i64(&table->vals);
     for (i = index; i < size; i++)
     {
-        debug("INDEX: %lld I: %lld", index);
         if (keys[i] != NULL_I64)
         {
             if (table->compare(keys[i], key) == 0)
@@ -126,14 +135,12 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
             continue;
         }
 
-        debug("INSERT: %d %lld", i, key);
         keys[i] = key;
         vals[i] = val;
         table->count++;
         return val;
     }
 
-    debug("REHASH!!!!");
     rehash(table);
     return ht_insert(table, key, val);
 }
@@ -165,9 +172,8 @@ i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
         return func(key, val, seed, &keys[i], &vals[i]);
     }
 
-    // rehash(table);
-    // return ht_insert(table, key, val);
-    panic("Hash table is full");
+    rehash_with(table);
+    return ht_insert(table, key, val);
 }
 
 /*
@@ -295,7 +301,6 @@ i64_t ht_get(ht_t *table, i64_t key)
 i64_t ht_next_key(ht_t *table, i64_t *index)
 {
     i64_t *keys = as_vector_i64(&table->keys), i;
-    debug("INMDEX: %lld", *index);
     while (*index < table->size)
     {
         if (keys[*index] != NULL_I64)
