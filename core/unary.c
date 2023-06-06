@@ -106,7 +106,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
             if (!(m[p] & w))
             {
                 m[p] |= w;
-                ov[j++] = n + min;
+                ov[j++] = iv1[i];
             }
         }
 
@@ -124,8 +124,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
 
     for (i = 0; i < xl; i++)
     {
-        // n = normalize(iv1[i]);
-        n = iv1[i];
+        n = normalize(iv1[i]);
         if (!ht_update(ht, n, 0))
             ov[j++] = iv1[i];
     }
