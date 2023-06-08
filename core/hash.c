@@ -117,6 +117,7 @@ null_t rehash_with(ht_t *table, null_t *seed, i64_t (*func)(i64_t key, i64_t val
  */
 i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
 {
+entry:
     i32_t i = 0, size = table->size;
     i64_t factor = table->size - 1,
           index = table->hasher(key) & factor;
@@ -129,18 +130,23 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
         {
             if (table->compare(keys[i], key) == 0)
                 return vals[i];
-
-            continue;
         }
+        else
+        {
+            keys[i] = key;
+            vals[i] = val;
+            table->count++;
 
-        keys[i] = key;
-        vals[i] = val;
-        table->count++;
-        return val;
+            // Check if rehash is necessary.
+            if ((f64_t)table->count / table->size > 0.7)
+                rehash(table);
+
+            return val;
+        }
     }
 
     rehash(table);
-    return ht_insert(table, key, val);
+    goto entry;
 }
 
 /*
@@ -149,6 +155,7 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
 i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
                      i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
 {
+entry:
     i32_t i, size = table->size;
     u64_t factor = table->size - 1,
           index = table->hasher(key) & factor;
@@ -162,17 +169,21 @@ i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
         {
             if (table->compare(keys[i], key) == 0)
                 return vals[i];
-
-            continue;
         }
+        else
+        {
+            table->count++;
 
-        table->count++;
-        return func(key, val, seed, &keys[i], &vals[i]);
+            // Check if rehash is necessary.
+            if ((f64_t)table->count / table->size > 0.7)
+                rehash_with(table, seed, func);
+
+            return func(key, val, seed, &keys[i], &vals[i]);
+        }
     }
 
     rehash_with(table, seed, func);
-
-    return ht_insert(table, key, val);
+    goto entry;
 }
 
 /*
@@ -181,6 +192,7 @@ i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
  */
 bool_t ht_upsert(ht_t *table, i64_t key, i64_t val)
 {
+entry:
     i32_t i, size = table->size;
     u64_t factor = table->size - 1,
           index = table->hasher(key) & factor;
@@ -197,20 +209,23 @@ bool_t ht_upsert(ht_t *table, i64_t key, i64_t val)
                 vals[i] = val;
                 return true;
             }
-
-            continue;
         }
+        else
+        {
+            keys[i] = key;
+            vals[i] = val;
+            table->count++;
 
-        keys[i] = key;
-        vals[i] = val;
-        table->count++;
+            // Check if rehash is necessary.
+            if ((f64_t)table->count / table->size > 0.7)
+                rehash(table);
 
-        return false;
+            return false;
+        }
     }
 
     rehash(table);
-
-    return ht_upsert(table, key, val);
+    goto entry;
 }
 
 /*
@@ -219,6 +234,7 @@ bool_t ht_upsert(ht_t *table, i64_t key, i64_t val)
 bool_t ht_upsert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
                       i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
 {
+entry:
     i32_t i, size = table->size;
     u64_t factor = table->size - 1,
           index = table->hasher(key) & factor;
@@ -235,20 +251,23 @@ bool_t ht_upsert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
                 func(key, val, seed, &keys[i], &vals[i]);
                 return true;
             }
-
-            continue;
         }
+        else
+        {
+            keys[i] = key;
+            vals[i] = val;
+            table->count++;
 
-        keys[i] = key;
-        vals[i] = val;
-        table->count++;
+            // Check if rehash is necessary.
+            if ((f64_t)table->count / table->size > 0.7)
+                rehash_with(table, seed, func);
 
-        return false;
+            return false;
+        }
     }
 
     rehash_with(table, seed, func);
-
-    return ht_upsert_with(table, key, val, seed, func);
+    goto entry;
 }
 
 /*

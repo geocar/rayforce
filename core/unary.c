@@ -30,6 +30,7 @@
 #include "sort.h"
 #include "vector.h"
 #include "guid.h"
+#include "set.h"
 
 rf_object_t rf_til_i64(rf_object_t *x)
 {
@@ -61,6 +62,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
     i64_t i, j = 0, p = 0, w = 0, xl = x->adt->len;
     i64_t n = 0, range, min, max, *m, *iv1 = as_vector_i64(x), *ov;
     rf_object_t mask, vec;
+    set_t *set;
 
     if (xl == 0)
         return vector_i64(0);
@@ -69,9 +71,6 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
         return rf_object_clone(x);
 
     max = min = iv1[0];
-
-    vec = vector_i64(xl);
-    ov = as_vector_i64(&vec);
 
     for (i = 0; i < xl; i++)
     {
@@ -85,6 +84,9 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
 
     if (range < MAX_LINEAR_VALUE)
     {
+        vec = vector_i64(xl);
+        ov = as_vector_i64(&vec);
+
         mask = vector_i64(range / 64);
         m = as_vector_i64(&mask);
 
@@ -113,15 +115,15 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
         return vec;
     }
 
-    // else create open addressing hash set based on bitvec
-    ht_t *ht = ht_new(xl, &kmh_hash, &i64_cmp);
+    vec = vector_i64(xl);
+    ov = as_vector_i64(&vec);
 
+    set = set_new(xl, &kmh_hash, &i64_cmp);
+
+    j = 0;
     for (i = 0; i < xl; i++)
-    {
-        n = normalize(iv1[i]);
-        if (!ht_upsert(ht, n, 0))
+        if (set_insert(set, iv1[i]))
             ov[j++] = iv1[i];
-    }
 
     vec.adt->attrs |= VEC_ATTR_DISTINCT;
 
@@ -145,10 +147,10 @@ i64_t pos_update(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
     UNUSED(key);
     UNUSED(*tkey);
 
-    u32_t idx = (u32_t)*tval;
-    rf_object_t *vv = (rf_object_t *)seed + idx;
-    i64_t *vi = as_vector_i64(vv);
-    vi[vv->adt->len++] = val;
+    // u32_t idx = (u32_t)*tval;
+    // rf_object_t *vv = (rf_object_t *)seed + idx;
+    // i64_t *vi = as_vector_i64(vv);
+    // vi[vv->adt->len++] = val;
 
     return val;
 }
@@ -168,7 +170,11 @@ rf_object_t rf_group_I64(rf_object_t *x)
 
     // calculate counts for each key
     for (i = 0; i < xl; i++)
+    {
+        if (iv1[i] == NULL_I64)
+            panic("NULL_I64");
         ht_upsert_with(ht, iv1[i], 1, NULL, &cnt_update);
+    }
 
     // allocate vectors of positions for each key
     ek = as_vector_i64(&ht->keys);
