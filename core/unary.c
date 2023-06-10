@@ -55,7 +55,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
 #define normalize(k) ((u64_t)(k - min))
 
     i64_t i, j = 0, p = 0, w = 0, xl = x->adt->len;
-    i64_t n = 0, range, min, max, *m, *iv1 = as_vector_i64(x), *ov;
+    i64_t n = 0, range, inrange = 0, min, max, *m, *iv1 = as_vector_i64(x), *ov;
     rf_object_t mask, vec;
     set_t *set;
 
@@ -73,15 +73,18 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
             min = iv1[i];
         else if (iv1[i] > max)
             max = iv1[i];
+
+        if (normalize(iv1[i]) < MAX_LINEAR_VALUE)
+            inrange++;
     }
 
-    range = max - min + 1;
+    vec = vector_i64(xl);
+    ov = as_vector_i64(&vec);
 
-    if (range < MAX_LINEAR_VALUE)
+    // all elements are in range
+    if (inrange == xl)
     {
-        vec = vector_i64(xl);
-        ov = as_vector_i64(&vec);
-
+        range = max - min + 1;
         mask = vector_i64(range / 64);
         m = as_vector_i64(&mask);
 
@@ -102,28 +105,63 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
         }
 
         rf_object_free(&mask);
-
         vector_shrink(&vec, j);
-
         vec.adt->attrs |= VEC_ATTR_DISTINCT;
 
         return vec;
     }
 
-    set = set_new(xl, &kmh_hash, &i64_cmp);
-    vec = vector_i64(xl);
-    ov = as_vector_i64(&vec);
-
-    for (i = 0; i < xl; i++)
+    // two thirds of elements are in range
+    if (inrange > xl / 3)
     {
-        if (set_insert(set, iv1[i]))
-            ov[j++] = iv1[i];
+        range = MAX_LINEAR_VALUE;
+        mask = vector_i64(range / 64);
+        m = as_vector_i64(&mask);
+
+        for (i = 0; i < range / 64; i++)
+            m[i] = 0;
+
+        // create hash set those elements are not in range
+        set = set_new(xl - inrange, &kmh_hash, &i64_cmp);
+
+        for (i = 0; i < xl; i++)
+        {
+            n = normalize(iv1[i]);
+            if (n < MAX_LINEAR_VALUE)
+            {
+                p = n / 64;
+                w = 1ull << (n & 63);
+
+                if (!(m[p] & w))
+                {
+                    m[p] |= w;
+                    ov[j++] = iv1[i];
+                }
+            }
+            else
+            {
+                if (set_insert(set, n))
+                    ov[j++] = iv1[i];
+            }
+        }
+
+        vec.adt->attrs |= VEC_ATTR_DISTINCT;
+        vector_shrink(&vec, j);
+        rf_object_free(&mask);
+        set_free(set);
+
+        return vec;
     }
 
+    // most of elements are not in range
+    set = set_new(xl, &kmh_hash, &i64_cmp);
+
+    for (i = 0; i < xl; i++)
+        if (set_insert(set, iv1[i]))
+            ov[j++] = iv1[i];
+
     vec.adt->attrs |= VEC_ATTR_DISTINCT;
-
     vector_shrink(&vec, j);
-
     set_free(set);
 
     return vec;
@@ -144,8 +182,15 @@ i64_t pos_update(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
     UNUSED(key);
     UNUSED(*tkey);
 
-    // u32_t idx = (u32_t)*tval;
-    // rf_object_t *vv = (rf_object_t *)seed + idx;
+    // u32_t sz = (u32_t)*tval;
+    // rf_object_t *vv = (rf_object_t *)seed;
+    rf_object_t v = vector_i64(1);
+    // i64_t *vi = as_vector_i64(&v);
+    // vi[0] = val;
+    // v.adt->len = 1;
+    // *vv = v;
+
+    // rf_object_t *vv = (rf_object_t *)tval;
     // i64_t *vi = as_vector_i64(vv);
     // vi[vv->adt->len++] = val;
 
@@ -154,7 +199,7 @@ i64_t pos_update(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
 
 rf_object_t rf_group_I64(rf_object_t *x)
 {
-    i64_t i, j = 0, l, xl = x->adt->len, *iv1 = as_vector_i64(x), *kv, *ek, *ev;
+    i64_t i, j = 0, l, xl = x->adt->len, *iv1 = as_vector_i64(x), *kv;
     rf_object_t keys, vals, *vv, v;
     ht_t *ht;
 
@@ -165,30 +210,22 @@ rf_object_t rf_group_I64(rf_object_t *x)
         ht_upsert_with(ht, iv1[i], 1, NULL, &cnt_update);
 
     keys = vector_i64(ht->count);
-    kv = as_vector_i64(&keys);
     vals = list(ht->count);
+
+    kv = as_vector_i64(&keys);
     vv = as_list(&vals);
 
-    // allocate vectors of positions for each key
-    ek = as_vector_i64(&ht->keys);
-    ev = as_vector_i64(&ht->vals);
-    l = ht->size;
-
-    for (i = 0; i < l; i++)
+    for (i = 0; i < ht->count; i++)
     {
-        if (ek[i] == NULL_I64)
-            continue;
-
-        kv[j] = ek[i];
-        v = vector_i64(ev[i]);
-        v.adt->len = 0;
-        ev[i] = j;
-        vv[j++] = v;
+        // vv[i] = vector_i64(0);
     }
 
     // finally, fill vectors with positions
     for (i = 0; i < xl; i++)
-        ht_upsert_with(ht, iv1[i], i, vv, &pos_update);
+    {
+        if (!ht_upsert_with(ht, iv1[i], i, vv + j, &pos_update))
+            j++;
+    }
 
     ht_free(ht);
 

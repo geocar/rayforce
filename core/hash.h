@@ -49,6 +49,9 @@ i64_t   ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
 bool_t  ht_upsert(ht_t *table, i64_t key, i64_t val);
 bool_t  ht_upsert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
                   i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval));
+bool_t ht_upsert_with2(ht_t *table, i64_t key, i64_t val, null_t *seed,
+                  i64_t (*ifunc)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval),
+                  i64_t (*ufunc)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval));
 i64_t   ht_get(ht_t *table, i64_t key);
 bool_t ht_next_entry(ht_t *table, i64_t **k, i64_t **v, i64_t *index);
 // clang-format on

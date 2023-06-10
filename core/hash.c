@@ -64,47 +64,40 @@ null_t ht_rehash(ht_t *table)
     i64_t i, old_size = table->size;
     rf_object_t old_keys = table->keys;
     rf_object_t old_vals = table->vals;
-    i64_t *ok = as_vector_i64(&old_keys), *ov = as_vector_i64(&old_vals), *kv;
+    i64_t *ok = as_vector_i64(&old_keys), *ov = as_vector_i64(&old_vals), *nk, *nv, key, val, factor, index;
 
     // Double the table size.
     table->size *= 2;
+    debug("rehashing to %lld\n", table->size);
     table->keys = vector_i64(table->size);
     table->vals = vector_i64(table->size);
-    kv = as_vector_i64(&table->keys);
+    factor = table->size - 1;
+
+    nk = as_vector_i64(&table->keys);
+    nv = as_vector_i64(&table->vals);
 
     for (i = 0; i < table->size; i++)
-        kv[i] = NULL_I64;
+        nk[i] = NULL_I64;
 
     for (i = 0; i < old_size; i++)
     {
         if (ok[i] != NULL_I64)
-            ht_insert(table, ok[i], ov[i]);
-    }
+        {
+            key = ok[i];
+            val = ov[i];
+            index = table->hasher(key) & factor;
 
-    rf_object_free(&old_keys);
-    rf_object_free(&old_vals);
-}
+            // Linear probing.
+            while (nk[index] != NULL_I64)
+            {
+                if (index == table->size)
+                    panic("ht is full!!");
+                index = index + 1;
+            }
 
-null_t ht_rehash_with(ht_t *table, null_t *seed, i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
-{
-    i64_t i, old_size = table->size;
-    rf_object_t old_keys = table->keys;
-    rf_object_t old_vals = table->vals;
-    i64_t *ok = as_vector_i64(&old_keys), *ov = as_vector_i64(&old_vals), *kv;
-
-    // Double the table size.
-    table->size *= 2;
-    table->keys = vector_i64(table->size);
-    table->vals = vector_i64(table->size);
-    kv = as_vector_i64(&table->keys);
-
-    for (i = 0; i < table->size; i++)
-        kv[i] = NULL_I64;
-
-    for (i = 0; i < old_size; i++)
-    {
-        if (ok[i] != NULL_I64)
-            ht_insert_with(table, ok[i], ov[i], seed, func);
+            nk[index] = key;
+            nv[index] = val;
+        }
     }
 
     rf_object_free(&old_keys);
@@ -125,6 +118,7 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
 
         i64_t *keys = as_vector_i64(&table->keys);
         i64_t *vals = as_vector_i64(&table->vals);
+
         for (i = index; i < size; i++)
         {
             if (keys[i] != NULL_I64)
@@ -178,13 +172,13 @@ i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
 
                 // Check if ht_rehash is necessary.
                 if ((f64_t)table->count / table->size > 0.7)
-                    ht_rehash_with(table, seed, func);
+                    ht_rehash(table);
 
                 return func(key, val, seed, &keys[i], &vals[i]);
             }
         }
 
-        ht_rehash_with(table, seed, func);
+        ht_rehash(table);
     }
 }
 
@@ -264,13 +258,50 @@ bool_t ht_upsert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
 
                 // Check if ht_rehash is necessary.
                 if ((f64_t)table->count / table->size > 0.7)
-                    ht_rehash_with(table, seed, func);
+                    ht_rehash(table);
 
                 return false;
             }
         }
 
-        ht_rehash_with(table, seed, func);
+        ht_rehash(table);
+    }
+}
+
+bool_t ht_upsert_with2(ht_t *table, i64_t key, i64_t val, null_t *seed,
+                       i64_t (*ifunc)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval),
+                       i64_t (*ufunc)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
+{
+    while (true)
+    {
+        i32_t i, size = table->size;
+        u64_t factor = table->size - 1,
+              index = table->hasher(key) & factor;
+
+        i64_t *keys = as_vector_i64(&table->keys);
+        i64_t *vals = as_vector_i64(&table->vals);
+
+        // Check if ht_rehash is necessary.
+        if ((f64_t)table->count / table->size > 0.7)
+            ht_rehash(table);
+
+        for (i = index; i < size; i++)
+        {
+            if (keys[i] == NULL_I64)
+            {
+                ifunc(key, val, seed, &keys[i], &vals[i]);
+                table->count++;
+                return false;
+            }
+
+            if (table->compare(keys[i], key) == 0)
+            {
+                ufunc(key, val, seed, &keys[i], &vals[i]);
+                return true;
+            }
+        }
+
+        ht_rehash(table);
     }
 }
 
