@@ -194,33 +194,19 @@ null_t *rf_malloc(u64_t size)
         return NULL;
 
     // block is a 32 bytes block
-    if (size <= 32)
+    if (size <= 32 && _ALLOC->freelist32)
     {
-        if (_ALLOC->freelist32 != NULL)
-        {
-            block = _ALLOC->freelist32;
-            _ALLOC->freelist32 = *(null_t **)block;
-            return block;
-        }
-        else
-        {
-            debug("freelist32 is NULL\n");
-        }
+        block = _ALLOC->freelist32;
+        _ALLOC->freelist32 = *(null_t **)block;
+        return block;
     }
 
     // block is a 64 bytes block
-    if (size <= 64)
+    if (size <= 64 && _ALLOC->freelist64)
     {
-        if (_ALLOC->freelist64 != NULL)
-        {
-            block = _ALLOC->freelist64;
-            _ALLOC->freelist64 = *(null_t **)block;
-            return block;
-        }
-        else
-        {
-            debug("freelist64 is NULL\n");
-        }
+        block = _ALLOC->freelist64;
+        _ALLOC->freelist64 = *(null_t **)block;
+        return block;
     }
 
     capacity = size + sizeof(struct node_t);

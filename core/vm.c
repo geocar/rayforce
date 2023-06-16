@@ -225,9 +225,7 @@ op_timer_set:
     dispatch();
 op_timer_get:
     vm->ip++;
-    x1 = stack_pop(vm);
     stack_push(vm, f64((((f64_t)(clock() - vm->timer)) / CLOCKS_PER_SEC) * 1000));
-    rf_object_free(&x1);
     dispatch();
 op_call0:
     b = vm->ip++;

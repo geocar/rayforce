@@ -596,6 +596,9 @@ i8_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t ar
         // additional one for ctx
         func->stack_size += 2;
 
+        if (!has_consumer)
+            push_opcode(cc, car->id, code, OP_POP);
+
         return type;
     }
 
