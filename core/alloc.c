@@ -339,7 +339,7 @@ null_t rf_free(null_t *block)
 null_t *rf_realloc(null_t *block, u64_t new_size)
 {
     node_t *node, *buddy;
-    u64_t i, size, order;
+    u64_t i, capacity, size, order;
     null_t *new_block, *base;
 
     if (block == NULL)
@@ -384,7 +384,8 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
     }
 
     node = ((node_t *)block) - 1;
-    size = node->size - sizeof(struct node_t);
+    capacity = node->size;
+    size = capacity - sizeof(struct node_t);
 
     if (new_size == size)
         return block;
@@ -403,7 +404,7 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
     }
 
     // shrink
-    i = orderof(size);
+    i = orderof(capacity);
     order = orderof(new_size + sizeof(struct node_t));
 
     // split until i == order
