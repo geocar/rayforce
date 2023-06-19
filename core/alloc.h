@@ -29,7 +29,7 @@
 
 // clang-format off
 #define MIN_ORDER        6  // 2^6  = 64 bytes
-#define MAX_ORDER        28 // 2^28 = 256MB
+#define MAX_ORDER        25 // 2^25 = 32MB
 #define MAX_POOL_ORDER   36 // 2^36 = 64GB
 #define MIN_ALLOC        (1ull << MIN_ORDER)
 #define MAX_ALLOC        (1ull << MAX_ORDER)
@@ -72,6 +72,7 @@ CASSERT(sizeof(struct alloc_t) % PAGE_SIZE == 0, alloc_h)
 extern null_t   *rf_malloc(u64_t size);
 extern null_t   *rf_realloc(null_t *block, u64_t size);
 extern null_t    rf_free(null_t *block);
+extern null_t    rf_alloc_mrequest(u64_t size);
 extern alloc_t   rf_alloc_init();
 extern alloc_t   rf_alloc_get();
 extern null_t    rf_alloc_cleanup();

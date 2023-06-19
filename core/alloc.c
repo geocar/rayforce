@@ -57,7 +57,7 @@ null_t print_blocks()
     }
 }
 
-null_t *rf_alloc_add_pool(u32_t size)
+null_t *rf_alloc_add_pool(u64_t size)
 {
     null_t *pool = mmap_malloc(size);
     node_t *node = (node_t *)pool;
@@ -180,6 +180,8 @@ null_t *rf_realloc(null_t *ptr, u64_t new_size)
 {
     return realloc(ptr, new_size);
 }
+
+null_t rf_alloc_mrequest(u64_t size) {}
 
 #else
 
@@ -395,6 +397,33 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
     rf_free(block);
 
     return new_block;
+}
+
+null_t rf_alloc_mrequest(u64_t size)
+{
+    u32_t order;
+    node_t *node;
+    u64_t capacity;
+
+    if (size <= 64)
+        return;
+
+    capacity = size + sizeof(struct node_t);
+
+    // calculate minimal order for this size
+    order = orderof(capacity);
+
+    if (order > MAX_POOL_ORDER)
+        return;
+
+    if (_ALLOC->avail & (AVAIL_MASK << order))
+        return;
+
+    // add a new pool of requested size
+    node = (node_t *)rf_alloc_add_pool(capacity);
+    node->next = NULL;
+    _ALLOC->freelist[order] = node;
+    _ALLOC->avail |= 1 << order;
 }
 
 #endif
