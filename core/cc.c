@@ -609,9 +609,10 @@ i8_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t
 {
     UNUSED(has_consumer);
 
-    i8_t type;
-    i64_t lbl1, lbl2;
-    rf_object_t *car, *params, key, val, table, *keys, *vals;
+    i8_t type, i;
+    i64_t lbl1, lbl2, usertype;
+    rf_object_t *car, *params, key, val, *keys, *vals, *tkeys, *tvals, mtkeys, mtvals, tabletype;
+    env_t *env = &runtime_get()->env;
 
     car = &as_list(object)[0];
     if (car->i64 == symbol("select").i64)
@@ -636,6 +637,20 @@ i8_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t
         if (type != TYPE_TABLE)
             cerr(cc, car->id, ERR_LENGTH, "'select': 'from' is required");
 
+        mtkeys = vector_symbol(3);
+        mtvals = vector_symbol(3);
+
+        as_vector_symbol(&mtkeys)[0] = symbol("Symbol").i64;
+        as_vector_symbol(&mtvals)[0] = symbol("Symbol").i64;
+        as_vector_symbol(&mtkeys)[1] = symbol("Price").i64;
+        as_vector_symbol(&mtvals)[1] = symbol("I64").i64;
+        as_vector_symbol(&mtkeys)[2] = symbol("Volume").i64;
+        as_vector_symbol(&mtvals)[2] = symbol("I64").i64;
+
+        tabletype = dict(mtkeys, mtvals);
+        usertype = env_add_usertype(env, tabletype);
+        cc->tabletype = usertype;
+
         // compile filters
         key = symbol("where");
         val = dict_get(params, &key);
@@ -654,6 +669,7 @@ i8_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t
         else
             rf_object_free(&val);
 
+        cc->tabletype = NULL_I64;
         return TYPE_TABLE;
         // --
     }
@@ -1045,7 +1061,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, i8_t rettype, rf_object_
 {
     cc_t cc = {
         .top_level = top,
-        .tabletype = NULL,
+        .tabletype = NULL_I64,
         .debuginfo = debuginfo,
         .function = function(rettype, args, dict(vector_symbol(0), vector_i64(0)), string(0),
                              debuginfo_new(debuginfo->filename, name)),

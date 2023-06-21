@@ -659,6 +659,7 @@ rf_object_t parse_dict(parser_t *parser)
         {
             rf_object_free(&keys);
             rf_object_free(&vals);
+            rf_object_free(&token);
             err = error(ERR_PARSE, "Expected ':'");
             err.id = token.id;
             return err;
