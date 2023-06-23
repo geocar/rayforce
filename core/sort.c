@@ -73,74 +73,26 @@ i64_t partition_desc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
 
 null_t quick_sort_asc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
 {
-    i64_t *stack = (i64_t *)rf_malloc(high - low + 1);
-    i64_t top = -1, p;
+    i64_t pi;
 
-    stack[++top] = low;
-    stack[++top] = high;
-
-    // Keep popping from stack while it's not empty
-    while (top >= 0)
+    if (low < high)
     {
-        // Pop high and low
-        high = stack[top--];
-        low = stack[top--];
-
-        // Partition the array
-        p = partition_asc(array, indices, low, high);
-
-        // If there are elements on the left side of partition, push left side to stack
-        if (p - 1 > low)
-        {
-            stack[++top] = low;
-            stack[++top] = p - 1;
-        }
-
-        // If there are elements on the right side of partition, push right side to stack
-        if (p + 1 < high)
-        {
-            stack[++top] = p + 1;
-            stack[++top] = high;
-        }
+        pi = partition_asc(array, indices, low, high);
+        quick_sort_asc(array, indices, low, pi - 1);
+        quick_sort_asc(array, indices, pi + 1, high);
     }
-
-    rf_free(stack);
 }
 
 null_t quick_sort_desc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
 {
-    i64_t *stack = (i64_t *)rf_malloc(high - low + 1);
-    i64_t top = -1, p;
+    i64_t pi;
 
-    stack[++top] = low;
-    stack[++top] = high;
-
-    // Keep popping from stack while it's not empty
-    while (top >= 0)
+    if (low < high)
     {
-        // Pop high and low
-        high = stack[top--];
-        low = stack[top--];
-
-        // Partition the array
-        p = partition_desc(array, indices, low, high);
-
-        // If there are elements on the left side of partition, push left side to stack
-        if (p - 1 > low)
-        {
-            stack[++top] = low;
-            stack[++top] = p - 1;
-        }
-
-        // If there are elements on the right side of partition, push right side to stack
-        if (p + 1 < high)
-        {
-            stack[++top] = p + 1;
-            stack[++top] = high;
-        }
+        pi = partition_desc(array, indices, low, high);
+        quick_sort_desc(array, indices, low, pi - 1);
+        quick_sort_desc(array, indices, pi + 1, high);
     }
-
-    rf_free(stack);
 }
 
 // heap sort
