@@ -117,7 +117,7 @@ env_record_t *find_record(rf_object_t *records, rf_object_t *car, type_t *args, 
             {
                 if (rec->args[j] == TYPE_ANY)
                     match_args++;
-                else if (rec->args[j] == args[j])
+                else if (rec->args[j] == type(args[j]))
                     match_args++;
                 else
                     break;
@@ -673,7 +673,7 @@ type_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32
         rf_object_free(&val);
 
         if (type(type) != TYPE_TABLE)
-            cerr(cc, car->id, ERR_LENGTH, "'select': 'from <Table>' requires");
+            cerr(cc, car->id, ERR_LENGTH, "'select': 'from <Table>' is required");
 
         cc->tabletype = type;
 
@@ -689,7 +689,7 @@ type_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32
             if (type == TYPE_ERROR)
                 return type;
 
-            if (type != -TYPE_BOOL)
+            if (type != TYPE_BOOL)
                 cerr(cc, car->id, ERR_TYPE, "'select': condition must have a Bool result");
         }
         else
@@ -853,7 +853,24 @@ type_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         if (!has_consumer)
             return TYPE_NONE;
 
-        // first find in locals
+        // first try to find in a table columns (if any)
+        if (cc->tabletype != NULL_I64)
+        {
+            u64_t offset = 0;
+
+            push_opcode(cc, object->id, code, OP_LLOAD);
+            push_u64(code, 1 + offset);
+            func->stack_size++;
+            push_opcode(cc, object->id, code, OP_PUSH);
+            push_const(cc, *object);
+            func->stack_size++;
+            push_opcode(cc, object->id, code, OP_CALL2);
+            push_u64(code, rf_get_Table_symbol);
+
+            return TYPE_SYMBOL;
+        }
+
+        // then try to find in locals
         arg_keys = &as_list(&func->locals)[0];
         arg_vals = &as_list(&func->locals)[1];
         id = vector_find(arg_keys, object);
