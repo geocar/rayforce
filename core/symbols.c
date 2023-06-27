@@ -123,7 +123,7 @@ i64_t str_dup(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
     *tkey = (i64_t)symbols->strings_pool;
     *tval = val;
     symbols->strings_pool += len + 1; // +1 for null terminator (buffer is zeroed)
-    return val;
+    return *tkey;
 }
 
 symbols_t *symbols_new()
@@ -162,10 +162,12 @@ i64_t intern_symbol(str_t s, i64_t len)
 {
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t id = symbols->next_sym_id;
-    i64_t id_or_str = ht_insert_with(symbols->str_to_id, (i64_t)&str_slice, id, symbols, &str_dup);
-    // symbol is already interned
-    if (id_or_str != id)
+    str_t p = symbols->strings_pool;
+    i64_t id = symbols->next_sym_id,
+          id_or_str = ht_insert_with(symbols->str_to_id, (i64_t)&str_slice, id, symbols, &str_dup);
+
+    // symbol is already interned (strings pool pointer is not moved)
+    if (p == symbols->strings_pool)
         return id_or_str;
 
     ht_insert(symbols->id_to_str, id, id_or_str);
@@ -177,10 +179,12 @@ i64_t intern_keyword(str_t s, i64_t len)
 {
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t id = symbols->next_kw_id;
-    i64_t id_or_str = ht_insert_with(symbols->str_to_id, (i64_t)&str_slice, id, symbols, &str_dup);
-    // symbol is already interned
-    if (id_or_str != id)
+    str_t p = symbols->strings_pool;
+    i64_t id = symbols->next_kw_id,
+          id_or_str = ht_insert_with(symbols->str_to_id, (i64_t)&str_slice, id, symbols, &str_dup);
+
+    // symbol is already interned (strings pool pointer is not moved)
+    if (p == symbols->strings_pool)
         return id_or_str;
 
     ht_insert(symbols->id_to_str, id, id_or_str);

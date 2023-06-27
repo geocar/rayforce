@@ -28,25 +28,19 @@
 
 rf_object_t rf_get_variable(rf_object_t *x);
 rf_object_t rf_type(rf_object_t *x);
+rf_object_t rf_count(rf_object_t *x);
 rf_object_t rf_til(rf_object_t *x);
 rf_object_t rf_distinct(rf_object_t *x);
 rf_object_t rf_group(rf_object_t *x);
-rf_object_t rf_sum_I64(rf_object_t *x);
-rf_object_t rf_avg_I64(rf_object_t *x);
-rf_object_t rf_min_I64(rf_object_t *x);
-rf_object_t rf_max_I64(rf_object_t *x);
-rf_object_t rf_sum_F64(rf_object_t *x);
-rf_object_t rf_avg_F64(rf_object_t *x);
-rf_object_t rf_min_F64(rf_object_t *x);
-rf_object_t rf_max_F64(rf_object_t *x);
-rf_object_t rf_count(rf_object_t *x);
-rf_object_t rf_not_bool(rf_object_t *x);
-rf_object_t rf_not_Bool(rf_object_t *x);
-rf_object_t rf_iasc_I64(rf_object_t *x);
-rf_object_t rf_idesc_I64(rf_object_t *x);
-rf_object_t rf_asc_I64(rf_object_t *x);
-rf_object_t rf_desc_I64(rf_object_t *x);
-rf_object_t rf_flatten_List(rf_object_t *x);
+rf_object_t rf_sum(rf_object_t *x);
+rf_object_t rf_avg(rf_object_t *x);
+rf_object_t rf_min(rf_object_t *x);
+rf_object_t rf_max(rf_object_t *x);
+rf_object_t rf_not(rf_object_t *x);
+rf_object_t rf_iasc(rf_object_t *x);
+rf_object_t rf_idesc(rf_object_t *x);
+rf_object_t rf_asc(rf_object_t *x);
+rf_object_t rf_desc(rf_object_t *x);
 rf_object_t rf_guid_generate(rf_object_t *x);
 
 #endif

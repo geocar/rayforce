@@ -36,6 +36,14 @@
 #include "env.h"
 #include "group.h"
 
+rf_object_t error_type(type_t type, str_t msg)
+{
+    str_t fmsg = str_fmt(0, "%s: '%s'", msg, env_get_typename(type));
+    rf_object_t err = error(ERR_TYPE, fmsg);
+    rf_free(fmsg);
+    return err;
+}
+
 rf_object_t rf_get_variable(rf_object_t *x)
 {
     return dict_get(&runtime_get()->env.variables, x);
@@ -47,9 +55,23 @@ rf_object_t rf_type(rf_object_t *x)
     return symboli64(t);
 }
 
+rf_object_t rf_count(rf_object_t *x)
+{
+    if (x->type < TYPE_NULL)
+        return i64(1);
+
+    switch (x->type)
+    {
+    case TYPE_FUNCTION:
+        return i64(1);
+    default:
+        return i64(x->adt->len);
+    }
+}
+
 rf_object_t rf_til(rf_object_t *x)
 {
-    if (x->type != -TYPE_I64)
+    if (MTYPE(x->type) != MTYPE(-TYPE_I64))
         return error(ERR_TYPE, "til: expected i64");
 
     i32_t i, l = (i32_t)x->i64;
@@ -83,236 +105,327 @@ rf_object_t rf_group(rf_object_t *x)
     return rf_group_I64(x);
 }
 
-rf_object_t rf_sum_I64(rf_object_t *x)
+rf_object_t rf_sum(rf_object_t *x)
 {
     i32_t i;
-    i64_t l = x->adt->len, sum = 0, *v = as_vector_i64(x);
+    i64_t l, n = 0, isum, *iv;
+    f64_t fsum, *fv;
 
-    for (i = 0; i < l; i++)
-        sum += v[i];
-
-    return i64(sum);
-}
-
-rf_object_t rf_avg_I64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len, sum = 0,
-          *v = as_vector_i64(x), n = 0;
-
-    // vectorized version when we exactly know that there are no nulls
-    if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+    switch (MTYPE(x->type))
     {
-        for (i = 0; i < l; i++)
-            sum += v[i];
-
-        return i64(sum / l);
-    }
-
-    // scalar version
-    for (i = 0; i < l; i++)
-    {
-        if (v[i] ^ NULL_I64)
-            sum += v[i];
-        else
-            n++;
-    }
-
-    return f64((f64_t)sum / (l - n));
-}
-
-rf_object_t rf_min_I64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len, min = 0,
-          *v = as_vector_i64(x);
-
-    if (!l)
-        return i64(NULL_I64);
-
-    // vectorized version when we exactly know that there are no nulls
-    if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
-    {
-        if (x->adt->attrs & VEC_ATTR_ASC)
-            return i64(v[0]);
-        if (x->adt->attrs & VEC_ATTR_DESC)
-            return i64(v[l - 1]);
-        min = v[0];
-        for (i = 1; i < l; i++)
-            if (v[i] < min)
-                min = v[i];
-
-        return i64(min);
-    }
-
-    // scalar version
-    // find first nonnull value
-    for (i = 0; i < l; i++)
-        if (v[i] ^ NULL_I64)
+    case MTYPE(TYPE_I64):
+        l = x->adt->len;
+        iv = as_vector_i64(x);
+        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
         {
-            min = v[i];
-            break;
+            for (i = 0; i < l; i++)
+                isum += iv[i];
+        }
+        else
+        {
+            for (i = 0; i < l; i++)
+            {
+                if (iv[i] ^ NULL_I64)
+                    isum += iv[i];
+            }
         }
 
-    for (i = 0; i < l; i++)
-    {
-        if (v[i] ^ NULL_I64)
-            min = v[i] < min ? v[i] : min;
-    }
+        return i64(isum);
 
-    return i64(min);
-}
+    case MTYPE(TYPE_F64):
+        l = x->adt->len;
+        fv = as_vector_f64(x);
+        for (i = 0; i < l; i++)
+            fsum += fv[i];
 
-rf_object_t rf_max_I64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len, max = x->adt->len ? as_vector_i64(x)[0] : 0, *v = as_vector_i64(x);
+        return f64(fsum);
 
-    if (x->adt->attrs & VEC_ATTR_ASC)
-        return i64(v[l - 1]);
-    if (x->adt->attrs & VEC_ATTR_DESC)
-        return i64(v[0]);
-
-    for (i = 0; i < l; i++)
-        if (v[i] > max)
-            max = v[i];
-
-    return i64(max);
-}
-
-rf_object_t rf_sum_F64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len;
-    f64_t sum = 0, *v = as_vector_f64(x);
-
-    for (i = 0; i < l; i++)
-        sum += v[i];
-
-    return f64(sum);
-}
-
-rf_object_t rf_avg_F64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len;
-    f64_t sum = 0, *v = as_vector_f64(x);
-
-    for (i = 0; i < l; i++)
-        sum += v[i];
-
-    return f64(sum / l);
-}
-
-rf_object_t rf_min_F64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len;
-    f64_t min = x->adt->len ? as_vector_f64(x)[0] : 0, *v = as_vector_f64(x);
-
-    for (i = 0; i < l; i++)
-        if (v[i] < min)
-            min = v[i];
-
-    return f64(min);
-}
-
-rf_object_t rf_max_F64(rf_object_t *x)
-{
-    i32_t i;
-    i64_t l = x->adt->len;
-    f64_t max = x->adt->len ? as_vector_f64(x)[0] : 0, *v = as_vector_f64(x);
-
-    for (i = 0; i < l; i++)
-        if (v[i] > max)
-            max = v[i];
-
-    return f64(max);
-}
-
-rf_object_t rf_count(rf_object_t *x)
-{
-    if (x->type < TYPE_NULL)
-        return i64(1);
-
-    switch (x->type)
-    {
-    case TYPE_FUNCTION:
-        return i64(1);
     default:
-        return i64(x->adt->len);
+        return error_type(x->type, "sum: unsupported type");
     }
 }
 
-rf_object_t rf_not_bool(rf_object_t *x)
-{
-    return bool(!x->bool);
-}
-
-rf_object_t rf_not_Bool(rf_object_t *x)
+rf_object_t rf_avg(rf_object_t *x)
 {
     i32_t i;
-    i64_t l = x->adt->len;
-    rf_object_t res = vector_bool(l);
-    bool_t *iv = as_vector_bool(x), *ov = as_vector_bool(&res);
+    i64_t l, isum, *iv, n = 0;
+    f64_t fsum, *fv;
 
-    for (i = 0; i < l; i++)
-        ov[i] = !iv[i];
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        l = x->adt->len;
+        iv = as_vector_i64(x);
+        isum = 0;
+        // vectorized version when we exactly know that there are no nulls
+        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        {
+            for (i = 0; i < l; i++)
+                isum += iv[i];
+        }
+        else
+        {
+            // scalar version
+            for (i = 0; i < l; i++)
+            {
+                if (iv[i] ^ NULL_I64)
+                    isum += iv[i];
+                else
+                    n++;
+            }
+        }
+        return f64((f64_t)isum / (l - n));
 
-    return res;
+    case MTYPE(TYPE_F64):
+        l = x->adt->len;
+        fv = as_vector_f64(x);
+        fsum = 0;
+        for (i = 0; i < l; i++)
+            fsum += fv[i];
+
+        return f64(fsum / l);
+
+    default:
+        return error_type(x->type, "avg: unsupported type");
+    }
 }
 
-rf_object_t rf_iasc_I64(rf_object_t *x)
+rf_object_t rf_min(rf_object_t *x)
 {
-    return rf_sort_asc(x);
+    i32_t i;
+    i64_t l, imin, *iv;
+    f64_t fmin, *fv;
+
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        l = x->adt->len;
+
+        if (!l)
+            return i64(NULL_I64);
+
+        iv = as_vector_i64(x);
+        imin = iv[0];
+        // vectorized version when we exactly know that there are no nulls
+        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        {
+            if (x->adt->attrs & VEC_ATTR_ASC)
+                return i64(iv[0]);
+            if (x->adt->attrs & VEC_ATTR_DESC)
+                return i64(iv[l - 1]);
+            imin = iv[0];
+            for (i = 1; i < l; i++)
+                if (iv[i] < imin)
+                    imin = iv[i];
+
+            return i64(imin);
+        }
+
+        // scalar version
+        // find first nonnull value
+        for (i = 0; i < l; i++)
+            if (iv[i] ^ NULL_I64)
+            {
+                imin = iv[i];
+                break;
+            }
+
+        for (i = 0; i < l; i++)
+        {
+            if (iv[i] ^ NULL_I64)
+                imin = iv[i] < imin ? iv[i] : imin;
+        }
+
+        return i64(imin);
+
+    case MTYPE(TYPE_F64):
+        l = x->adt->len;
+
+        if (!l)
+            return f64(NULL_F64);
+
+        fv = as_vector_f64(x);
+        fmin = fv[0];
+        // vectorized version when we exactly know that there are no nulls
+        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        {
+            if (x->adt->attrs & VEC_ATTR_ASC)
+                return f64(fv[0]);
+            if (x->adt->attrs & VEC_ATTR_DESC)
+                return f64(fv[l - 1]);
+            fmin = fv[0];
+            for (i = 1; i < l; i++)
+                if (fv[i] < fmin)
+                    fmin = fv[i];
+
+            return f64(fmin);
+        }
+
+        for (i = 0; i < l; i++)
+            fmin = fv[i] < fmin ? fv[i] : fmin;
+
+        return f64(fmin);
+
+    default:
+        return error_type(x->type, "min: unsupported type");
+    }
 }
 
-rf_object_t rf_idesc_I64(rf_object_t *x)
+rf_object_t rf_max(rf_object_t *x)
 {
-    return rf_sort_desc(x);
+    i32_t i;
+    i64_t l, imax, *iv;
+
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        l = x->adt->len;
+
+        if (!l)
+            return i64(NULL_I64);
+
+        iv = as_vector_i64(x);
+        imax = iv[0];
+        // vectorized version when we exactly know that there are no nulls
+        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        {
+            if (x->adt->attrs & VEC_ATTR_ASC)
+                return i64(iv[l - 1]);
+            if (x->adt->attrs & VEC_ATTR_DESC)
+                return i64(iv[0]);
+            imax = iv[0];
+            for (i = 1; i < l; i++)
+                if (iv[i] > imax)
+                    imax = iv[i];
+
+            return i64(imax);
+        }
+
+        // scalar version
+        // find first nonnull value
+        for (i = 0; i < l; i++)
+            if (iv[i] ^ NULL_I64)
+            {
+                imax = iv[i];
+                break;
+            }
+
+        for (i = 0; i < l; i++)
+        {
+            if (iv[i] ^ NULL_I64)
+                imax = iv[i] > imax ? iv[i] : imax;
+        }
+
+        return i64(imax);
+
+    default:
+        return error_type(x->type, "max: unsupported type");
+    }
 }
 
-rf_object_t rf_asc_I64(rf_object_t *x)
+rf_object_t rf_not(rf_object_t *x)
 {
-    rf_object_t idx = rf_iasc_I64(x);
-    i64_t len = x->adt->len, i,
-          *iv = as_vector_i64(x), *ov = as_vector_i64(&idx);
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(-TYPE_BOOL):
+        return bool(!x->bool);
 
-    for (i = 0; i < len; i++)
-        ov[i] = iv[ov[i]];
+    case MTYPE(TYPE_BOOL):
+        i32_t i;
+        i64_t l = x->adt->len;
+        rf_object_t res = vector_bool(l);
+        bool_t *iv = as_vector_bool(x), *ov = as_vector_bool(&res);
+        for (i = 0; i < l; i++)
+            ov[i] = !iv[i];
 
-    idx.adt->attrs |= VEC_ATTR_ASC;
+        return res;
 
-    return idx;
+    default:
+        return error_type(x->type, "not: unsupported type");
+    }
 }
 
-rf_object_t rf_desc_I64(rf_object_t *x)
+rf_object_t rf_iasc(rf_object_t *x)
 {
-    rf_object_t idx = rf_idesc_I64(x);
-    i64_t len = x->adt->len, i,
-          *iv = as_vector_i64(x), *ov = as_vector_i64(&idx);
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        return rf_sort_asc(x);
 
-    for (i = 0; i < len; i++)
-        ov[i] = iv[ov[i]];
-
-    idx.adt->attrs |= VEC_ATTR_DESC;
-
-    return idx;
+    default:
+        return error_type(x->type, "iasc: unsupported type");
+    }
 }
 
-rf_object_t rf_flatten_List(rf_object_t *x)
+rf_object_t rf_idesc(rf_object_t *x)
 {
-    return list_flatten(x);
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        return rf_sort_desc(x);
+
+    default:
+        return error_type(x->type, "idesc: unsupported type");
+    }
+}
+
+rf_object_t rf_asc(rf_object_t *x)
+{
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        rf_object_t idx = rf_sort_asc(x);
+        i64_t len = x->adt->len, i,
+              *iv = as_vector_i64(x), *ov = as_vector_i64(&idx);
+
+        for (i = 0; i < len; i++)
+            ov[i] = iv[ov[i]];
+
+        idx.adt->attrs |= VEC_ATTR_ASC;
+
+        return idx;
+
+    default:
+        return error_type(x->type, "asc: unsupported type");
+    }
+}
+
+rf_object_t rf_desc(rf_object_t *x)
+{
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(TYPE_I64):
+        rf_object_t idx = rf_sort_desc(x);
+        i64_t len = x->adt->len, i,
+              *iv = as_vector_i64(x), *ov = as_vector_i64(&idx);
+
+        for (i = 0; i < len; i++)
+            ov[i] = iv[ov[i]];
+
+        idx.adt->attrs |= VEC_ATTR_DESC;
+
+        return idx;
+
+    default:
+        return error_type(x->type, "desc: unsupported type");
+    }
 }
 
 rf_object_t rf_guid_generate(rf_object_t *x)
 {
-    i64_t i, count = x->i64;
-    rf_object_t vec = vector_guid(count);
-    guid_t *g = as_vector_guid(&vec);
+    switch (MTYPE(x->type))
+    {
+    case MTYPE(-TYPE_I64):
+        i64_t i, count = x->i64;
+        rf_object_t vec = vector_guid(count);
+        guid_t *g = as_vector_guid(&vec);
 
-    for (i = 0; i < count; i++)
-        guid_generate(g + i);
+        for (i = 0; i < count; i++)
+            guid_generate(g + i);
 
-    return vec;
+        return vec;
+
+    default:
+        return error_type(x->type, "guid_generate: unsupported type");
+    }
 }

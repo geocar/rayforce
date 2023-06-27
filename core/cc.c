@@ -91,7 +91,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, rf_object_t args, rf_obj
         rf_object_free(&(c)->function);                               \
         (c)->function = error(t, e);                                  \
         (c)->function.adt->span = debuginfo_get((c)->debuginfo, (i)); \
-        return TYPE_ERROR;                                            \
+        return CC_ERROR;                                              \
     }
 
 #define ccerr(c, i, t, e)                                             \
@@ -101,7 +101,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, rf_object_t args, rf_obj
         (c)->function = error(t, m);                                  \
         rf_free(m);                                                   \
         (c)->function.adt->span = debuginfo_get((c)->debuginfo, (i)); \
-        return TYPE_ERROR;                                            \
+        return CC_ERROR;                                              \
     }
 
 env_record_t *find_record(rf_object_t *records, rf_object_t *car, u32_t *arity)
@@ -231,14 +231,14 @@ cc_result_t cc_compile_fn(bool_t has_consumer, cc_t *cc, rf_object_t *object, u3
     {
         rf_object_free(&cc->function);
         cc->function = fun;
-        return TYPE_ERROR;
+        return CC_ERROR;
     }
 
     push_opcode(cc, object->id, code, OP_PUSH);
     push_const(cc, fun);
     func->stack_size++;
 
-    return TYPE_FUNCTION;
+    return CC_OK;
 }
 
 type_t cc_compile_cond(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
@@ -615,28 +615,7 @@ cc_result_t cc_compile_call(cc_t *cc, rf_object_t *car, u32_t arity)
     str_t err;
 
     if (!rec)
-    {
-        l = get_records_len(records, arity);
-        err = str_fmt(0, "function name/arity mismatch");
-        //     n = o = strlen(err);
-        //     str_fmt_into(&err, &n, &o, 0, ", here are the possible variants:\n");
-
-        //     for (i = 0; i < l; i++)
-        //     {
-        //         rec = get_record(records, arity, i);
-
-        //         if (rec->id == car->i64)
-        //         {
-        //             str_fmt_into(&err, &n, &o, 0, "{'%s'", symbols_get(rec->id));
-        //             for (j = 0; j < arity; j++)
-        //                 str_fmt_into(&err, &n, &o, 0, ", '%s'", symbols_get(env_get_typename_by_type(&runtime_get()->env, rec->args[j])));
-
-        //             str_fmt_into(&err, &n, &o, 0, " -> %'s'}\n", symbols_get(env_get_typename_by_type(&runtime_get()->env, rec->ret)));
-        //         }
-        //     }
-
-        ccerr(cc, car->id, ERR_LENGTH, err);
-    }
+        ccerr(cc, car->id, ERR_LENGTH, str_fmt(0, "function name/arity mismatch"));
 
     // It is an instruction
     if (rec->op < OP_INVALID)
@@ -646,7 +625,7 @@ cc_result_t cc_compile_call(cc_t *cc, rf_object_t *car, u32_t arity)
     }
 
     // It is a function call
-    switch (arity)
+    switch (found_arity)
     {
     case 0:
         push_opcode(cc, car->id, code, OP_CALL0);
