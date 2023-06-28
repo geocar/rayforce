@@ -357,7 +357,12 @@ type_t cc_compile_catch(cc_t *cc, rf_object_t *object, u32_t arity)
 
 cc_result_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
 {
-    cc_result_t res;
+    UNUSED(has_consumer);
+    UNUSED(cc);
+    UNUSED(object);
+    UNUSED(arity);
+
+    cc_result_t res = CC_NONE;
     // rf_object_t *car, *addr, *arg_keys, *arg_vals;
     // function_t *func = as_function(&cc->function);
     // rf_object_t *code = &func->code;
@@ -444,7 +449,7 @@ cc_result_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u
     // if (!has_consumer)
     //     push_opcode(cc, car->id, code, OP_POP);
 
-    return CC_OK;
+    return res;
 }
 
 type_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
