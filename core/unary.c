@@ -46,7 +46,11 @@ rf_object_t error_type1(type_t type, str_t msg)
 
 rf_object_t rf_get_variable(rf_object_t *x)
 {
-    return dict_get(&runtime_get()->env.variables, x);
+    rf_object_t v = dict_get(&runtime_get()->env.variables, x);
+    if (v.type == TYPE_NULL)
+        return error(ERR_NOT_FOUND, "not found");
+
+    return v;
 }
 
 rf_object_t rf_type(rf_object_t *x)

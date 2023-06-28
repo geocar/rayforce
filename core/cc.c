@@ -202,6 +202,37 @@ cc_result_t cc_compile_set(bool_t has_consumer, cc_t *cc, rf_object_t *object, u
     return CC_OK;
 }
 
+cc_result_t cc_compile_let(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+{
+    i64_t id = 0;
+    cc_result_t res;
+    rf_object_t *car = &as_list(object)[0];
+    function_t *func = as_function(&cc->function);
+    rf_object_t *code = &func->code;
+
+    if (!has_consumer)
+        return CC_NULL;
+
+    if (arity != 2)
+        cerr(cc, car->id, ERR_LENGTH, "'let' takes two arguments");
+
+    if (as_list(object)[1].type != -TYPE_SYMBOL)
+        cerr(cc, car->id, ERR_TYPE, "'let' first argument must be a symbol");
+
+    id = func->locals.adt->len;
+    vector_push(&func->locals, as_list(object)[1]);
+
+    res = cc_compile_expr(true, cc, &as_list(object)[2]);
+
+    if (res == CC_ERROR)
+        return CC_ERROR;
+
+    push_opcode(cc, car->id, code, OP_STORE);
+    push_u64(code, 1 + id);
+
+    return CC_OK;
+}
+
 cc_result_t cc_compile_fn(cc_t *cc, rf_object_t *object, u32_t arity)
 {
     rf_object_t *car = &as_list(object)[0], *b, fun;
@@ -452,75 +483,59 @@ cc_result_t cc_compile_map(bool_t has_consumer, cc_t *cc, rf_object_t *object, u
     return res;
 }
 
-type_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
+cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object, u32_t arity)
 {
-    UNUSED(has_consumer);
-    UNUSED(cc);
-    UNUSED(object);
-    UNUSED(arity);
-
-    // type_t type, i;
-    // i64_t offset;
+    cc_result_t res;
     // rf_object_t *car, *params, key, val, *keys, *vals, *tkeys, *tvals, mtkeys, mtvals;
     // function_t *func = as_function(&cc->function);
     // rf_object_t *code = &func->code;
     // env_t *env = &runtime_get()->env;
 
     // car = &as_list(object)[0];
-    // if (car->i64 == symbol("select").i64)
+
+    // if (arity == 0)
+    //     cerr(cc, car->id, ERR_LENGTH, "'select' takes at least two arguments");
+
+    // params = &as_list(object)[1];
+
+    // if (params->type != TYPE_DICT)
+    //     cerr(cc, car->id, ERR_LENGTH, "'select' takes dict of params");
+
+    // keys = &as_list(params)[0];
+    // vals = &as_list(params)[1];
+
+    // key = symbol("from");
+    // val = dict_get(params, &key);
+
+    // res = cc_compile_expr(true, cc, &val);
+    // rf_object_free(&val);
+
+    // if (type(type) != TYPE_TABLE)
+    //     cerr(cc, car->id, ERR_LENGTH, "'select': 'from <Table>' is required");
+
+    // // compile filters
+    // key = symbol("where");
+    // val = dict_get(params, &key);
+
+    // if (val.i64 != NULL_I64)
     // {
-    //     if (arity == 0)
-    //         cerr(cc, car->id, ERR_LENGTH, "'select' takes at least two arguments");
-
-    //     params = &as_list(object)[1];
-
-    //     if (params->type != TYPE_DICT)
-    //         cerr(cc, car->id, ERR_LENGTH, "'select' takes dict of params");
-
-    //     keys = &as_list(params)[0];
-    //     vals = &as_list(params)[1];
-
-    //     key = symbol("from");
-    //     val = dict_get(params, &key);
-
-    //     offset = 0;
-
     //     type = cc_compile_expr(true, cc, &val);
     //     rf_object_free(&val);
 
-    //     if (type(type) != TYPE_TABLE)
-    //         cerr(cc, car->id, ERR_LENGTH, "'select': 'from <Table>' is required");
+    //     if (type == TYPE_ERROR)
+    //         return type;
 
-    //     cc->table = (cc_table_t){.type = type, .offset = offset};
-
-    //     // compile filters
-    //     key = symbol("where");
-    //     val = dict_get(params, &key);
-
-    //     if (val.i64 != NULL_I64)
-    //     {
-    //         type = cc_compile_expr(true, cc, &val);
-    //         rf_object_free(&val);
-
-    //         if (type == TYPE_ERROR)
-    //             return type;
-
-    //         if (type != TYPE_BOOL)
-    //             cerr(cc, car->id, ERR_TYPE, "'select': condition must have a Bool result");
-    //     }
-    //     else
-    //         rf_object_free(&val);
-
-    //     cc->table = (cc_table_t){.type = NULL_I64};
-
-    //     push_opcode(cc, car->id, code, OP_CALL2);
-    //     push_u64(code, rf_filter_Table_Bool);
-
-    //     return type;
-    //     // --
+    //     if (type != TYPE_BOOL)
+    //         cerr(cc, car->id, ERR_TYPE, "'select': condition must have a Bool result");
     // }
+    // else
+    //     rf_object_free(&val);
 
-    return TYPE_NONE;
+    // push_opcode(cc, car->id, code, OP_CALL2);
+    // push_u64(code, rf_filter_Table_Bool);
+
+    return CC_OK;
+    // --
 }
 /*
  * Special forms are those that are not in a table of functions because of their special nature.
@@ -544,6 +559,9 @@ cc_result_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t 
     case KW_SET:
         res = cc_compile_set(has_consumer, cc, object, arity);
         break;
+    case KW_LET:
+        res = cc_compile_let(has_consumer, cc, object, arity);
+        break;
     case KW_FN:
         res = cc_compile_fn(cc, object, arity);
         break;
@@ -558,6 +576,9 @@ cc_result_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, rf_object_t 
         break;
     case KW_THROW:
         res = cc_compile_throw(cc, object, arity);
+        break;
+    case KW_SELECT:
+        res = cc_compile_select(has_consumer, cc, object, arity);
         break;
     }
 
