@@ -356,6 +356,7 @@ op_lget:
     x2 = dict_get(&f->locals, &x1);
     if (x2.type == TYPE_NULL)
         x2 = rf_get_variable(&x1);
+    unwrap(x2, b);
     stack_push(vm, x2);
     dispatch();
 op_cast:

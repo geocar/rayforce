@@ -129,6 +129,7 @@ null_t init_typenames(i64_t *typenames)
     typenames[ TYPE_DICT      + TYPE_OFFSET] = symbol("Dict").i64;
     typenames[ TYPE_TABLE     + TYPE_OFFSET] = symbol("Table").i64;
     typenames[ TYPE_FUNCTION  + TYPE_OFFSET] = symbol("Function").i64;
+    typenames[ TYPE_ERROR     + TYPE_OFFSET] = symbol("Error").i64;
 }
 
 
