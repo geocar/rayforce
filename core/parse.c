@@ -549,6 +549,21 @@ rf_object_t parse_vector(parser_t *parser)
                 return err;
             }
         }
+        else if (token.type == -TYPE_TIMESTAMP)
+        {
+            if (vec.type == TYPE_TIMESTAMP || (vec.adt->len == 0))
+            {
+                vector_push(&vec, token);
+                vec.type = TYPE_TIMESTAMP;
+            }
+            else
+            {
+                rf_object_free(&vec);
+                err = error(ERR_PARSE, "Invalid token in vector");
+                err.id = token.id;
+                return err;
+            }
+        }
         else
         {
             rf_object_free(&vec);
