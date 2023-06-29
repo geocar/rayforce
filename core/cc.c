@@ -747,7 +747,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, rf_object_t args,
     cc_result_t res;
     i32_t i;
     function_t *func = as_function(&cc.function);
-    rf_object_t *code = &func->code, *b = body;
+    rf_object_t *code = &func->code, *b;
 
     if (len == 0)
     {
@@ -758,7 +758,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, rf_object_t args,
     // Compile all arguments but the last one
     for (i = 0; i < len - 1; i++)
     {
-        b += i;
+        b = body + i;
         // skip const expressions
         if (b->type != TYPE_LIST)
             continue;
@@ -770,7 +770,7 @@ rf_object_t cc_compile_function(bool_t top, str_t name, rf_object_t args,
     }
 
     // Compile last argument
-    b += i;
+    b = body + i;
     res = cc_compile_expr(true, &cc, b);
 
     if (res == CC_ERROR)
