@@ -591,7 +591,6 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         push_opcode(cc, car->id, code, OP_LDETACH);
         push_opcode(cc, car->id, code, OP_CALL2);
         push_u64(code, rf_take);
-        return CC_OK;
 
         push_opcode(cc, car->id, code, OP_LATTACH);
     }
