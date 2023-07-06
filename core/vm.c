@@ -415,7 +415,7 @@ op_trace:
 op_alloc:
     b = vm->ip++;
     c = code[vm->ip++];
-    l = stack_peek(vm)->adt->len;
+    l = stack_peek_n(vm, c - 1)->adt->len;
     // allocate result and write to a preserved space on the stack
     x1 = list(l);
     x1.adt->len = 0;
@@ -433,7 +433,10 @@ op_map:
     for (i = c - 1; i >= 0; i--)
     {
         addr = stack_peek_n(vm, i + j++);
-        stack_push(vm, vector_get(addr, l));
+        if (addr->type > 0)
+            stack_push(vm, vector_get(addr, l));
+        else
+            stack_push(vm, *addr);
     }
     dispatch();
 op_collect:

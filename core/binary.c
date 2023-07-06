@@ -25,6 +25,7 @@
 #include "runtime.h"
 #include "unary.h"
 #include "binary.h"
+#include "nary.h"
 #include "dict.h"
 #include "util.h"
 #include "ops.h"
@@ -61,7 +62,7 @@ rf_object_t rf_add(rf_object_t *x, rf_object_t *y)
 {
     i32_t i;
     i64_t l;
-    rf_object_t vec;
+    rf_object_t vec, v;
 
     switch (MTYPE2(x->type, y->type))
     {
@@ -104,6 +105,40 @@ rf_object_t rf_add(rf_object_t *x, rf_object_t *y)
         return vec;
 
     default:
+        if (x->type == TYPE_LIST)
+        {
+            l = x->adt->len;
+            vec = list(l);
+            vec.adt->len = 0;
+            for (i = 0; i < l; i++)
+            {
+                v = rf_add(&as_list(x)[i], y);
+                if (v.type == TYPE_ERROR)
+                {
+                    rf_object_free(&vec);
+                    return v;
+                }
+                as_list(&vec)[vec.adt->len++] = v;
+            }
+            return vec;
+        }
+        if (y->type == TYPE_LIST)
+        {
+            l = y->adt->len;
+            vec = list(l);
+            vec.adt->len = 0;
+            for (i = 0; i < l; i++)
+            {
+                v = rf_add(x, &as_list(y)[i]);
+                if (v.type == TYPE_ERROR)
+                {
+                    rf_object_free(&vec);
+                    return v;
+                }
+                as_list(&vec)[vec.adt->len++] = v;
+            }
+            return vec;
+        }
         return error_type2(x->type, y->type, "add: unsupported types");
     }
 }
@@ -845,6 +880,15 @@ rf_object_t rf_concat(rf_object_t *x, rf_object_t *y)
         as_vector_i64(&vec)[xl] = y->i64;
         return vec;
 
+    case MTYPE2(-TYPE_I64, TYPE_I64):
+        yl = y->adt->len;
+        vec = vector_i64(yl + 1);
+        as_vector_i64(&vec)[0] = x->i64;
+        for (i = 1; i <= yl; i++)
+            as_vector_i64(&vec)[i] = as_vector_i64(y)[i - 1];
+
+        return vec;
+
     case MTYPE2(TYPE_F64, -TYPE_F64):
         xl = x->adt->len;
         vec = vector_f64(xl + 1);
@@ -943,6 +987,27 @@ rf_object_t rf_concat(rf_object_t *x, rf_object_t *y)
         return vec;
 
     default:
+        if (x->type == TYPE_LIST)
+        {
+            xl = x->adt->len;
+            vec = list(xl + 1);
+            for (i = 0; i < xl; i++)
+                as_list(&vec)[i] = rf_object_clone(&as_list(x)[i]);
+            as_list(&vec)[xl] = rf_object_clone(y);
+
+            return vec;
+        }
+        if (y->type == TYPE_LIST)
+        {
+            yl = y->adt->len;
+            vec = list(yl + 1);
+            as_list(&vec)[0] = rf_object_clone(x);
+            for (i = 0; i < yl; i++)
+                as_list(&vec)[i + 1] = rf_object_clone(&as_list(y)[i]);
+
+            return vec;
+        }
+
         return error_type2(x->type, y->type, "concat: unsupported types");
     }
 }

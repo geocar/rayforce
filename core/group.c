@@ -206,8 +206,8 @@ rf_object_t rf_group_I64(rf_object_t *x)
             inrange++;
     }
 
-    if (xl <= 10000)
-        goto hash;
+    // if (xl <= 10000)
+    //     goto hash;
 
     // all elements are in range
     if (inrange == xl)

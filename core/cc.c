@@ -543,7 +543,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
 {
     cc_result_t res;
     i64_t i, l, k;
-    rf_object_t *car, *params, key, val, cols, syms;
+    rf_object_t *car, *params, key, val, cols, syms, g;
     function_t *func = as_function(&cc->function);
     rf_object_t *code = &func->code;
 
@@ -574,12 +574,13 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
     for (i = 0; i < l; i++)
     {
         k = as_vector_symbol(&as_list(params)[0])[i];
-        if (k != KW_FROM && k != KW_WHERE)
+        if (k != KW_FROM && k != KW_WHERE && k != KW_BY)
         {
             find_used_symbols(&as_list(&as_list(params)[1])[i], &syms);
             vector_push(&cols, symboli64(k));
         }
     }
+    // debug_object(&syms);
 
     // compile filters
     key = symboli64(KW_WHERE);
@@ -622,10 +623,6 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
     val = dict_get(params, &key);
     if (val.type != TYPE_NULL)
     {
-        push_opcode(cc, car->id, code, OP_PUSH);
-        push_const(cc, syms);
-        push_opcode(cc, car->id, code, OP_CALL2);
-        push_u64(code, rf_take);
 
         push_opcode(cc, car->id, code, OP_LATTACH);
 
@@ -643,6 +640,11 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
 
         // detach and drop table from env
         push_opcode(cc, car->id, code, OP_LDETACH);
+        push_opcode(cc, car->id, code, OP_PUSH);
+        push_const(cc, syms);
+        push_opcode(cc, car->id, code, OP_CALL2);
+        push_u64(code, rf_take);
+
         push_opcode(cc, car->id, code, OP_CALL2);
         push_u64(code, rf_take);
     }
@@ -661,6 +663,8 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
             {
                 val = as_list(&as_list(params)[1])[i];
                 res = cc_compile_expr(true, cc, &val);
+
+                rf_object_free(&val);
 
                 if (res == CC_ERROR)
                     return CC_ERROR;
