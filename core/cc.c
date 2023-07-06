@@ -559,39 +559,53 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
 
     l = as_list(params)[0].adt->len;
 
+    // compile from
     key = symboli64(KW_FROM);
     val = dict_get(params, &key);
-
     res = cc_compile_expr(true, cc, &val);
     rf_object_free(&val);
 
     if (res == CC_ERROR)
         return CC_ERROR;
 
+    // determine which of columns are used in select and which names will be used for result columns
+    cols = vector_symbol(0);
+    syms = vector_symbol(0);
+    for (i = 0; i < l; i++)
+    {
+        k = as_vector_symbol(&as_list(params)[0])[i];
+        if (k != KW_FROM && k != KW_WHERE && k != KW_BY)
+        {
+            find_used_symbols(&(&as_list(params)[0])[i], &syms);
+            vector_push(&cols, symboli64(k));
+        }
+    }
+
     // compile filters
     key = symboli64(KW_WHERE);
     val = dict_get(params, &key);
-
     if (val.type != TYPE_NULL)
     {
-        // first determine which of columns are used in select
-        syms = vector_symbol(0);
-        find_used_symbols(&as_list(params)[1], &syms);
-        push_opcode(cc, car->id, code, OP_PUSH);
-        push_const(cc, syms);
-
-        // remap table of columns
-        push_opcode(cc, car->id, code, OP_CALL2);
-        push_u64(code, rf_take);
-
-        // compile filters
+        // remap table of columns (if specified)
+        if (cols.adt->len > 0)
+        {
+            push_opcode(cc, car->id, code, OP_PUSH);
+            push_const(cc, syms);
+            push_opcode(cc, car->id, code, OP_CALL2);
+            push_u64(code, rf_take);
+        }
+        else
+            rf_object_free(&syms);
         push_opcode(cc, car->id, code, OP_LATTACH);
 
         res = cc_compile_expr(true, cc, &val);
         rf_object_free(&val);
 
         if (res == CC_ERROR)
+        {
+            rf_object_free(&cols);
             return CC_ERROR;
+        }
 
         push_opcode(cc, car->id, code, OP_CALL1);
         push_u64(code, rf_where);
@@ -602,42 +616,39 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         push_u64(code, rf_take);
     }
 
-    push_opcode(cc, car->id, code, OP_LATTACH);
-
-    cols = vector_symbol(0);
-    for (i = 0; i < l; i++)
+    // compile mappings (if specified)
+    if (cols.adt->len > 0)
     {
-        k = as_vector_symbol(&as_list(params)[0])[i];
-        if (k != KW_FROM && k != KW_WHERE)
-            vector_push(&cols, symboli64(as_vector_symbol(&as_list(params)[0])[i]));
-    }
+        push_opcode(cc, car->id, code, OP_LATTACH);
+        push_opcode(cc, car->id, code, OP_PUSH);
+        push_const(cc, cols);
 
-    push_opcode(cc, car->id, code, OP_PUSH);
-    push_const(cc, rf_object_clone(&cols));
-
-    // compile mappings
-    for (i = 0; i < l; i++)
-    {
-        k = as_vector_symbol(&as_list(params)[0])[i];
-        if (k != KW_FROM && k != KW_WHERE)
+        for (i = 0; i < l; i++)
         {
-            val = as_list(&as_list(params)[1])[i];
-            res = cc_compile_expr(true, cc, &val);
+            k = as_vector_symbol(&as_list(params)[0])[i];
+            if (k != KW_FROM && k != KW_WHERE)
+            {
+                val = as_list(&as_list(params)[1])[i];
+                res = cc_compile_expr(true, cc, &val);
 
-            if (res == CC_ERROR)
-                return CC_ERROR;
+                if (res == CC_ERROR)
+                    return CC_ERROR;
+            }
         }
+
+        push_opcode(cc, car->id, code, OP_CALLN);
+        push_opcode(cc, car->id, code, (u8_t)cols.adt->len);
+        push_u64(code, rf_list);
+
+        push_opcode(cc, car->id, code, OP_CALL2);
+        push_u64(code, rf_table);
+
+        // detach and drop table from env
+        push_opcode(cc, car->id, code, OP_LDETACH);
+        push_opcode(cc, car->id, code, OP_POP);
     }
-
-    push_opcode(cc, car->id, code, OP_CALLN);
-    push_opcode(cc, car->id, code, (u8_t)cols.adt->len);
-    push_u64(code, rf_list);
-
-    push_opcode(cc, car->id, code, OP_CALL2);
-    push_u64(code, rf_table);
-
-    push_opcode(cc, car->id, code, OP_LDETACH);
-    push_opcode(cc, car->id, code, OP_POP);
+    else
+        rf_object_free(&cols);
 
     if (!has_consumer)
         push_opcode(cc, car->id, code, OP_POP);
