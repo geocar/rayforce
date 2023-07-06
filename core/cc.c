@@ -574,7 +574,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
     for (i = 0; i < l; i++)
     {
         k = as_vector_symbol(&as_list(params)[0])[i];
-        if (k != KW_FROM && k != KW_WHERE && k != KW_BY)
+        if (k != KW_FROM && k != KW_WHERE)
         {
             find_used_symbols(&as_list(&as_list(params)[1])[i], &syms);
             vector_push(&cols, symboli64(k));
@@ -611,14 +611,37 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         push_opcode(cc, car->id, code, OP_CALL1);
         push_u64(code, rf_where);
 
-        // group by
-        // key = symboli64(KW_BY);
-        // val = dict_get(params, &key);
-        // if (val.type != TYPE_NULL)
-        // {
-        // }
-
         // remap table of columns (by applying filters)
+        push_opcode(cc, car->id, code, OP_LDETACH);
+        push_opcode(cc, car->id, code, OP_CALL2);
+        push_u64(code, rf_take);
+    }
+
+    // group by
+    key = symboli64(KW_BY);
+    val = dict_get(params, &key);
+    if (val.type != TYPE_NULL)
+    {
+        push_opcode(cc, car->id, code, OP_PUSH);
+        push_const(cc, syms);
+        push_opcode(cc, car->id, code, OP_CALL2);
+        push_u64(code, rf_take);
+
+        push_opcode(cc, car->id, code, OP_LATTACH);
+
+        res = cc_compile_expr(true, cc, &val);
+        rf_object_free(&val);
+
+        if (res == CC_ERROR)
+        {
+            rf_object_free(&cols);
+            return CC_ERROR;
+        }
+
+        push_opcode(cc, car->id, code, OP_CALL1);
+        push_u64(code, rf_group);
+
+        // detach and drop table from env
         push_opcode(cc, car->id, code, OP_LDETACH);
         push_opcode(cc, car->id, code, OP_CALL2);
         push_u64(code, rf_take);

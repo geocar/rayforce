@@ -187,7 +187,7 @@ set:
 rf_object_t rf_group_I64(rf_object_t *x)
 {
     i64_t i, j = 0, xl = x->adt->len, *iv1 = as_vector_i64(x), *kv, range, inrange = 0, min, max, *m, n;
-    rf_object_t keys, vals, mask, *vv;
+    rf_object_t vals, mask, *vv;
     ht_t *ht;
 
     if (xl == 0)
@@ -216,10 +216,7 @@ rf_object_t rf_group_I64(rf_object_t *x)
         mask = vector_i64(range);
         m = as_vector_i64(&mask);
 
-        keys = vector_i64(xl);
         vals = list(xl);
-
-        kv = as_vector_i64(&keys);
         vv = as_list(&vals);
 
         for (i = 0; i < range; i++)
@@ -229,9 +226,6 @@ rf_object_t rf_group_I64(rf_object_t *x)
         {
             n = normalize(iv1[i]);
             m[n]++;
-
-            if (m[n] == 1)
-                kv[j++] = iv1[i];
         }
 
         j = 0;
@@ -256,10 +250,9 @@ rf_object_t rf_group_I64(rf_object_t *x)
 
         rf_object_free(&mask);
 
-        vector_shrink(&keys, j);
         vector_shrink(&vals, j);
 
-        return dict(keys, vals);
+        return vals;
     }
 
     // two thirds of elements are in range
@@ -269,10 +262,7 @@ rf_object_t rf_group_I64(rf_object_t *x)
         mask = vector_i64(range);
         m = as_vector_i64(&mask);
 
-        keys = vector_i64(xl);
         vals = list(xl);
-
-        kv = as_vector_i64(&keys);
         vv = as_list(&vals);
 
         for (i = 0; i < range; i++)
@@ -284,17 +274,9 @@ rf_object_t rf_group_I64(rf_object_t *x)
         {
             n = normalize(iv1[i]);
             if (n < MAX_LINEAR_VALUE)
-            {
                 m[n]++;
-
-                if (m[n] == 1)
-                    kv[j++] = iv1[i];
-            }
             else
-            {
-                if (!ht_upsert_with(ht, n, i, vv + j, &cnt_update))
-                    kv[j++] = iv1[i];
-            }
+                ht_upsert_with(ht, n, i, vv + j, &cnt_update);
         }
 
         j = 0;
@@ -328,10 +310,9 @@ rf_object_t rf_group_I64(rf_object_t *x)
         rf_object_free(&mask);
         ht_free(ht);
 
-        vector_shrink(&keys, j);
         vector_shrink(&vals, j);
 
-        return dict(keys, vals);
+        return vals;
     }
 
 hash:
@@ -341,20 +322,14 @@ hash:
     for (i = 0; i < xl; i++)
         ht_upsert_with(ht, normalize(iv1[i]), 1, NULL, &cnt_update);
 
-    keys = vector_i64(ht->count);
     vals = list(ht->count);
-
-    kv = as_vector_i64(&keys);
     vv = as_list(&vals);
 
     // finally, fill vectors with positions
     for (i = 0; i < xl; i++)
-    {
-        if (!ht_upsert_with(ht, normalize(iv1[i]), i, vv + j, &pos_update))
-            kv[j++] = iv1[i];
-    }
+        ht_upsert_with(ht, normalize(iv1[i]), i, vv + j, &pos_update);
 
     ht_free(ht);
 
-    return dict(keys, vals);
+    return vals;
 }

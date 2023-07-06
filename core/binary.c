@@ -1124,7 +1124,24 @@ rf_object_t rf_take(rf_object_t *x, rf_object_t *y)
 
         return res;
 
+    case MTYPE2(TYPE_I64, TYPE_LIST):
+        l = y->adt->len;
+        res = list(l);
+
+        for (i = 0; i < l; i++)
+            as_list(&res)[i] = rf_take(x, &as_list(y)[i]);
+
+        return res;
+
     case MTYPE2(TYPE_I64, TYPE_TABLE):
+        l = as_list(y)[0].adt->len;
+        cols = list(l);
+        for (i = 0; i < l; i++)
+            as_list(&cols)[i] = rf_take(&as_list(&as_list(y)[1])[i], x);
+
+        return table(rf_object_clone(&as_list(y)[0]), cols);
+
+    case MTYPE2(TYPE_LIST, TYPE_TABLE):
         l = as_list(y)[0].adt->len;
         cols = list(l);
         for (i = 0; i < l; i++)
