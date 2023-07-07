@@ -116,6 +116,27 @@ rf_object_t rf_add(rf_object_t *x, rf_object_t *y)
 
         return vec;
 
+    case MTYPE2(TYPE_LIST, TYPE_LIST):
+        l = x->adt->len;
+        if (l != y->adt->len)
+            return error(ERR_LENGTH, "add: lists must be of the same length");
+
+        vec = list(l);
+        vec.adt->len = 0;
+
+        for (i = 0; i < l; i++)
+        {
+            v = rf_add(&as_list(x)[i], &as_list(y)[i]);
+            if (v.type == TYPE_ERROR)
+            {
+                rf_object_free(&vec);
+                return v;
+            }
+            as_list(&vec)[vec.adt->len++] = v;
+        }
+
+        return vec;
+
     default:
         if (x->type == TYPE_LIST)
         {
