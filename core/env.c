@@ -24,117 +24,124 @@
 #include <stdarg.h>
 #include "env.h"
 #include "dict.h"
-#include "nilary.h"
 #include "unary.h"
 #include "binary.h"
-#include "ternary.h"
-#include "nary.h"
 #include "guid.h"
 #include "runtime.h"
+#include "format.h"
 
-#define REC_SIZE (MAX_ARITY + 2)
+#define reg(r, n, t, o)                                             \
+    {                                                               \
+        rf_object_t k = symboli64(intern_keyword(n, strlen(n)));    \
+        dict_set(r, &k, (rf_object_t){.type = t, .i64 = (i64_t)o}); \
+    };
 
-#define REC(r, a, n, o)                          \
-    {                                            \
-        i64_t id = intern_keyword(n, strlen(n)); \
-        env_record_t rec = {                     \
-            .id = id,                            \
-            .op = (i64_t)o,                      \
-            .arity = a,                          \
-        };                                       \
-        push(&as_list(r)[a], env_record_t, rec); \
-    }
+rf_object_t rf_env()
+{
+    return rf_object_clone(&runtime_get()->env.variables);
+}
+
+rf_object_t rf_memstat()
+{
+    rf_object_t keys, vals;
+    memstat_t stat = rf_alloc_memstat();
+
+    keys = vector_symbol(3);
+    as_vector_symbol(&keys)[0] = symbol("total").i64;
+    as_vector_symbol(&keys)[1] = symbol("used ").i64;
+    as_vector_symbol(&keys)[2] = symbol("free ").i64;
+
+    vals = list(3);
+    as_list(&vals)[0] = i64(stat.total);
+    as_list(&vals)[1] = i64(stat.used);
+    as_list(&vals)[2] = i64(stat.free);
+
+    return dict(keys, vals);
+}
 
 // clang-format off
-null_t init_functions(rf_object_t *records)
+null_t init_functions(rf_object_t *functions)
 {
-    // Nilary
-    REC(records, 0, "halt",        OP_HALT);
-    REC(records, 0, "env",         rf_env);
-    REC(records, 0, "memstat",     rf_memstat);
-            
     // Unary
-    REC(records, 1, "type",        rf_type);
-    REC(records, 1, "til" ,        rf_til);
-    REC(records, 1, "trace",       OP_TRACE);
-    REC(records, 1, "distinct",    rf_distinct);
-    REC(records, 1, "group",       rf_group);
-    REC(records, 1, "sum",         rf_sum);
-    REC(records, 1, "avg",         rf_avg);
-    REC(records, 1, "min",         rf_min);
-    REC(records, 1, "max",         rf_max);
-    REC(records, 1, "count",       rf_count);
-    REC(records, 1, "not",         rf_not);
-    REC(records, 1, "iasc",        rf_iasc);
-    REC(records, 1, "idesc",       rf_idesc);
-    REC(records, 1, "asc",         rf_asc);
-    REC(records, 1, "desc",        rf_desc);
-    REC(records, 1, "flatten",     vector_flatten);
-    REC(records, 1, "guid",        rf_guid_generate);
-    REC(records, 1, "neg",         rf_neg);
-    REC(records, 1, "where",       rf_where);
+    reg(functions, "type",   TYPE_UNARY,     rf_type);
+    // REC(records, 0, "til" ,        rf_til);
+    // REC(records, 0, "trace",       OP_TRACE);
+    // REC(records, 0, "distinct",    rf_distinct);
+    // REC(records, 0, "group",       rf_group);
+    // REC(records, 0, "sum",         rf_sum);
+    // REC(records, 0, "avg",         rf_avg);
+    // REC(records, 0, "min",         rf_min);
+    // REC(records, 0, "max",         rf_max);
+    // REC(records, 0, "count",       rf_count);
+    // REC(records, 0, "not",         rf_not);
+    // REC(records, 0, "iasc",        rf_iasc);
+    // REC(records, 0, "idesc",       rf_idesc);
+    // REC(records, 0, "asc",         rf_asc);
+    // REC(records, 0, "desc",        rf_desc);
+    // REC(records, 0, "flatten",     vector_flatten);
+    // REC(records, 0, "guid",        rf_guid_generate);
+    // REC(records, 0, "neg",         rf_neg);
+    // REC(records, 0, "where",       rf_where);
       
     // Binary         
-    REC(records, 2, "==",          rf_eq);
-    REC(records, 2, "<",           rf_lt);
-    REC(records, 2, ">",           rf_gt);
-    REC(records, 2, "<=",          rf_le);
-    REC(records, 2, ">=",          rf_ge);
-    REC(records, 2, "!=",          rf_ne);
-    REC(records, 2, "and",         rf_and);
-    REC(records, 2, "or",          rf_or);
-    REC(records, 2, "+",           rf_add);
-    REC(records, 2, "-",           rf_sub);
-    REC(records, 2, "*",           rf_mul);
-    REC(records, 2, "/",           rf_div);
-    REC(records, 2, "%",           rf_mod);
-    REC(records, 2, "div",         rf_fdiv);
-    REC(records, 2, "like",        rf_like);
-    REC(records, 2, "dict",        rf_dict);
-    REC(records, 2, "table",       rf_table);
-    REC(records, 2, "get",         rf_get);
-    REC(records, 2, "find",        rf_find);
-    REC(records, 2, "concat",      rf_concat);
-    REC(records, 2, "filter",      rf_filter);
-    REC(records, 2, "take",        rf_take);
-    REC(records, 2, "in",          rf_in);
-    REC(records, 2, "sect",        rf_sect);
-    REC(records, 2, "except",      rf_except);
+    // REC(records, 1, "==",          rf_eq);
+    // REC(records, 1, "<",           rf_lt);
+    // REC(records, 1, ">",           rf_gt);
+    // REC(records, 1, "<=",          rf_le);
+    // REC(records, 1, ">=",          rf_ge);
+    // REC(records, 1, "!=",          rf_ne);
+    // REC(records, 1, "and",         rf_and);
+    // REC(records, 1, "or",          rf_or);
+    reg(functions,  "+",    TYPE_BINARY,       rf_add);
+    // REC(records, 1, "-",           rf_sub);
+    // REC(records, 1, "*",           rf_mul);
+    // REC(records, 1, "/",           rf_div);
+    // REC(records, 1, "%",           rf_mod);
+    // REC(records, 1, "div",         rf_fdiv);
+    // REC(records, 1, "like",        rf_like);
+    // REC(records, 1, "dict",        rf_dict);
+    // REC(records, 1, "table",       rf_table);
+    // REC(records, 1, "get",         rf_get);
+    // REC(records, 1, "find",        rf_find);
+    // REC(records, 1, "concat",      rf_concat);
+    // REC(records, 1, "filter",      rf_filter);
+    // REC(records, 1, "take",        rf_take);
+    // REC(records, 1, "in",          rf_in);
+    // REC(records, 1, "sect",        rf_sect);
+    // REC(records, 1, "except",      rf_except);
+    reg(functions, "rand",     TYPE_BINARY,   rf_rand);
      
-    // Ternary       
-    REC(records, 3, "rand",        rf_rand);
-         
-    // Quaternary
-
-    // Nary       
-    REC(records, 5, "list",        rf_list);
-    REC(records, 5, "format",      rf_format);
-    REC(records, 5, "print",       rf_print);
-    REC(records, 5, "println",     rf_println);
+    // Lambdas       
+    // REC(records, 2, "env",         rf_env);
+    // REC(records, 2, "memstat",     rf_memstat);
+    reg(functions,  "list",    -TYPE_LAMBDA,    rf_list);
+    // REC(records, 2, "format",      rf_format);
+    // REC(records, 2, "print",       rf_print);
+    // REC(records, 2, "println",     rf_println);
 }    
     
 null_t init_typenames(i64_t *typenames)    
 {
-    typenames[-TYPE_BOOL      + TYPE_OFFSET] = symbol("bool").i64;
-    typenames[-TYPE_I64       + TYPE_OFFSET] = symbol("i64").i64;
-    typenames[-TYPE_F64       + TYPE_OFFSET] = symbol("f64").i64;
-    typenames[-TYPE_SYMBOL    + TYPE_OFFSET] = symbol("symbol").i64;
-    typenames[-TYPE_TIMESTAMP + TYPE_OFFSET] = symbol("timestamp").i64;
-    typenames[-TYPE_GUID      + TYPE_OFFSET] = symbol("guid").i64;
-    typenames[-TYPE_CHAR      + TYPE_OFFSET] = symbol("char").i64;
-    typenames[ TYPE_NULL      + TYPE_OFFSET] = symbol("Null").i64;
-    typenames[ TYPE_BOOL      + TYPE_OFFSET] = symbol("Bool").i64;
-    typenames[ TYPE_I64       + TYPE_OFFSET] = symbol("I64").i64;
-    typenames[ TYPE_F64       + TYPE_OFFSET] = symbol("F64").i64;
-    typenames[ TYPE_SYMBOL    + TYPE_OFFSET] = symbol("Symbol").i64;
-    typenames[ TYPE_TIMESTAMP + TYPE_OFFSET] = symbol("Timestamp").i64;
-    typenames[ TYPE_GUID      + TYPE_OFFSET] = symbol("Guid").i64;
-    typenames[ TYPE_CHAR      + TYPE_OFFSET] = symbol("Char").i64;
-    typenames[ TYPE_LIST      + TYPE_OFFSET] = symbol("List").i64;
-    typenames[ TYPE_DICT      + TYPE_OFFSET] = symbol("Dict").i64;
-    typenames[ TYPE_TABLE     + TYPE_OFFSET] = symbol("Table").i64;
-    typenames[ TYPE_FUNCTION  + TYPE_OFFSET] = symbol("Function").i64;
-    typenames[ TYPE_ERROR     + TYPE_OFFSET] = symbol("Error").i64;
+    // typenames[-TYPE_BOOL      + TYPE_OFFSET] = symbol("bool").i64;
+    // typenames[-TYPE_I64       + TYPE_OFFSET] = symbol("i64").i64;
+    // typenames[-TYPE_F64       + TYPE_OFFSET] = symbol("f64").i64;
+    // typenames[-TYPE_SYMBOL    + TYPE_OFFSET] = symbol("symbol").i64;
+    // typenames[-TYPE_TIMESTAMP + TYPE_OFFSET] = symbol("timestamp").i64;
+    // typenames[-TYPE_GUID      + TYPE_OFFSET] = symbol("guid").i64;
+    // typenames[-TYPE_CHAR      + TYPE_OFFSET] = symbol("char").i64;
+    // typenames[ TYPE_NULL      + TYPE_OFFSET] = symbol("Null").i64;
+    // typenames[ TYPE_BOOL      + TYPE_OFFSET] = symbol("Bool").i64;
+    // typenames[ TYPE_I64       + TYPE_OFFSET] = symbol("I64").i64;
+    // typenames[ TYPE_F64       + TYPE_OFFSET] = symbol("F64").i64;
+    // typenames[ TYPE_SYMBOL    + TYPE_OFFSET] = symbol("Symbol").i64;
+    // typenames[ TYPE_TIMESTAMP + TYPE_OFFSET] = symbol("Timestamp").i64;
+    // typenames[ TYPE_GUID      + TYPE_OFFSET] = symbol("Guid").i64;
+    // typenames[ TYPE_CHAR      + TYPE_OFFSET] = symbol("Char").i64;
+    // typenames[ TYPE_LIST      + TYPE_OFFSET] = symbol("List").i64;
+    // typenames[ TYPE_DICT      + TYPE_OFFSET] = symbol("Dict").i64;
+    // typenames[ TYPE_TABLE     + TYPE_OFFSET] = symbol("Table").i64;
+    // typenames[ TYPE_LAMBDA  + TYPE_OFFSET] = symbol("lambda").i64;
+    // typenames[ TYPE_ERROR     + TYPE_OFFSET] = symbol("Error").i64;
 }
 
 
@@ -162,11 +169,8 @@ null_t init_kw_symbols()
 
 env_t create_env()
 {
-    rf_object_t functions = list(REC_SIZE);
+    rf_object_t functions = dict(vector_symbol(0), list(0));
     rf_object_t variables = dict(vector_symbol(0), list(0));
-
-    for (i32_t i = 0; i < REC_SIZE; i++)
-        as_list(&functions)[i] = vector(TYPE_CHAR, 0);
 
     init_kw_symbols();
 

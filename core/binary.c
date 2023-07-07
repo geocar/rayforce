@@ -25,7 +25,6 @@
 #include "runtime.h"
 #include "unary.h"
 #include "binary.h"
-#include "nary.h"
 #include "dict.h"
 #include "util.h"
 #include "ops.h"
@@ -56,6 +55,27 @@ rf_object_t rf_dict(rf_object_t *x, rf_object_t *y)
 rf_object_t rf_table(rf_object_t *x, rf_object_t *y)
 {
     return table(rf_object_clone(x), rf_object_clone(y));
+}
+
+rf_object_t rf_rand(rf_object_t *x, rf_object_t *y)
+{
+    i64_t i, count;
+    rf_object_t vec;
+
+    switch (MTYPE2(x->type, y->type))
+    {
+    case MTYPE2(-TYPE_I64, -TYPE_I64):
+        count = x->i64;
+        vec = vector_i64(count);
+
+        for (i = 0; i < count; i++)
+            as_vector_i64(&vec)[i] = rfi_rand_u64() % y->i64;
+
+        return vec;
+
+    default:
+        return error_type2(x->type, y->type, "rand: unsupported types");
+    }
 }
 
 rf_object_t rf_add(rf_object_t *x, rf_object_t *y)

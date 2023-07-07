@@ -30,17 +30,17 @@
 /*
  * Holds a dict with such fields:
  * file: Char
- * function: Char
+ * lambda: Char
  * spans: Dict of id -- span mappings
  */
 typedef struct debuginfo_t
 {
     str_t filename;
-    str_t function;
+    str_t lambda;
     ht_t *spans;
 } debuginfo_t;
 
-debuginfo_t debuginfo_new(str_t filename, str_t function);
+debuginfo_t debuginfo_new(str_t filename, str_t lambda);
 null_t debuginfo_free(debuginfo_t *debuginfo);
 null_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span);
 span_t debuginfo_get(debuginfo_t *debuginfo, u32_t index);

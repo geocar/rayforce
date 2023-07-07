@@ -48,10 +48,13 @@ extern "C"
 #define TYPE_GUID 6
 #define TYPE_CHAR 7
 #define TYPE_LIST 8
-#define TYPE_DICT 9
-#define TYPE_TABLE 10
-#define TYPE_FUNCTION 11
-#define TYPE_ERROR 12
+#define TYPE_TABLE 98
+#define TYPE_DICT 99
+#define TYPE_LAMBDA 100
+#define TYPE_UNARY 101
+#define TYPE_BINARY 102
+#define TYPE_INSTRUCTION 111
+#define TYPE_ERROR 127
 
 // Result constants
 #define OK 0

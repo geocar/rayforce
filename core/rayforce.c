@@ -293,6 +293,10 @@ rf_object_t __attribute__((hot)) rf_object_clone(rf_object_t *object)
     case -TYPE_SYMBOL:
     case -TYPE_TIMESTAMP:
     case -TYPE_CHAR:
+    case TYPE_NULL:
+    case TYPE_UNARY:
+    case TYPE_BINARY:
+    case -TYPE_LAMBDA:
         return *object;
     case -TYPE_GUID:
         if (object->guid == NULL)
@@ -318,7 +322,7 @@ rf_object_t __attribute__((hot)) rf_object_clone(rf_object_t *object)
         rf_object_clone(&as_list(object)[0]);
         rf_object_clone(&as_list(object)[1]);
         return *object;
-    case TYPE_FUNCTION:
+    case TYPE_LAMBDA:
         rc_inc(object);
         return *object;
     case TYPE_ERROR:
@@ -344,6 +348,10 @@ null_t __attribute__((hot)) rf_object_free(rf_object_t *object)
     case -TYPE_SYMBOL:
     case -TYPE_TIMESTAMP:
     case -TYPE_CHAR:
+    case TYPE_NULL:
+    case TYPE_UNARY:
+    case TYPE_BINARY:
+    case -TYPE_LAMBDA:
         return;
     case -TYPE_GUID:
         if (object->guid == NULL)
@@ -376,15 +384,15 @@ null_t __attribute__((hot)) rf_object_free(rf_object_t *object)
         if (rc == 0)
             rf_free(object->adt);
         return;
-    case TYPE_FUNCTION:
+    case TYPE_LAMBDA:
         rc_dec(rc, object);
         if (rc == 0)
         {
-            rf_object_free(&as_function(object)->constants);
-            rf_object_free(&as_function(object)->args);
-            rf_object_free(&as_function(object)->locals);
-            rf_object_free(&as_function(object)->code);
-            debuginfo_free(&as_function(object)->debuginfo);
+            rf_object_free(&as_lambda(object)->constants);
+            rf_object_free(&as_lambda(object)->args);
+            rf_object_free(&as_lambda(object)->locals);
+            rf_object_free(&as_lambda(object)->code);
+            debuginfo_free(&as_lambda(object)->debuginfo);
             rf_free(object->adt);
         }
         return;
@@ -418,6 +426,10 @@ rf_object_t rf_object_cow(rf_object_t *object)
     case -TYPE_SYMBOL:
     case -TYPE_TIMESTAMP:
     case -TYPE_CHAR:
+    case TYPE_NULL:
+    case TYPE_UNARY:
+    case TYPE_BINARY:
+    case -TYPE_LAMBDA:
         return *object;
     case -TYPE_GUID:
         if (object->guid == NULL)
@@ -469,7 +481,7 @@ rf_object_t rf_object_cow(rf_object_t *object)
         new = table(rf_object_cow(&as_list(object)[0]), rf_object_cow(&as_list(object)[1]));
         new.adt->attrs = object->adt->attrs;
         return new;
-    case TYPE_FUNCTION:
+    case TYPE_LAMBDA:
         return *object;
     case TYPE_ERROR:
         return *object;

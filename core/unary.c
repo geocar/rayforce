@@ -66,7 +66,7 @@ rf_object_t rf_count(rf_object_t *x)
 
     switch (x->type)
     {
-    case TYPE_FUNCTION:
+    case TYPE_LAMBDA:
         return i64(1);
     case TYPE_TABLE:
         return i64((&as_list(&as_list(x)[1])[0])->adt->len);

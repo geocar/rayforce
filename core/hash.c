@@ -134,7 +134,7 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
 }
 
 /*
- * Does the same as ht_insert, but uses a function to set the rf_object of the bucket.
+ * Does the same as ht_insert, but uses a lambda to set the rf_object of the bucket.
  */
 i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
                      i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
@@ -209,7 +209,7 @@ bool_t ht_upsert(ht_t *table, i64_t key, i64_t val)
 }
 
 /*
- * Does the same as ht_upsert, but uses a function to set the val of the bucket.
+ * Does the same as ht_upsert, but uses a lambda to set the val of the bucket.
  */
 bool_t ht_upsert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
                       bool_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))

@@ -21,14 +21,28 @@
  *   SOFTWARE.
  */
 
-#ifndef NARY_H
-#define NARY_H
+#include "lambda.h"
+#include "string.h"
+#include "alloc.h"
 
-#include "rayforce.h"
+rf_object_t lambda(rf_object_t args, rf_object_t code, debuginfo_t debuginfo)
+{
+    header_t *adt = rf_malloc(sizeof(header_t) + sizeof(lambda_t));
+    lambda_t *f = (lambda_t *)(adt + 1);
 
-rf_object_t rf_list(rf_object_t *x, u32_t n);
-rf_object_t rf_format(rf_object_t *x, u32_t n);
-rf_object_t rf_print(rf_object_t *x, u32_t n);
-rf_object_t rf_println(rf_object_t *x, u32_t n);
+    adt->rc = 1;
 
-#endif
+    f->args = args;
+    f->locals = list(0);
+    f->code = code;
+    f->constants = list(0);
+    f->debuginfo = debuginfo;
+    f->stack_size = 0;
+
+    rf_object_t fun = {
+        .type = TYPE_LAMBDA,
+        .adt = adt,
+    };
+
+    return fun;
+}

@@ -94,4 +94,5 @@ null_t vector_shrink(rf_object_t *vector, u32_t len);
 null_t vector_free(rf_object_t *vector);
 null_t vector_clear(rf_object_t *vector);
 
+rf_object_t rf_list(rf_object_t *x, u32_t n);
 #endif

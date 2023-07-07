@@ -21,29 +21,24 @@
  *   SOFTWARE.
  */
 
-#include "nilary.h"
-#include "runtime.h"
-#include "alloc.h"
+#ifndef LAMBDA_H
+#define LAMBDA_H
 
-rf_object_t rf_env()
+#include "rayforce.h"
+#include "debuginfo.h"
+
+#define as_lambda(object) ((lambda_t *)(as_string(object)))
+
+typedef struct lambda_t
 {
-    return rf_object_clone(&runtime_get()->env.variables);
-}
+    rf_object_t args;      // vector of arguments names
+    rf_object_t locals;    // list of dicts of local variables
+    rf_object_t code;      // string of bytecode
+    rf_object_t constants; // list of lambda constants
+    debuginfo_t debuginfo; // debuginfo from cc phase
+    i32_t stack_size;      // size of stack frame
+} lambda_t;
 
-rf_object_t rf_memstat()
-{
-    rf_object_t keys, vals;
-    memstat_t stat = rf_alloc_memstat();
+rf_object_t lambda(rf_object_t args, rf_object_t code, debuginfo_t debuginfo);
 
-    keys = vector_symbol(3);
-    as_vector_symbol(&keys)[0] = symbol("total").i64;
-    as_vector_symbol(&keys)[1] = symbol("used ").i64;
-    as_vector_symbol(&keys)[2] = symbol("free ").i64;
-
-    vals = list(3);
-    as_list(&vals)[0] = i64(stat.total);
-    as_list(&vals)[1] = i64(stat.used);
-    as_list(&vals)[2] = i64(stat.free);
-
-    return dict(keys, vals);
-}
+#endif

@@ -5,7 +5,7 @@
   - [Syntax](syntax.md)
   - [Data Types](datatypes.md)
   - [Control Structures](controlstructures.md)
-  - [Functions](functions.md)
+  - [lambdas](lambdas.md)
   - [Modules](modules.md)
 - Advanced Topics
   - [Concurrency](concurrency.md)

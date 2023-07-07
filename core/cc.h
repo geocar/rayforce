@@ -28,13 +28,13 @@
 #include "debuginfo.h"
 
 /*
- * Context for compiling function
+ * Context for compiling lambda
  */
 typedef struct cc_t
 {
-    bool_t top_level;       // is this top level function?
-    rf_object_t *body;      // body of function being compiled (list of expressions)
-    rf_object_t function;   // function being compiled
+    bool_t top_level;       // is this top level lambda?
+    rf_object_t *body;      // body of lambda being compiled (list of expressions)
+    rf_object_t lambda;     // lambda being compiled
     debuginfo_t *debuginfo; // debuginfo from parse phase
 } cc_t;
 

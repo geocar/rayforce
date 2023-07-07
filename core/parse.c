@@ -844,7 +844,7 @@ rf_object_t parse(parser_t *parser, str_t filename, str_t input)
 {
     rf_object_t prg;
 
-    parser->debuginfo.function = "";
+    parser->debuginfo.lambda = "";
     parser->debuginfo.filename = filename;
     parser->input = input;
     parser->current = input;

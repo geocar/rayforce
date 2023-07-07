@@ -31,11 +31,11 @@ i32_t u32_cmp(i64_t a, i64_t b)
     return !((u32_t)a == (u32_t)b);
 }
 
-debuginfo_t debuginfo_new(str_t filename, str_t function)
+debuginfo_t debuginfo_new(str_t filename, str_t lambda)
 {
     debuginfo_t debuginfo = {
         .filename = filename,
-        .function = function,
+        .lambda = lambda,
         .spans = ht_new(32, &rfi_kmh_hash, &u32_cmp),
     };
 

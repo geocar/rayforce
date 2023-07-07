@@ -26,7 +26,7 @@
 
 #include <time.h>
 #include "rayforce.h"
-#include "function.h"
+#include "lambda.h"
 #include "mmap.h"
 #include "debuginfo.h"
 
@@ -35,20 +35,14 @@
 typedef enum vm_opcode_t
 {
     OP_HALT = 0,  // Halt the VM
-    OP_RET,       // Return from function
+    OP_RET,       // Return from lambda
     OP_PUSH,      // Push an rf_object to the stack
     OP_POP,       // Pop an rf_object from the stack
     OP_JNE,       // Jump if not equal
     OP_JMP,       // Jump
+    OP_CALL,      // Call primitive/lambda
     OP_TIMER_SET, // Start timer
     OP_TIMER_GET, // Get timer value
-    OP_CALL0,     // Call function with no arguments
-    OP_CALL1,     // Call function with one argument
-    OP_CALL2,     // Call function with two arguments
-    OP_CALL3,     // Call function with three arguments
-    OP_CALL4,     // Call function with four arguments
-    OP_CALLN,     // Call function with n arguments
-    OP_CALLF,     // Call user function
     OP_STORE,     // Store value somewhere in a stack pointed by argument
     OP_LOAD,      // Load value from somewhere in a stack pointed by argument
     OP_LSET,      // Set local variable
@@ -61,7 +55,7 @@ typedef enum vm_opcode_t
     OP_THROW,     // Throw an error
     OP_TRACE,     // Print stack trace (limit)
     OP_ALLOC,     // Allocate rf_object
-    OP_MAP,       // Map function over array
+    OP_MAP,       // Map lambda over array
     OP_COLLECT,   // Collect array of results
 
     OP_INVALID, // Invalid opcode

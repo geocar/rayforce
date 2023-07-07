@@ -32,7 +32,7 @@
 #include "debuginfo.h"
 #include "runtime.h"
 #include "ops.h"
-#include "function.h"
+#include "lambda.h"
 #include "timestamp.h"
 
 #define MAX_ROW_WIDTH 120
@@ -504,15 +504,15 @@ i32_t error_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t 
     return str_fmt_into(dst, len, offset, 0, "** [E%.3d] error: %s", error->adt->code, as_string(error));
 }
 
-i32_t function_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, rf_object_t *rf_object)
+i32_t lambda_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, rf_object_t *rf_object)
 {
     UNUSED(limit);
     UNUSED(indent);
     UNUSED(rf_object);
 
-    // function_t *function = as_function(rf_object);
+    // lambda_t *lambda = as_lambda(rf_object);
 
-    return str_fmt_into(dst, len, offset, 0, "<function>");
+    return str_fmt_into(dst, len, offset, 0, "<lambda>");
 }
 
 i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, rf_object_t *object)
@@ -555,8 +555,12 @@ i32_t rf_object_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i3
         return dict_fmt_into(dst, len, offset, indent, limit, object);
     case TYPE_TABLE:
         return table_fmt_into(dst, len, offset, indent, limit, object);
-    case TYPE_FUNCTION:
-        return function_fmt_into(dst, len, offset, indent, limit, object);
+    case TYPE_UNARY:
+        return str_fmt_into(dst, len, offset, limit, "unary %lld", object->i64);
+    case TYPE_BINARY:
+        return str_fmt_into(dst, len, offset, limit, "binary %lld", object->i64);
+    case TYPE_LAMBDA:
+        return lambda_fmt_into(dst, len, offset, indent, limit, object);
     case TYPE_ERROR:
         return error_fmt_into(dst, len, offset, indent, limit, object);
     default:
@@ -637,4 +641,44 @@ str_t rf_object_fmt_n(rf_object_t *x, u32_t n)
     str_fmt_into(&s, &l, &o, end - start, "%s", start);
 
     return s;
+}
+
+rf_object_t rf_format(rf_object_t *x, i64_t n)
+{
+    str_t s = rf_object_fmt_n(x, n);
+    rf_object_t ret;
+
+    if (!s)
+        return error(ERR_TYPE, "malformed format string");
+
+    ret = string_from_str(s, strlen(s));
+    rf_free(s);
+
+    return ret;
+}
+
+rf_object_t rf_print(rf_object_t *x, i64_t n)
+{
+    str_t s = rf_object_fmt_n(x, n);
+
+    if (!s)
+        return error(ERR_TYPE, "malformed format string");
+
+    printf("%s", s);
+    rf_free(s);
+
+    return null();
+}
+
+rf_object_t rf_println(rf_object_t *x, i64_t n)
+{
+    str_t s = rf_object_fmt_n(x, n);
+
+    if (!s)
+        return error(ERR_TYPE, "malformed format string");
+
+    printf("%s\n", s);
+    rf_free(s);
+
+    return null();
 }

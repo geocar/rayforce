@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "function.h"
+#include "lambda.h"
 #include "vm.h"
 #include "rayforce.h"
 #include "alloc.h"
@@ -55,7 +55,7 @@
 
 typedef struct ctx_t
 {
-    function_t *addr;
+    lambda_t *addr;
     i32_t ip;
     i32_t bp;
 } ctx_t;
@@ -76,23 +76,20 @@ vm_t *vm_new()
 }
 
 /*
- * Execute the function
+ * Execute the lambda
  */
 rf_object_t __attribute__((hot)) vm_exec(vm_t *vm, rf_object_t *fun)
 {
     type_t c;
-    function_t *f = as_function(fun);
+    lambda_t *f = as_lambda(fun);
     str_t code = as_string(&f->code);
-    rf_object_t x1, x2, x3, x4, x5, *addr;
+    rf_object_t x0, x1, x2, x3, x4, x5, *addr;
     i64_t t;
     u64_t l, p;
     i32_t i, j, b;
-    nilary_t f0;
     unary_t f1;
     binary_t f2;
-    ternary_t f3;
-    quaternary_t f4;
-    nary_t fn;
+    vary_t fn;
     ctx_t ctx;
 
     vm->ip = 0;
@@ -101,10 +98,9 @@ rf_object_t __attribute__((hot)) vm_exec(vm_t *vm, rf_object_t *fun)
 
     // The indices of labels in the dispatch_table are the relevant opcodes
     static null_t *dispatch_table[] = {
-        &&op_halt, &&op_ret, &&op_push, &&op_pop, &&op_jne, &&op_jmp, &&op_timer_set, &&op_timer_get,
-        &&op_call0, &&op_call1, &&op_call2, &&op_call3, &&op_call4, &&op_calln, &&op_callf, &&op_store,
-        &&op_load, &&op_lset, &&op_lget, &&op_lattach, &&op_ldetach, &&op_cast, &&op_try, &&op_catch,
-        &&op_throw, &&op_trace, &&op_alloc, &&op_map, &&op_collect};
+        &&op_halt, &&op_ret, &&op_push, &&op_pop, &&op_jne, &&op_jmp, &&op_call, &&op_timer_set, &&op_timer_get,
+        &&op_store, &&op_load, &&op_lset, &&op_lget, &&op_lattach, &&op_ldetach, &&op_cast,
+        &&op_try, &&op_catch, &&op_throw, &&op_trace, &&op_alloc, &&op_map, &&op_collect};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
 
@@ -173,11 +169,9 @@ op_halt:
         return null();
 op_ret:
     vm->ip++;
-    // clear locals
-    vector_clear(&f->locals);
     x3 = stack_pop(vm); // return value
     x2 = stack_pop(vm); // ctx
-    stack_pop_free(vm); // <function>
+    stack_pop_free(vm); // free lambda
     j = (i32_t)f->args.adt->len;
     for (i = 0; i < j; i++)
         stack_pop_free(vm); // pop args
@@ -210,6 +204,78 @@ op_jmp:
     load_u64(l, vm);
     vm->ip = l;
     dispatch();
+op_call:
+    b = vm->ip++;
+    addr = stack_peek(vm);
+    switch (addr->type)
+    {
+    case TYPE_UNARY:
+        x0 = stack_pop(vm);
+        f1 = (unary_t)x0.i64;
+        x2 = stack_pop(vm);
+        x1 = f1(&x2);
+        rf_object_free(&x2);
+        unwrap(x1, b);
+        stack_push(vm, x1);
+        break;
+    case TYPE_BINARY:
+        x0 = stack_pop(vm);
+        f2 = (binary_t)x0.i64;
+        x3 = stack_pop(vm);
+        x2 = stack_pop(vm);
+        x1 = f2(&x2, &x3);
+        rf_object_free(&x2);
+        rf_object_free(&x3);
+        unwrap(x1, b);
+        stack_push(vm, x1);
+        break;
+    case -TYPE_LAMBDA:
+        x0 = stack_pop(vm);
+        fn = (vary_t)x0.i64;
+        l = code[vm->ip++];
+        addr = (rf_object_t *)(&vm->stack[vm->sp - l]);
+        x1 = fn(addr, l);
+        for (i = 0; i < l; i++)
+            stack_pop_free(vm); // pop args
+        unwrap(x1, b);
+        stack_push(vm, x1);
+        break;
+    case TYPE_LAMBDA:
+        /* Call stack of user lambda call looks as follows:
+         * +-------------------+
+         * |        ...        |
+         * +-------------------+
+         * | ctx {ret, ip, sp} | <- bp
+         * +-------------------+
+         * |    <lambda>     |
+         * +-------------------+
+         * |       argn        |
+         * +-------------------+
+         * |       ...         |
+         * +-------------------+
+         * |       arg2        |
+         * +-------------------+
+         * |       arg1        |
+         * +-------------------+
+         */
+        l = code[vm->ip++];
+        if (l != as_lambda(addr)->args.adt->len)
+            unwrap(error(ERR_LENGTH, "wrong number of arguments"), b);
+        if ((vm->sp + as_lambda(addr)->stack_size) * sizeof(rf_object_t) > VM_STACK_SIZE)
+            unwrap(error(ERR_STACK_OVERFLOW, "stack overflow"), b);
+        // save ctx
+        ctx = (ctx_t){.addr = f, .ip = vm->ip, .bp = vm->bp};
+        vm->ip = 0;
+        vm->bp = vm->sp;
+        ((ctx_t *)vm->stack)[vm->sp++] = ctx;
+        // --
+        f = as_lambda(addr);
+        code = as_string(&f->code);
+        break;
+    default:
+        unwrap(error(ERR_TYPE, "call"), b);
+    }
+    dispatch();
 op_timer_set:
     vm->ip++;
     vm->timer = clock();
@@ -217,114 +283,6 @@ op_timer_set:
 op_timer_get:
     vm->ip++;
     stack_push(vm, f64((((f64_t)(clock() - vm->timer)) / CLOCKS_PER_SEC) * 1000));
-    dispatch();
-op_call0:
-    b = vm->ip++;
-    load_u64(l, vm);
-    f0 = (nilary_t)l;
-    x1 = f0();
-    unwrap(x1, b);
-    stack_push(vm, x1);
-    dispatch();
-op_call1:
-    b = vm->ip++;
-    load_u64(l, vm);
-    x2 = stack_pop(vm);
-    f1 = (unary_t)l;
-    x1 = f1(&x2);
-    rf_object_free(&x2);
-    unwrap(x1, b);
-    stack_push(vm, x1);
-    dispatch();
-op_call2:
-    b = vm->ip++;
-    load_u64(l, vm);
-    x3 = stack_pop(vm);
-    x2 = stack_pop(vm);
-    f2 = (binary_t)l;
-    x1 = f2(&x2, &x3);
-    rf_object_free(&x2);
-    rf_object_free(&x3);
-    unwrap(x1, b);
-    stack_push(vm, x1);
-    dispatch();
-op_call3:
-    b = vm->ip++;
-    load_u64(l, vm);
-    x4 = stack_pop(vm);
-    x3 = stack_pop(vm);
-    x2 = stack_pop(vm);
-    f3 = (ternary_t)l;
-    x1 = f3(&x2, &x3, &x4);
-    rf_object_free(&x2);
-    rf_object_free(&x3);
-    rf_object_free(&x4);
-    unwrap(x1, b);
-    stack_push(vm, x1);
-    dispatch();
-op_call4:
-    b = vm->ip++;
-    load_u64(l, vm);
-    x5 = stack_pop(vm);
-    x4 = stack_pop(vm);
-    x3 = stack_pop(vm);
-    x2 = stack_pop(vm);
-    f4 = (quaternary_t)l;
-    x1 = f4(&x2, &x3, &x4, &x5);
-    rf_object_free(&x2);
-    rf_object_free(&x3);
-    rf_object_free(&x4);
-    rf_object_free(&x5);
-    unwrap(x1, b);
-    stack_push(vm, x1);
-    dispatch();
-op_calln:
-    b = vm->ip++;
-    j = code[vm->ip++];
-    load_u64(l, vm);
-    fn = (nary_t)l;
-    addr = (rf_object_t *)(&vm->stack[vm->sp - j]);
-    x1 = fn(addr, j);
-    for (i = 0; i < j; i++)
-        stack_pop_free(vm); // pop args
-    unwrap(x1, b);
-    stack_push(vm, x1);
-    dispatch();
-op_callf:
-    /* Call stack of user function call looks as follows:
-     * +-------------------+
-     * |        ...        |
-     * +-------------------+
-     * | ctx {ret, ip, sp} | <- bp
-     * +-------------------+
-     * |    <function>     |
-     * +-------------------+
-     * |       argn        |
-     * +-------------------+
-     * |       ...         |
-     * +-------------------+
-     * |       arg2        |
-     * +-------------------+
-     * |       arg1        |
-     * +-------------------+
-     */
-    b = vm->ip++;
-    l = code[vm->ip++];
-    addr = stack_peek(vm); // function
-    if (addr->type != TYPE_FUNCTION)
-        unwrap(error(ERR_TYPE, "expected function"), b);
-    if (l != as_function(addr)->args.adt->len)
-        unwrap(error(ERR_LENGTH, "wrong number of arguments"), b);
-    if ((vm->sp + as_function(addr)->stack_size) * sizeof(rf_object_t) > VM_STACK_SIZE)
-        unwrap(error(ERR_STACK_OVERFLOW, "stack overflow"), b);
-    // save ctx
-    ctx = (ctx_t){.addr = f, .ip = vm->ip, .bp = vm->bp};
-    vm->ip = 0;
-    vm->bp = vm->sp;
-    ((ctx_t *)vm->stack)[vm->sp++] = ctx;
-    // --
-    f = as_function(addr);
-    code = as_string(&f->code);
     dispatch();
 op_store:
     b = vm->ip++;
@@ -468,7 +426,7 @@ null_t vm_free(vm_t *vm)
  */
 str_t vm_code_fmt(rf_object_t *fun)
 {
-    function_t *f = as_function(fun);
+    lambda_t *f = as_lambda(fun);
     str_t code = as_string(&f->code);
     i32_t c = 0, l = 0, o = 0;
     u32_t ip = 0, len = (u32_t)f->code.adt->len;
@@ -506,49 +464,14 @@ str_t vm_code_fmt(rf_object_t *fun)
             str_fmt_into(&s, &l, &o, 0, "\n");
             ip += sizeof(rf_object_t);
             break;
+        case OP_CALL:
+            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call ", c++, ip++);
+            break;
         case OP_TIMER_SET:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] timer_set\n", c++, ip++);
             break;
         case OP_TIMER_GET:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] timer_get\n", c++, ip++);
-            break;
-        case OP_CALL0:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call0 ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
-            str_fmt_into(&s, &l, &o, 0, "\n");
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL1:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call1 ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
-            str_fmt_into(&s, &l, &o, 0, "\n");
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL2:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call2 ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
-            str_fmt_into(&s, &l, &o, 0, "\n");
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL3:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call3 ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
-            str_fmt_into(&s, &l, &o, 0, "\n");
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALL4:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call4 ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
-            str_fmt_into(&s, &l, &o, 0, "\n");
-            ip += sizeof(rf_object_t);
-            break;
-        case OP_CALLN:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] calln %d %p\n", c++, ip, code[ip + 1], ((rf_object_t *)(code + ip + 2))->i64);
-            ip += 2 + sizeof(rf_object_t);
-            break;
-        case OP_CALLF:
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] callf\n", c++, ip, code[ip + 1]);
-            ip += 2 + sizeof(rf_object_t);
             break;
         case OP_STORE:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] store [%d]\n", c++, ip, (i32_t)((rf_object_t *)(code + ip + 1))->i64);
