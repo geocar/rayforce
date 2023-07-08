@@ -517,7 +517,8 @@ rf_object_t vector_filter(rf_object_t *x, bool_t mask[], i64_t len)
             if (mask[i])
                 as_vector_guid(&vec)[j++] = as_vector_guid(x)[i];
         if (len == NULL_I64)
-            return vec;
+            vector_shrink(&vec, j);
+        return vec;
     case TYPE_CHAR:
         l = x->adt->len;
         ol = (len == NULL_I64) ? (i64_t)x->adt->len : len;
