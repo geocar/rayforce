@@ -39,7 +39,7 @@ extern "C"
 #define UNUSED(x) (void)(x)
 
 // Type constants
-#define TYPE_LIST 0
+#define TYPE_NULL 0
 #define TYPE_BOOL 1
 #define TYPE_I64 2
 #define TYPE_F64 3
@@ -47,6 +47,7 @@ extern "C"
 #define TYPE_TIMESTAMP 5
 #define TYPE_GUID 6
 #define TYPE_CHAR 7
+#define TYPE_LIST 97
 #define TYPE_TABLE 98
 #define TYPE_DICT 99
 #define TYPE_LAMBDA 100
@@ -197,11 +198,11 @@ extern null_t rf_object_free(rf_object_t *rf_object);
 #define as_list(object)             ((rf_object_t *)(as_string(object)))
 
 // Checkers
-#define is_null(object)   ((object)->type == TYPE_LIST && (object)->adt == NULL)
+#define is_null(object)   ((object)->type == TYPE_NULL)
 #define is_error(object)  ((object)->type == TYPE_ERROR)
 #define is_scalar(object) ((object)->type < 0)
-#define is_vector(object) ((object)->type >= 0 && (object)->type < TYPE_DICT)
-#define is_rc(object)     ((object)->type >= 0 && (object)->type < TYPE_UNARY)
+#define is_vector(object) ((object)->type > 0 && (object)->type < TYPE_TABLE)
+#define is_rc(object)     ((object)->type > 0 && (object)->type < TYPE_UNARY)
 
 // Mutators
 extern rf_object_t vector_push(rf_object_t *vector, rf_object_t object);

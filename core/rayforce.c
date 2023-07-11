@@ -91,8 +91,7 @@ rf_object_t error(i8_t code, str_t message)
 rf_object_t null()
 {
     rf_object_t obj = {
-        .type = TYPE_LIST,
-        .adt = NULL,
+        .type = TYPE_NULL,
     };
 
     return obj;
@@ -263,9 +262,6 @@ rf_object_t __attribute__((hot)) rf_object_clone(rf_object_t *object)
     if (!is_rc(object))
         return *object;
 
-    if (is_null(object))
-        return *object;
-
     rc_inc(object);
 
     switch (object->type)
@@ -314,9 +310,6 @@ null_t __attribute__((hot)) rf_object_free(rf_object_t *object)
     }
 
     if (!is_rc(object))
-        return;
-
-    if (is_null(object))
         return;
 
     rc_dec(rc, object);
@@ -384,9 +377,6 @@ rf_object_t rf_object_cow(rf_object_t *object)
     }
 
     if (!is_rc(object))
-        return *object;
-
-    if (is_null(object))
         return *object;
 
     if (rf_object_rc(object) == 1)

@@ -80,12 +80,10 @@ rf_object_t dict_set(rf_object_t *dict, rf_object_t *key, rf_object_t val)
         as_vector_i64(vals)[index] = val.i64;
         break;
     case TYPE_LIST:
-        if (is_null(vals))
-            panic("dict set: null list");
         as_list(vals)[index] = rf_object_clone(&val);
         break;
     default:
-        panic("dict set: unknown type");
+        panic("dict set: unsupported type");
     }
 
     return val;

@@ -460,8 +460,6 @@ null_t find_used_symbols(rf_object_t *lst, rf_object_t *syms)
             vector_push(syms, *lst);
         return;
     case TYPE_LIST:
-        if (is_null(lst))
-            return;
         l = lst->adt->len;
         if (l == 0)
             return;
@@ -680,9 +678,6 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
     rf_object_t *code = &func->code;
     cc_result_t res = CC_NONE;
 
-    if (is_null(object))
-        goto other;
-
     switch (object->type)
     {
     case -TYPE_SYMBOL:
@@ -803,7 +798,7 @@ rf_object_t cc_compile_lambda(bool_t top, str_t name, rf_object_t args,
     {
         b = body + i;
         // skip const expressions
-        if (b->type != TYPE_LIST || is_null(b))
+        if (b->type != TYPE_LIST)
             continue;
 
         res = cc_compile_expr(false, &cc, b);

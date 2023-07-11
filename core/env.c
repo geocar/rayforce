@@ -136,21 +136,22 @@ null_t init_typenames(rf_object_t *typenames)
     regt(typenames, -TYPE_SYMBOL,     "symbol");
     regt(typenames, -TYPE_TIMESTAMP,  "timestamp");
     regt(typenames, -TYPE_GUID,       "guid");
-    regt(typenames, TYPE_BOOL,        "Bool");
-    regt(typenames, TYPE_I64,         "I64");
-    regt(typenames, TYPE_F64,         "F64");
-    regt(typenames, TYPE_CHAR,        "Char");
-    regt(typenames, TYPE_SYMBOL,      "Symbol");
-    regt(typenames, TYPE_TIMESTAMP,   "Timestamp");
-    regt(typenames, TYPE_GUID,        "Guid");
-    regt(typenames, TYPE_LIST,        "List");
-    regt(typenames, TYPE_TABLE,       "Table");
-    regt(typenames, TYPE_DICT,        "Dict");
-    regt(typenames, TYPE_UNARY,       "Unary");
-    regt(typenames, TYPE_BINARY,      "Binary");
-    regt(typenames, TYPE_VARY,        "Vary");
-    regt(typenames, TYPE_LAMBDA,      "Lambda");
-    regt(typenames, TYPE_ERROR,       "Error");
+    regt(typenames,  TYPE_NULL,       "null");
+    regt(typenames,  TYPE_BOOL,       "Bool");
+    regt(typenames,  TYPE_I64,        "I64");
+    regt(typenames,  TYPE_F64,        "F64");
+    regt(typenames,  TYPE_CHAR,       "Char");
+    regt(typenames,  TYPE_SYMBOL,     "Symbol");
+    regt(typenames,  TYPE_TIMESTAMP,  "Timestamp");
+    regt(typenames,  TYPE_GUID,       "Guid");
+    regt(typenames,  TYPE_LIST,       "List");
+    regt(typenames,  TYPE_TABLE,      "Table");
+    regt(typenames,  TYPE_DICT,       "Dict");
+    regt(typenames,  TYPE_UNARY,      "Unary");
+    regt(typenames,  TYPE_BINARY,     "Binary");
+    regt(typenames,  TYPE_VARY,       "Vary");
+    regt(typenames,  TYPE_LAMBDA,     "Lambda");
+    regt(typenames,  TYPE_ERROR,      "Error");
 }
 
 

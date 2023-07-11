@@ -86,9 +86,6 @@ rf_object_t vector_push(rf_object_t *vec, rf_object_t value)
     if (!is_vector(vec))
         panic("vector push: can not push to scalar");
 
-    if (is_null(vec))
-        panic("vector push: can not push to a null");
-
     l = vec->adt->len;
 
     // if (l == 0)
@@ -146,7 +143,7 @@ rf_object_t vector_pop(rf_object_t *vec)
 {
     guid_t *g;
 
-    if (!is_vector(vec) || is_null(vec) || vec->adt->len == 0)
+    if (!is_vector(vec) || vec->adt->len == 0)
         return null();
 
     switch (vec->type)
@@ -212,7 +209,7 @@ null_t vector_reserve(rf_object_t *vec, u32_t len)
 
 null_t vector_grow(rf_object_t *vec, u32_t len)
 {
-    if (is_null(vec))
+    if (!is_vector(vec))
         panic_type("vector grow: can not reserve a null", vec->type);
 
     // calculate size of vector with new length
@@ -224,7 +221,7 @@ null_t vector_grow(rf_object_t *vec, u32_t len)
 
 null_t vector_shrink(rf_object_t *vec, u32_t len)
 {
-    if (is_null(vec))
+    if (!is_vector(vec))
         panic_type("vector shrink: can not reserve a null", vec->type);
 
     if (vec->adt->len == len)
@@ -246,9 +243,6 @@ i64_t vector_find(rf_object_t *vec, rf_object_t *key)
     rf_object_t *kl, *vl;
     i64_t i, l;
     guid_t *kg, *vg;
-
-    if (is_null(vec))
-        panic("vector find: can not find in a null");
 
     if (!is_vector(vec))
         panic("vector find: can not find in a null");
@@ -327,9 +321,6 @@ rf_object_t vector_get(rf_object_t *vec, i64_t index)
 
     if (!is_vector(vec))
         return error(ERR_TYPE, "vector get: can not get from scalar");
-
-    if (is_null(vec))
-        return error(ERR_TYPE, "vector get: can not get from null");
 
     l = vec->adt->len;
 

@@ -172,7 +172,6 @@ op_halt:
 op_push:
     vm->ip++;
     load_u64(l, vm);
-    debug_object(&as_lambda(fun)->constants);
     x1 = vector_get(&f->constants, l);
     stack_push(vm, x1);
     dispatch();
@@ -477,7 +476,7 @@ str_t vm_code_fmt(rf_object_t *fun)
             break;
         case OP_PUSH:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] push ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            rf_object_fmt_into(&s, &l, &o, 0, (rf_object_t *)(code + ip));
             str_fmt_into(&s, &l, &o, 0, "\n");
             ip += sizeof(rf_object_t);
             break;
@@ -486,13 +485,13 @@ str_t vm_code_fmt(rf_object_t *fun)
             break;
         case OP_JNE:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] jne ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            rf_object_fmt_into(&s, &l, &o, 0, (rf_object_t *)(code + ip));
             str_fmt_into(&s, &l, &o, 0, "\n");
             ip += sizeof(rf_object_t);
             break;
         case OP_JMP:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] jmp ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            rf_object_fmt_into(&s, &l, &o, 0, (rf_object_t *)(code + ip));
             str_fmt_into(&s, &l, &o, 0, "\n");
             ip += sizeof(rf_object_t);
             break;
@@ -515,7 +514,7 @@ str_t vm_code_fmt(rf_object_t *fun)
             break;
         case OP_TRY:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] try ", c++, ip++);
-            rf_object_fmt_into(&s, &l, &o, 0, 0, (rf_object_t *)(code + ip));
+            rf_object_fmt_into(&s, &l, &o, 0, (rf_object_t *)(code + ip));
             str_fmt_into(&s, &l, &o, 0, "\n");
             ip += sizeof(rf_object_t);
             break;
