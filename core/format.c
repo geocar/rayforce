@@ -309,7 +309,7 @@ i32_t string_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, rf_obj
 i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, rf_object_t *object)
 {
     rf_object_t *keys = &as_list(object)[0], *vals = &as_list(object)[1], v;
-    i32_t i, m, n, dict_height = keys->adt->len;
+    i32_t i, n, dict_height = keys->adt->len;
 
     if (dict_height == 0)
         return str_fmt_into(dst, len, offset, limit, "{}");
@@ -323,14 +323,12 @@ i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
 
     for (i = 0; i < dict_height; i++)
     {
-        m = 0;
-
         maxn(n, str_fmt_into(dst, len, offset, 0, "\n%*.*s", indent, indent, PADDING));
         v = vector_get(keys, i);
         maxn(n, rf_object_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, &v));
         rf_object_free(&v);
 
-        m += str_fmt_into(dst, len, offset, MAX_ROW_WIDTH, ": ");
+        n += str_fmt_into(dst, len, offset, MAX_ROW_WIDTH, ": ");
 
         v = vector_get(vals, i);
         maxn(n, rf_object_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, &v));

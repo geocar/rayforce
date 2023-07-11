@@ -113,9 +113,6 @@ rf_object_t _push(rf_object_t *vec, rf_object_t value)
 
 rf_object_t list_push(rf_object_t *vec, rf_object_t value)
 {
-    i64_t i, l;
-    rf_object_t lst;
-
     if (!is_vector(vec))
         panic("vector push: can not push to a non-vector");
 
@@ -127,7 +124,7 @@ rf_object_t list_push(rf_object_t *vec, rf_object_t value)
 
 rf_object_t vector_push(rf_object_t *vec, rf_object_t value)
 {
-    i64_t i, l;
+    u64_t i, l;
     rf_object_t lst;
 
     if (!is_vector(vec))

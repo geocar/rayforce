@@ -366,7 +366,6 @@ rf_object_t rf_object_cow(rf_object_t *object)
 {
     i64_t i, l;
     rf_object_t new;
-    type_t type;
 
     if (object->type == -TYPE_GUID)
     {

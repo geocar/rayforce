@@ -37,10 +37,11 @@
 // Atomic binary functions (iterates through list of arguments down to atoms)
 rf_object_t rf_call_binary_atomic(binary_t f, rf_object_t *x, rf_object_t *y)
 {
-    i64_t i, l;
+    u64_t i, l;
     rf_object_t res, item, a, b;
 
-    if (x->type == TYPE_LIST && is_vector(y) || y->type == TYPE_LIST && is_vector(x))
+    if ((x->type == TYPE_LIST && is_vector(y)) ||
+        (y->type == TYPE_LIST && is_vector(x)))
     {
         l = x->adt->len;
         if (l != y->adt->len)
@@ -185,8 +186,7 @@ rf_object_t rf_rand(rf_object_t *x, rf_object_t *y)
 
 rf_object_t rf_add(rf_object_t *x, rf_object_t *y)
 {
-    i32_t i;
-    i64_t l;
+    u64_t i, l;
     rf_object_t vec, v;
 
     switch (MTYPE2(x->type, y->type))
@@ -1308,8 +1308,9 @@ rf_object_t rf_filter(rf_object_t *x, rf_object_t *y)
 
 rf_object_t rf_take(rf_object_t *x, rf_object_t *y)
 {
-    i64_t i, j, l, *p;
-    rf_object_t res, col, cols, sym, syms;
+    u64_t i, l;
+    i64_t *p;
+    rf_object_t res, cols, sym, syms;
 
     switch (MTYPE2(x->type, y->type))
     {

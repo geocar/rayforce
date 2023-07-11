@@ -155,7 +155,6 @@ rf_object_t rf_sum(rf_object_t *x)
     i32_t i;
     i64_t l, isum = 0, *iv;
     f64_t fsum = 0.0, *fv;
-    rf_object_t res, v;
 
     switch (MTYPE(x->type))
     {
@@ -200,7 +199,6 @@ rf_object_t rf_avg(rf_object_t *x)
     i32_t i;
     i64_t l, isum, *iv, n = 0;
     f64_t fsum, *fv;
-    rf_object_t res, v;
 
     switch (MTYPE(x->type))
     {

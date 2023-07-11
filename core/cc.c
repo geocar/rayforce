@@ -353,7 +353,6 @@ type_t cc_compile_catch(cc_t *cc, rf_object_t *object, u32_t arity)
 
 cc_result_t cc_compile_call(cc_t *cc, rf_object_t *car, u8_t arity)
 {
-    cc_result_t res;
     rf_object_t *code = &as_lambda(&cc->lambda)->code, rec;
 
     rec = dict_get(&runtime_get()->env.functions, car);
@@ -475,7 +474,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
 {
     cc_result_t res;
     i64_t i, l, k;
-    rf_object_t *car, *params, key, val, cols, syms, g;
+    rf_object_t *car, *params, key, val, cols, syms;
     lambda_t *func = as_lambda(&cc->lambda);
     rf_object_t *code = &func->code;
 
