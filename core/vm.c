@@ -100,9 +100,9 @@ rf_object_t __attribute__((hot)) vm_exec(vm_t *vm, rf_object_t *fun)
 
     // The indices of labels in the dispatch_table are the relevant opcodes
     static null_t *dispatch_table[] = {
-        &&op_halt, &&op_push, &&op_pop, &&op_jne, &&op_jmp, &&op_call1, &&op_call2, &&op_calln,
+        &&op_halt, &&op_push, &&op_pop, &&op_swap, &&op_jne, &&op_jmp, &&op_call1, &&op_call2, &&op_calln,
         &&op_calld, &&op_ret, &&op_timer_set, &&op_timer_get, &&op_store, &&op_load, &&op_lset,
-        &&op_lget, &&op_lpush, &&op_lpop, &&op_filter, &&op_group, &&op_try, &&op_catch, &&op_throw,
+        &&op_lget, &&op_lpush, &&op_lpop, &&op_group, &&op_try, &&op_catch, &&op_throw,
         &&op_trace, &&op_alloc, &&op_map, &&op_collect};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
@@ -179,6 +179,13 @@ op_push:
 op_pop:
     vm->ip++;
     stack_pop_free(vm);
+    dispatch();
+op_swap:
+    vm->ip++;
+    x1 = stack_pop(vm);
+    x2 = stack_pop(vm);
+    stack_push(vm, x1);
+    stack_push(vm, x2);
     dispatch();
 op_jne:
     vm->ip++;
@@ -350,50 +357,15 @@ op_lget:
     dispatch();
 op_lpush:
     b = vm->ip++;
-    x0 = stack_pop(vm); // keys
     x1 = stack_pop(vm); // table or dict
     if (x1.type != TYPE_TABLE && x1.type != TYPE_DICT)
         unwrap(error(ERR_TYPE, "expected dict or table"), b);
-    if (!is_null(&x0))
-    {
-        x2 = rf_sect(&as_list(&x1)[0], &x0);
-        rf_object_free(&x0);
-
-        x3 = rf_take(&x1, &x2);
-        x3.type = TYPE_DICT;
-
-        rf_object_free(&x1);
-        rf_object_free(&x2);
-
-        vector_push(&f->locals, x3);
-    }
-    else
-        vector_push(&f->locals, x1);
+    vector_push(&f->locals, x1);
     dispatch();
 op_lpop:
     b = vm->ip++;
     x1 = vector_pop(&f->locals);
     stack_push(vm, x1);
-    dispatch();
-op_filter:
-    b = vm->ip++;
-    m = f->locals.adt->len - 1;
-    x1 = stack_pop(vm); // filters
-
-    l = x3.adt->len;
-
-    for (p = 0; p < l; p++)
-    {
-        x2 = symboli64(as_vector_symbol(&x3)[p]);
-        x4 = dict_get(&as_list(&f->locals)[m], &x2);
-        x5 = rf_take(&x4, &x1);
-        dict_set(&as_list(&f->locals)[m], &x2, x5);
-        rf_object_free(&x4);
-    }
-
-    rf_object_free(&x1);
-    rf_object_free(&x3);
-
     dispatch();
 op_group:
     b = vm->ip++;

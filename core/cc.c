@@ -634,8 +634,6 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
     val = dict_get(params, &key);
     if (!is_null(&val))
     {
-        push_opcode(cc, car->id, code, OP_PUSH);
-        push_const(cc, null());
         push_opcode(cc, car->id, code, OP_LPUSH);
 
         res = cc_compile_where(cc, &val);
@@ -648,22 +646,30 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         }
 
         push_opcode(cc, car->id, code, OP_LPOP);
-        // reduce table by used columns
+
+        // push used columns
         push_opcode(cc, car->id, code, OP_PUSH);
         push_const(cc, k);
 
-        push_opcode(cc, car->id, code, OP_LPUSH);
+        push_opcode(cc, car->id, code, OP_CALL2);
+        push_opcode(cc, car->id, code, 0);
+        push_u64(code, rf_take);
 
-        push_opcode(cc, car->id, code, OP_FILTER);
+        push_opcode(cc, car->id, code, OP_SWAP);
     }
     else
     {
-        // reduce table by used columns
+        // push used columns
         push_opcode(cc, car->id, code, OP_PUSH);
         push_const(cc, k);
-
-        push_opcode(cc, car->id, code, OP_LPUSH);
     }
+
+    // reduce table by used columns/filters
+    push_opcode(cc, car->id, code, OP_CALL2);
+    push_opcode(cc, car->id, code, 0);
+    push_u64(code, rf_take);
+
+    push_opcode(cc, car->id, code, OP_LPUSH);
 
     res = cc_compile_by(has_consumer, cc, object, arity);
 
