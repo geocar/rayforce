@@ -34,7 +34,6 @@
 #define MIN_ALLOC        (1ull << MIN_ORDER) // 64 bytes
 #define MAX_ALLOC        (1ull << MAX_ORDER) // 32MB
 #define POOL_SIZE        (1ull << MAX_ORDER) // 32MB
-#define SMALL_BLOCK_SIZE (1ull << MIN_ORDER) // 64 bytes
 #define NUM_32_BLOCKS    1024 * 1024 * 8     // 8M blocks
 #define NUM_64_BLOCKS    1024 * 1024 * 8     // 8M blocks
 

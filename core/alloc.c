@@ -59,6 +59,7 @@ null_t print_blocks()
 
 null_t *rf_alloc_add_pool(u64_t size)
 {
+    // printf("ADD POOL: %llu O: %d\n", size, orderof(size));
     null_t *pool = mmap_malloc(size);
     if (pool == NULL)
         return NULL;
@@ -74,7 +75,7 @@ null_t *rf_alloc_add_pool(u64_t size)
 
 alloc_t rf_alloc_init()
 {
-    i32_t i, order;
+    i32_t i;
 
     _ALLOC = (alloc_t)mmap_malloc(sizeof(struct alloc_t));
     _ALLOC->avail = 0;
@@ -99,15 +100,13 @@ alloc_t rf_alloc_init()
         _ALLOC->freelist64 = block64;
     }
 
-    for (order = MAX_ORDER; order <= MAX_ORDER; order++)
-    {
-        node_t *node = (node_t *)rf_alloc_add_pool(1ull << order);
+    node_t *node = (node_t *)rf_alloc_add_pool(1ull << MAX_ORDER);
+    node->next = NULL;
+    _ALLOC->freelist[MAX_ORDER] = node;
+    _ALLOC->avail = 1ull << MAX_ORDER;
 
-        node->next = NULL;
-        _ALLOC->freelist[order] = node;
-        _ALLOC->avail |= 1ull << order;
-    }
     // print_blocks();
+
     return _ALLOC;
 }
 
