@@ -344,11 +344,13 @@ rf_object_t rf_table(rf_object_t *x, rf_object_t *y)
         case -TYPE_F64:
         case -TYPE_CHAR:
         case -TYPE_SYMBOL:
+        case -TYPE_TIMESTAMP:
             s = true;
             break;
         case TYPE_BOOL:
         case TYPE_I64:
         case TYPE_F64:
+        case TYPE_TIMESTAMP:
         case TYPE_CHAR:
         case TYPE_SYMBOL:
         case TYPE_LIST:
@@ -428,10 +430,13 @@ rf_object_t rf_add(rf_object_t *x, rf_object_t *y)
     switch (MTYPE2(x->type, y->type))
     {
     case MTYPE2(-TYPE_I64, -TYPE_I64):
-        return (i64(ADDI64(x->i64, y->i64)));
+        return i64(ADDI64(x->i64, y->i64));
 
     case MTYPE2(-TYPE_F64, -TYPE_F64):
-        return (f64(ADDF64(x->f64, y->f64)));
+        return f64(ADDF64(x->f64, y->f64));
+
+    case MTYPE2(-TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+        return timestamp(ADDI64(x->i64, y->i64));
 
     case MTYPE2(-TYPE_I64, TYPE_I64):
         l = y->adt->len;
@@ -446,6 +451,30 @@ rf_object_t rf_add(rf_object_t *x, rf_object_t *y)
         vec = vector_f64(l);
         for (i = 0; i < l; i++)
             as_vector_f64(&vec)[i] = ADDF64(x->f64, as_vector_f64(y)[i]);
+
+        return vec;
+
+    case MTYPE2(-TYPE_TIMESTAMP, TYPE_I64):
+        l = y->adt->len;
+        vec = vector_timestamp(l);
+        for (i = 0; i < l; i++)
+            as_vector_i64(&vec)[i] = ADDI64(x->i64, as_vector_i64(y)[i]);
+
+        return vec;
+
+    case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
+        l = x->adt->len;
+        vec = vector_timestamp(l);
+        for (i = 0; i < l; i++)
+            as_vector_i64(&vec)[i] = ADDI64(as_vector_i64(x)[i], y->i64);
+
+        return vec;
+
+    case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
+        l = x->adt->len;
+        vec = vector_timestamp(l);
+        for (i = 0; i < l; i++)
+            as_vector_i64(&vec)[i] = ADDI64(as_vector_i64(x)[i], as_vector_i64(y)[i]);
 
         return vec;
 

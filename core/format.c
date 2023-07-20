@@ -77,8 +77,6 @@ i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt
         *dst = s;
     }
 
-    // debug("LEN: %d, OFFSET: %d, SIZE: %d FREE: %d", *len, *offset, size, *len - *offset);
-
     while (1)
     {
         p = *dst + *offset;
@@ -206,6 +204,9 @@ i32_t ts_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, i64_t val)
     timestamp_t ts = rf_timestamp_from_i64(val);
     i32_t n = str_fmt_into(dst, len, offset, limit, "%.4d.%.2d.%.2dD%.2d:%.2d:%.2d.%.9d",
                            ts.year, ts.month, ts.day, ts.hours, ts.mins, ts.secs, ts.nanos);
+
+    if (n > limit)
+        n += str_fmt_into(dst, len, offset, 3, "..");
 
     return n;
 }
@@ -380,7 +381,7 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, rf_obj
             o = 0;
 
             c = vector_get(column, j);
-            maxn(n, rf_object_fmt_into(&s, &l, &o, 0, 10, &c));
+            maxn(n, rf_object_fmt_into(&s, &l, &o, 0, 31, &c));
             rf_object_free(&c);
 
             formatted_columns[i][j] = s;
