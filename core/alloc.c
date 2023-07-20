@@ -121,7 +121,7 @@ alloc_t rf_alloc_get()
 
 null_t rf_alloc_cleanup()
 {
-    i32_t i;
+    i32_t i, order;
     null_t *base;
     node_t *node, *next;
 
@@ -133,13 +133,14 @@ null_t rf_alloc_cleanup()
         {
             next = node->next;
             base = blockaddr(node->base);
-            if (node != base)
+            order = blockorder(node->base);
+            if (order != i)
             {
                 debug("order: %d node: %p base: %p\n", i, node, base);
                 return;
             }
 
-            mmap_free(node, blocksize(blockorder(node->base)));
+            mmap_free(node, blocksize(order));
             node = next;
         }
     }
