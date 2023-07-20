@@ -33,8 +33,8 @@ static alloc_t _ALLOC = NULL;
 
 // clang-format off
 #define AVAIL_MASK       ((u64_t)0xFFFFFFFFFFFFFFFF)
-#define BLOCK_ORDER_MASK (1ull << 56)        // 1 byte
-#define BLOCK_ADDR_MASK  (~BLOCK_ORDER_MASK) // 7 bytes
+#define BLOCK_ADDR_MASK  ((u64_t)0x00FFFFFFFFFFFFFF)
+#define BLOCK_ORDER_MASK (~BLOCK_ADDR_MASK)
 #define blockorder(p)    ((u64_t)(p) >> 56)
 #define blockaddr(p)     ((null_t *)((u64_t)(p) & BLOCK_ADDR_MASK))
 #define blocksize(i)     (1ull << (i))
@@ -61,8 +61,9 @@ null_t print_blocks()
     }
 }
 
-null_t *rf_alloc_add_pool(u64_t size)
+null_t *rf_alloc_add_pool(u64_t order)
 {
+    u64_t size = blocksize(order);
     null_t *pool = mmap_malloc(size);
 
     if (pool == NULL)
@@ -70,9 +71,9 @@ null_t *rf_alloc_add_pool(u64_t size)
 
     node_t *node = (node_t *)pool;
 
-    assert((i64_t)node % 16 == 0);
+    debug_assert((i64_t)node % 16 == 0);
 
-    node->base = (null_t *)((orderof(size) << 56) | (u64_t)pool);
+    node->base = (null_t *)(order << 56 | (u64_t)pool);
     node->size = size;
 
     return (null_t *)node;
@@ -105,7 +106,7 @@ alloc_t rf_alloc_init()
         _ALLOC->freelist64 = block64;
     }
 
-    node_t *node = (node_t *)rf_alloc_add_pool(1ull << MAX_ORDER);
+    node_t *node = (node_t *)rf_alloc_add_pool(MAX_ORDER);
     node->next = NULL;
     _ALLOC->freelist[MAX_ORDER] = node;
     _ALLOC->avail = 1ull << MAX_ORDER;
@@ -125,6 +126,7 @@ null_t rf_alloc_cleanup()
     print_blocks();
 
     i32_t i;
+    null_t *base;
 
     // All the nodes remains are pools, so just munmap them
     for (i = 0; i <= MAX_POOL_ORDER; i++)
@@ -133,12 +135,14 @@ null_t rf_alloc_cleanup()
         while (node)
         {
             next = node->next;
-            if (blockaddr(node->base) != node)
+            base = blockaddr(node->base);
+            if (node != base)
             {
-                debug("node->base: %p\n", node->base);
+                debug("order: %d node: %p base: %p\n", i, node, base);
                 return;
             }
-            mmap_free(node->base, node->size);
+
+            mmap_free(base, node->size);
             node = next;
         }
     }
@@ -233,12 +237,11 @@ null_t *rf_malloc(u64_t size)
     {
         if (capacity >= POOL_SIZE)
         {
-            capacity = 1ull << order;
-            block = rf_alloc_add_pool(capacity);
+            block = rf_alloc_add_pool(order);
             return (null_t *)((node_t *)block + 1);
         }
 
-        node_t *node = (node_t *)rf_alloc_add_pool(POOL_SIZE);
+        node_t *node = (node_t *)rf_alloc_add_pool(MAX_ORDER);
 
         node->next = NULL;
         _ALLOC->freelist[MAX_ORDER] = node;
@@ -449,7 +452,7 @@ null_t rf_alloc_mrequest(u64_t size)
         return;
 
     // add a new pool of requested size
-    node = (node_t *)rf_alloc_add_pool(capacity);
+    node = (node_t *)rf_alloc_add_pool(order);
 
     if (node == NULL)
         return;
