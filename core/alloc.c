@@ -111,8 +111,6 @@ alloc_t rf_alloc_init()
     _ALLOC->freelist[MAX_ORDER] = node;
     _ALLOC->avail = 1ull << MAX_ORDER;
 
-    // print_blocks();
-
     return _ALLOC;
 }
 
@@ -123,8 +121,6 @@ alloc_t rf_alloc_get()
 
 null_t rf_alloc_cleanup()
 {
-    print_blocks();
-
     i32_t i;
     null_t *base;
 
