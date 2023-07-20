@@ -293,7 +293,7 @@ rf_object_t rf_call_binary(u8_t flags, binary_t f, rf_object_t *x, rf_object_t *
     case FLAG_RIGHT_ATOMIC:
         return rf_call_binary_right_atomic(f, x, y);
     default:
-        return call_binary(f, x, y);
+        return f(x, y);
     }
 }
 
@@ -1699,6 +1699,24 @@ rf_object_t rf_take(rf_object_t *x, rf_object_t *y)
 
         for (i = 0; i < l; i++)
             as_vector_f64(&res)[i] = vector_get(x, as_vector_i64(y)[i]).f64;
+
+        return res;
+
+    case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
+        l = y->adt->len;
+        res = vector_timestamp(l);
+
+        for (i = 0; i < l; i++)
+            as_vector_timestamp(&res)[i] = vector_get(x, as_vector_i64(y)[i]).i64;
+
+        return res;
+
+    case MTYPE2(TYPE_LIST, TYPE_I64):
+        l = y->adt->len;
+        res = list(l);
+
+        for (i = 0; i < l; i++)
+            as_list(&res)[i] = rf_object_clone(&as_list(x)[as_vector_i64(y)[i]]);
 
         return res;
 
