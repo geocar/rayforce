@@ -74,7 +74,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
     if (xl == 0)
         return vector_i64(0);
 
-    if (x->adt->attrs & VEC_ATTR_DISTINCT)
+    if (x->adt->attrs.flags & VEC_ATTR_DISTINCT)
         return rf_object_clone(x);
 
     max = min = iv1[0];
@@ -122,7 +122,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
         rf_object_free(&mask);
         vector_shrink(&vec, j);
 
-        vec.adt->attrs |= VEC_ATTR_DISTINCT;
+        vec.adt->attrs.flags |= VEC_ATTR_DISTINCT;
 
         return vec;
     }
@@ -161,7 +161,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
             }
         }
 
-        vec.adt->attrs |= VEC_ATTR_DISTINCT;
+        vec.adt->attrs.flags |= VEC_ATTR_DISTINCT;
         vector_shrink(&vec, j);
         rf_object_free(&mask);
         set_free(set);
@@ -177,7 +177,7 @@ set:
         if (set_insert(set, normalize(iv1[i])))
             ov[j++] = iv1[i];
 
-    vec.adt->attrs |= VEC_ATTR_DISTINCT;
+    vec.adt->attrs.flags |= VEC_ATTR_DISTINCT;
     vector_shrink(&vec, j);
     set_free(set);
 

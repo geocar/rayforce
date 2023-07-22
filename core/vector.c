@@ -68,7 +68,7 @@ rf_object_t vector(type_t type, i64_t len)
 
     adt->len = len;
     adt->rc = 1;
-    adt->attrs = 0;
+    adt->attrs = (attrs_t){0};
 
     rf_object_t v = {
         .type = type,

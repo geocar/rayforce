@@ -29,11 +29,10 @@
 #include "ops.h"
 #include "util.h"
 
-#define VEC_ATTR_WITHOUT_NULLS 1Ull << 63
-#define VEC_ATTR_ASC (1Ull << 62)
-#define VEC_ATTR_DESC (1Ull << 61)
-#define VEC_ATTR_DISTINCT (1Ull << 60)
-#define VEC_ATTR_MASK 0xFF << 55
+#define VEC_ATTR_WITHOUT_NULLS 1 << 31
+#define VEC_ATTR_ASC (1 << 30)
+#define VEC_ATTR_DESC (1 << 29)
+#define VEC_ATTR_DISTINCT (1 << 28)
 
 /*
  * Each vector capacity is always factor of 16

@@ -98,6 +98,15 @@ typedef struct span_t
 } span_t;
 
 /*
+* Vector asttributes
+*/
+typedef struct attrs_t
+{
+    i32_t flags;
+    i32_t fd;
+} attrs_t;
+
+/*
  * ADT header
  */
 typedef struct header_t
@@ -108,7 +117,7 @@ typedef struct header_t
     union
     {
         i8_t code;
-        i64_t attrs;
+        attrs_t attrs;
     };
 } header_t;
 

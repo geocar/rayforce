@@ -142,7 +142,7 @@ rf_object_t rf_til(rf_object_t *x)
     for (i = 0; i < l; i++)
         v[i] = i;
 
-    vec.adt->attrs = VEC_ATTR_ASC | VEC_ATTR_WITHOUT_NULLS | VEC_ATTR_DISTINCT;
+    vec.adt->attrs.flags = VEC_ATTR_ASC | VEC_ATTR_WITHOUT_NULLS | VEC_ATTR_DISTINCT;
     return vec;
 }
 
@@ -186,7 +186,7 @@ rf_object_t rf_sum(rf_object_t *x)
     case MTYPE(TYPE_I64):
         l = x->adt->len;
         iv = as_vector_i64(x);
-        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        if (x->adt->attrs.flags & VEC_ATTR_WITHOUT_NULLS)
         {
             for (i = 0; i < l; i++)
                 isum += iv[i];
@@ -228,7 +228,7 @@ rf_object_t rf_avg(rf_object_t *x)
         iv = as_vector_i64(x);
         isum = 0;
         // vectorized version when we exactly know that there are no nulls
-        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        if (x->adt->attrs.flags & VEC_ATTR_WITHOUT_NULLS)
         {
             for (i = 0; i < l; i++)
                 isum += iv[i];
@@ -277,11 +277,11 @@ rf_object_t rf_min(rf_object_t *x)
         iv = as_vector_i64(x);
         imin = iv[0];
         // vectorized version when we exactly know that there are no nulls
-        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        if (x->adt->attrs.flags & VEC_ATTR_WITHOUT_NULLS)
         {
-            if (x->adt->attrs & VEC_ATTR_ASC)
+            if (x->adt->attrs.flags & VEC_ATTR_ASC)
                 return i64(iv[0]);
-            if (x->adt->attrs & VEC_ATTR_DESC)
+            if (x->adt->attrs.flags & VEC_ATTR_DESC)
                 return i64(iv[l - 1]);
             imin = iv[0];
             for (i = 1; i < l; i++)
@@ -317,11 +317,11 @@ rf_object_t rf_min(rf_object_t *x)
         fv = as_vector_f64(x);
         fmin = fv[0];
         // vectorized version when we exactly know that there are no nulls
-        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        if (x->adt->attrs.flags & VEC_ATTR_WITHOUT_NULLS)
         {
-            if (x->adt->attrs & VEC_ATTR_ASC)
+            if (x->adt->attrs.flags & VEC_ATTR_ASC)
                 return f64(fv[0]);
-            if (x->adt->attrs & VEC_ATTR_DESC)
+            if (x->adt->attrs.flags & VEC_ATTR_DESC)
                 return f64(fv[l - 1]);
             fmin = fv[0];
             for (i = 1; i < l; i++)
@@ -357,11 +357,11 @@ rf_object_t rf_max(rf_object_t *x)
         iv = as_vector_i64(x);
         imax = iv[0];
         // vectorized version when we exactly know that there are no nulls
-        if (x->adt->attrs & VEC_ATTR_WITHOUT_NULLS)
+        if (x->adt->attrs.flags & VEC_ATTR_WITHOUT_NULLS)
         {
-            if (x->adt->attrs & VEC_ATTR_ASC)
+            if (x->adt->attrs.flags & VEC_ATTR_ASC)
                 return i64(iv[l - 1]);
-            if (x->adt->attrs & VEC_ATTR_DESC)
+            if (x->adt->attrs.flags & VEC_ATTR_DESC)
                 return i64(iv[0]);
             imax = iv[0];
             for (i = 1; i < l; i++)
@@ -453,7 +453,7 @@ rf_object_t rf_asc(rf_object_t *x)
         for (i = 0; i < l; i++)
             as_vector_i64(&idx)[i] = as_vector_i64(x)[as_vector_i64(&idx)[i]];
 
-        idx.adt->attrs |= VEC_ATTR_ASC;
+        idx.adt->attrs.flags |= VEC_ATTR_ASC;
 
         return idx;
 
@@ -474,7 +474,7 @@ rf_object_t rf_desc(rf_object_t *x)
         for (i = 0; i < l; i++)
             as_vector_i64(&idx)[i] = as_vector_i64(x)[as_vector_i64(&idx)[i]];
 
-        idx.adt->attrs |= VEC_ATTR_DESC;
+        idx.adt->attrs.flags |= VEC_ATTR_DESC;
 
         return idx;
 

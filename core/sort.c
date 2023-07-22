@@ -273,14 +273,14 @@ rf_object_t rf_sort_asc(rf_object_t *vec)
     rf_object_t indices = vector_i64(len);
     i64_t *iv = as_vector_i64(vec), *ov = as_vector_i64(&indices);
 
-    if (vec->adt->attrs & VEC_ATTR_ASC)
+    if (vec->adt->attrs.flags & VEC_ATTR_ASC)
     {
         for (i = 0; i < len; i++)
             ov[i] = i;
         return indices;
     }
 
-    if (vec->adt->attrs & VEC_ATTR_DESC)
+    if (vec->adt->attrs.flags & VEC_ATTR_DESC)
     {
         for (i = 0; i < len; i++)
             ov[i] = len - i - 1;
@@ -306,7 +306,7 @@ rf_object_t rf_sort_asc(rf_object_t *vec)
     // ascending order
     if (out_of_order == 0)
     {
-        vec->adt->attrs |= VEC_ATTR_ASC;
+        vec->adt->attrs.flags |= VEC_ATTR_ASC;
         for (i = 0; i < len; i++)
             ov[i] = i;
         return indices;
@@ -315,7 +315,7 @@ rf_object_t rf_sort_asc(rf_object_t *vec)
     // descending order
     if (out_of_order == len - 1)
     {
-        vec->adt->attrs |= VEC_ATTR_DESC;
+        vec->adt->attrs.flags |= VEC_ATTR_DESC;
         for (i = 0; i < len; i++)
             ov[i] = len - i - 1;
         return indices;
@@ -354,14 +354,14 @@ rf_object_t rf_sort_desc(rf_object_t *vec)
     rf_object_t indices = vector_i64(len);
     i64_t *iv = as_vector_i64(vec), *ov = as_vector_i64(&indices);
 
-    if (vec->adt->attrs & VEC_ATTR_DESC)
+    if (vec->adt->attrs.flags & VEC_ATTR_DESC)
     {
         for (i64_t i = 0; i < len; i++)
             ov[i] = i;
         return indices;
     }
 
-    if (vec->adt->attrs & VEC_ATTR_ASC)
+    if (vec->adt->attrs.flags & VEC_ATTR_ASC)
     {
         for (i64_t i = 0; i < len; i++)
             ov[i] = len - i - 1;
@@ -387,7 +387,7 @@ rf_object_t rf_sort_desc(rf_object_t *vec)
     // descending order
     if (out_of_order == 0)
     {
-        vec->adt->attrs |= VEC_ATTR_DESC;
+        vec->adt->attrs.flags |= VEC_ATTR_DESC;
         for (i64_t i = 0; i < len; i++)
             ov[i] = i;
         return indices;
@@ -396,7 +396,7 @@ rf_object_t rf_sort_desc(rf_object_t *vec)
     // ascending order
     if (out_of_order == len - 1)
     {
-        vec->adt->attrs |= VEC_ATTR_ASC;
+        vec->adt->attrs.flags |= VEC_ATTR_ASC;
         for (i64_t i = 0; i < len; i++)
             ov[i] = len - i - 1;
         return indices;
