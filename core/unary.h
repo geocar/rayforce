@@ -26,32 +26,32 @@
 
 #include "rayforce.h"
 
-typedef rf_object_t (*unary_t)(rf_object_t *);
+typedef rf_object (*unary_t)(rf_object);
 
-rf_object_t rf_call_unary(u8_t flags, unary_t f, rf_object_t *x);
-rf_object_t rf_get_variable(rf_object_t *x);
-rf_object_t rf_type(rf_object_t *x);
-rf_object_t rf_count(rf_object_t *x);
-rf_object_t rf_til(rf_object_t *x);
-rf_object_t rf_distinct(rf_object_t *x);
-rf_object_t rf_group(rf_object_t *x);
-rf_object_t rf_group_remap(rf_object_t *x);
-rf_object_t rf_sum(rf_object_t *x);
-rf_object_t rf_avg(rf_object_t *x);
-rf_object_t rf_min(rf_object_t *x);
-rf_object_t rf_max(rf_object_t *x);
-rf_object_t rf_not(rf_object_t *x);
-rf_object_t rf_iasc(rf_object_t *x);
-rf_object_t rf_idesc(rf_object_t *x);
-rf_object_t rf_asc(rf_object_t *x);
-rf_object_t rf_desc(rf_object_t *x);
-rf_object_t rf_guid_generate(rf_object_t *x);
-rf_object_t rf_neg(rf_object_t *x);
-rf_object_t rf_where(rf_object_t *x);
-rf_object_t rf_key(rf_object_t *x);
-rf_object_t rf_value(rf_object_t *x);
-rf_object_t rf_fread(rf_object_t *x);
-rf_object_t rf_parse(rf_object_t *x);
-rf_object_t rf_read_parse_compile(rf_object_t *x);
+rf_object rf_call_unary(u8_t flags, unary_t f, rf_object x);
+rf_object rf_get_variable(rf_object x);
+rf_object rf_type(rf_object x);
+rf_object rf_count(rf_object x);
+rf_object rf_til(rf_object x);
+rf_object rf_distinct(rf_object x);
+rf_object rf_group(rf_object x);
+rf_object rf_group_remap(rf_object x);
+rf_object rf_sum(rf_object x);
+rf_object rf_avg(rf_object x);
+rf_object rf_min(rf_object x);
+rf_object rf_max(rf_object x);
+rf_object rf_not(rf_object x);
+rf_object rf_iasc(rf_object x);
+rf_object rf_idesc(rf_object x);
+rf_object rf_asc(rf_object x);
+rf_object rf_desc(rf_object x);
+rf_object rf_guid_generate(rf_object x);
+rf_object rf_neg(rf_object x);
+rf_object rf_where(rf_object x);
+rf_object rf_key(rf_object x);
+rf_object rf_value(rf_object x);
+rf_object rf_fread(rf_object x);
+rf_object rf_parse(rf_object x);
+rf_object rf_read_parse_compile(rf_object x);
 
 #endif

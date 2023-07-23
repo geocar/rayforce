@@ -38,6 +38,8 @@ typedef struct span_t
     u16_t end_column;
 } span_t;
 
+CASSERT(sizeof(struct span_t) == 8, debuginfo_h)
+
 /*
  * Holds a dict with such fields:
  * file: Char

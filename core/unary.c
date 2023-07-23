@@ -40,40 +40,41 @@
 #include "cc.h"
 
 // Atomic unary functions (iterates through list of argumen items down to atoms)
-rf_object_t rf_call_unary_atomic(unary_t f, rf_object_t *x)
+rf_object rf_call_unary_atomic(unary_t f, rf_object x)
 {
     i64_t i, l;
-    rf_object_t res, item;
+    rf_object res = NULL, item = NULL;
 
     // argument is a list, so iterate through it
     if (x->type == TYPE_LIST)
     {
-        l = x->adt->len;
+        l = x->len;
 
         if (l == 0)
             return error(ERR_TYPE, "empty list");
 
         item = rf_call_unary_atomic(f, as_list(x)); // call function with first item
 
-        if (item.type == TYPE_ERROR)
+        if (item->type == TYPE_ERROR)
             return item;
 
         // probably we can fold it in a vector if all other values will be of the same type
-        if (is_scalar(&item))
-            res = vector(-item.type, l);
+        if (is_scalar(item))
+            res = vector(-item->type, l);
         else
             res = list(l);
 
-        vector_write(&res, 0, item);
+        vector_write(res, 0, item);
+        drop(item);
 
         for (i = 1; i < l; i++)
         {
             item = rf_call_unary_atomic(f, &as_list(x)[i]);
 
-            if (item.type == TYPE_ERROR)
+            if (item->type == TYPE_ERROR)
             {
-                res.adt->len = i;
-                rf_object_free(&res);
+                res->len = i;
+                drop(res);
                 return item;
             }
 
@@ -86,7 +87,7 @@ rf_object_t rf_call_unary_atomic(unary_t f, rf_object_t *x)
     return f(x);
 }
 
-rf_object_t rf_call_unary(u8_t flags, unary_t f, rf_object_t *x)
+rf_object rf_call_unary(u8_t flags, unary_t f, rf_object x)
 {
     switch (flags)
     {
@@ -97,58 +98,58 @@ rf_object_t rf_call_unary(u8_t flags, unary_t f, rf_object_t *x)
     }
 }
 
-rf_object_t rf_get_variable(rf_object_t *x)
+rf_object rf_get_variable(rf_object x)
 {
-    rf_object_t v = dict_get(&runtime_get()->env.variables, x);
-    if (is_null(&v))
+    rf_object v = dict_get(&runtime_get()->env.variables, x);
+    if (is_null(v))
         return error(ERR_NOT_FOUND, "symbol not found");
 
     return v;
 }
 
-rf_object_t rf_type(rf_object_t *x)
+rf_object rf_type(rf_object x)
 {
     i64_t t = env_get_typename_by_type(&runtime_get()->env, x->type);
     return symboli64(t);
 }
 
-rf_object_t rf_count(rf_object_t *x)
+rf_object rf_count(rf_object x)
 {
     if (is_vector(x))
-        return i64(x->adt->len);
+        return i64(x->len);
 
     switch (x->type)
     {
     case TYPE_TABLE:
-        return i64(as_list(&as_list(x)[1])[0].adt->len);
+        return i64(as_list(as_list(x)[1])[0]->len);
     default:
         return i64(1);
     }
 }
 
-rf_object_t rf_til(rf_object_t *x)
+rf_object rf_til(rf_object x)
 {
     if (MTYPE(x->type) != MTYPE(-TYPE_I64))
         return error(ERR_TYPE, "til: expected i64");
 
     i32_t i, l = (i32_t)x->i64;
     i64_t *v;
-    rf_object_t vec;
+    rf_object vec = NULL;
 
     vec = vector_i64(l);
 
-    v = as_vector_i64(&vec);
+    v = as_vector_i64(vec);
 
     for (i = 0; i < l; i++)
         v[i] = i;
 
-    vec.adt->attrs.flags = VEC_ATTR_ASC | VEC_ATTR_WITHOUT_NULLS | VEC_ATTR_DISTINCT;
+    vec->flags = VEC_ATTR_ASC | VEC_ATTR_WITHOUT_NULLS | VEC_ATTR_DISTINCT;
     return vec;
 }
 
-rf_object_t rf_distinct(rf_object_t *x)
+rf_object rf_distinct(rf_object x)
 {
-    rf_object_t res;
+    rf_object res = NULL;
 
     switch (MTYPE(x->type))
     {
@@ -156,14 +157,14 @@ rf_object_t rf_distinct(rf_object_t *x)
         return rf_distinct_I64(x);
     case MTYPE(TYPE_SYMBOL):
         res = rf_distinct_I64(x);
-        res.type = TYPE_SYMBOL;
+        res->type = TYPE_SYMBOL;
         return res;
     default:
         return error(ERR_TYPE, "distinct: expected I64");
     }
 }
 
-rf_object_t rf_group(rf_object_t *x)
+rf_object rf_group(rf_object x)
 {
     if (MTYPE(x->type) != MTYPE(TYPE_I64))
         return error(ERR_TYPE, "group: expected I64");
@@ -171,7 +172,7 @@ rf_object_t rf_group(rf_object_t *x)
     return rf_group_I64(x);
 }
 
-rf_object_t rf_sum(rf_object_t *x)
+rf_object rf_sum(rf_object x)
 {
     i32_t i;
     i64_t l, isum = 0, *iv;
@@ -180,13 +181,13 @@ rf_object_t rf_sum(rf_object_t *x)
     switch (MTYPE(x->type))
     {
     case MTYPE(-TYPE_I64):
-        return *x;
+        return clone(x);
     case MTYPE(-TYPE_F64):
-        return *x;
+        return clone(x);
     case MTYPE(TYPE_I64):
-        l = x->adt->len;
+        l = x->len;
         iv = as_vector_i64(x);
-        if (x->adt->attrs.flags & VEC_ATTR_WITHOUT_NULLS)
+        if (x->flags & VEC_ATTR_WITHOUT_NULLS)
         {
             for (i = 0; i < l; i++)
                 isum += iv[i];
@@ -203,7 +204,7 @@ rf_object_t rf_sum(rf_object_t *x)
         return i64(isum);
 
     case MTYPE(TYPE_F64):
-        l = x->adt->len;
+        l = x->len;
         fv = as_vector_f64(x);
         for (i = 0; i < l; i++)
             fsum += fv[i];
@@ -406,9 +407,9 @@ rf_object_t rf_not(rf_object_t *x)
 
     case MTYPE(TYPE_BOOL):
         l = x->adt->len;
-        res = vector_bool(l);
+        res = Bool(l);
         for (i = 0; i < l; i++)
-            as_vector_bool(&res)[i] = !as_vector_bool(x)[i];
+            as_Bool(&res)[i] = !as_Bool(x)[i];
 
         return res;
 
@@ -548,7 +549,7 @@ rf_object_t rf_where(rf_object_t *x)
     {
     case MTYPE(TYPE_BOOL):
         l = x->adt->len;
-        iv = as_vector_bool(x);
+        iv = as_Bool(x);
         res = vector_i64(l);
         ov = as_vector_i64(&res);
         for (i = 0; i < l; i++)
@@ -570,9 +571,9 @@ rf_object_t rf_key(rf_object_t *x)
     {
     case MTYPE(TYPE_TABLE):
     case MTYPE(TYPE_DICT):
-        return rf_object_clone(&as_list(x)[0]);
+        return clone(&as_list(x)[0]);
     default:
-        return rf_object_clone(x);
+        return clone(x);
     }
 }
 
@@ -582,9 +583,9 @@ rf_object_t rf_value(rf_object_t *x)
     {
     case MTYPE(TYPE_TABLE):
     case MTYPE(TYPE_DICT):
-        return rf_object_clone(&as_list(x)[1]);
+        return clone(&as_list(x)[1]);
     default:
-        return rf_object_clone(x);
+        return clone(x);
     }
 }
 
@@ -662,7 +663,7 @@ rf_object_t rf_read_parse_compile(rf_object_t *x)
 
         parser = parser_new();
         par = parse(&parser, as_string(x), as_string(&red));
-        rf_object_free(&red);
+        drop(&red);
 
         if (par.type == TYPE_ERROR)
         {
@@ -673,7 +674,7 @@ rf_object_t rf_read_parse_compile(rf_object_t *x)
 
         com = cc_compile_lambda(false, as_string(x), vector_symbol(0),
                                 as_list(&par), par.id, par.adt->len, &parser.debuginfo);
-        rf_object_free(&par);
+        drop(&par);
         parser_free(&parser);
 
         return com;

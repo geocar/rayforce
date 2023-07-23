@@ -48,7 +48,7 @@ CASSERT(OP_INVALID < 127, vm_h)
 #define stack_pop_free(v)             \
     {                                 \
         rf_object_t o = stack_pop(v); \
-        rf_object_free(&o);           \
+        drop(&o);                     \
     }
 #define stack_debug(v)                                                     \
     {                                                                      \
@@ -67,7 +67,7 @@ typedef struct ctx_t
     i32_t bp;
 } ctx_t;
 
-CASSERT(sizeof(struct ctx_t) == sizeof(struct rf_object_t), vm_c)
+// CASSERT(sizeof(struct ctx_t) == sizeof(struct rf_object_t), vm_c)
 
 vm_t vm_new()
 {
@@ -75,7 +75,6 @@ vm_t vm_new()
 
     vm_t vm = {
         .trace = 0,
-        .acc = null(),
         .stack = stack,
     };
 
@@ -151,7 +150,7 @@ rf_object_t __attribute__((hot)) vm_exec(vm_t *vm, rf_object_t *fun)
                            o.adt->span.end_column + 1);                                                            \
                 }                                                                                                  \
                                                                                                                    \
-                rf_object_free(&x1);                                                                               \
+                drop(&x1);                                                                                         \
             }                                                                                                      \
             return o;                                                                                              \
         }                                                                                                          \
@@ -193,7 +192,7 @@ op_swap:
 op_dup:
     vm->ip++;
     addr = stack_peek(vm);
-    stack_push(vm, rf_object_clone(addr));
+    stack_push(vm, clone(addr));
     dispatch();
 op_jne:
     vm->ip++;
@@ -214,7 +213,7 @@ op_call1:
 made_call1:
     x2 = stack_pop(vm);
     x1 = rf_call_unary(flags, (unary_t)l, &x2);
-    rf_object_free(&x2);
+    drop(&x2);
     unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
@@ -226,8 +225,8 @@ made_call2:
     x3 = stack_pop(vm);
     x2 = stack_pop(vm);
     x1 = rf_call_binary(flags, (binary_t)l, &x2, &x3);
-    rf_object_free(&x2);
-    rf_object_free(&x3);
+    drop(&x2);
+    drop(&x3);
     unwrap(x1, b);
     stack_push(vm, x1);
     dispatch();
@@ -338,7 +337,7 @@ op_load:
     b = vm->ip++;
     load_u64(t, vm);
     x1 = vm->stack[vm->bp + t];
-    stack_push(vm, rf_object_clone(&x1));
+    stack_push(vm, clone(&x1));
     dispatch();
 op_lset:
     b = vm->ip++;
@@ -454,11 +453,11 @@ op_eval:
     x1 = stack_pop(vm);
     if (x1.type != TYPE_LIST)
     {
-        rf_object_free(&x1);
+        drop(&x1);
         unwrap(error(ERR_TYPE, "eval: expects list"), b);
     }
     x2 = cc_compile_lambda(false, "anonymous", vector_symbol(0), as_list(&x1), x1.id, x1.adt->len, NULL);
-    rf_object_free(&x1);
+    drop(&x1);
     unwrap(x2, b);
     stack_push(vm, x2);
     n = 0;
@@ -467,7 +466,7 @@ op_fload:
     b = vm->ip++;
     x1 = stack_pop(vm);
     x2 = rf_read_parse_compile(&x1);
-    rf_object_free(&x1);
+    drop(&x1);
     unwrap(x2, b);
     stack_push(vm, x2);
     n = 0;

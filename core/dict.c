@@ -31,15 +31,15 @@ rf_object_t dict(rf_object_t keys, rf_object_t vals)
 {
     if (!is_vector(&keys) || !is_vector(&vals))
     {
-        rf_object_free(&keys);
-        rf_object_free(&vals);
+        drop(&keys);
+        drop(&vals);
         return error(ERR_TYPE, "Keys and Values must be lists");
     }
 
     if (keys.adt->len != vals.adt->len)
     {
-        rf_object_free(&keys);
-        rf_object_free(&vals);
+        drop(&keys);
+        drop(&vals);
         return error(ERR_LENGTH, "Keys and Values must have the same length");
     }
 
@@ -71,12 +71,12 @@ rf_object_t dict_set(rf_object_t *dict, rf_object_t *key, rf_object_t val)
 
     if (index == (i64_t)keys->adt->len)
     {
-        vector_push(keys, rf_object_clone(key));
-        vector_push(vals, rf_object_clone(&val));
+        vector_push(keys, clone(key));
+        vector_push(vals, clone(&val));
         return val;
     }
 
-    vector_set(vals, index, rf_object_clone(&val));
+    vector_set(vals, index, clone(&val));
 
     return val;
 }

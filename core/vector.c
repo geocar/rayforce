@@ -56,7 +56,7 @@ i64_t size_of_val(type_t type)
 }
 
 /*
- * Creates new vector of type type
+ * Creates new vector of type
  */
 rf_object vector(type_t type, i64_t len)
 {
@@ -97,7 +97,7 @@ rf_object _push(rf_object vec, rf_object value)
         push(vec, char_t, value->schar);
         return null();
     case TYPE_LIST:
-        push(vec, rf_object, rf_object_clone(value));
+        push(vec, rf_object, clone(value));
         return null();
     default:
         panic("vector push: can not push to a unknown type");
@@ -141,7 +141,7 @@ rf_object vector_push(rf_object vec, rf_object value)
 
             as_list(&lst)[l] = value;
 
-            rf_object_free(vec);
+            drop(vec);
 
             *vec = lst;
             return null();
@@ -264,7 +264,7 @@ i64_t vector_find(rf_object_t *vec, rf_object_t *key)
     switch (vec->type)
     {
     case TYPE_BOOL:
-        vb = as_vector_bool(vec);
+        vb = as_Bool(vec);
         kb = key->bool;
         for (i = 0; i < l; i++)
             if (vb[i] == kb)
@@ -336,7 +336,7 @@ rf_object_t vector_get(rf_object_t *vec, i64_t index)
     {
     case TYPE_BOOL:
         if (index < l)
-            return bool(as_vector_bool(vec)[index]);
+            return bool(as_Bool(vec)[index]);
         return bool(false);
     case TYPE_I64:
         if (index < l)
@@ -364,7 +364,7 @@ rf_object_t vector_get(rf_object_t *vec, i64_t index)
         return schar(0);
     case TYPE_LIST:
         if (index < l)
-            return rf_object_clone(&as_list(vec)[index]);
+            return clone(&as_list(vec)[index]);
         return null();
     default:
         return null();
@@ -393,7 +393,7 @@ rf_object_t vector_set(rf_object_t *vec, i64_t index, rf_object_t value)
 
         as_list(&lst)[index] = value;
 
-        rf_object_free(vec);
+        drop(vec);
 
         *vec = lst;
 
@@ -403,7 +403,7 @@ rf_object_t vector_set(rf_object_t *vec, i64_t index, rf_object_t value)
     switch (vec->type)
     {
     case TYPE_BOOL:
-        as_vector_bool(vec)[index] = value.bool;
+        as_Bool(vec)[index] = value.bool;
         break;
     case TYPE_I64:
         as_vector_i64(vec)[index] = value.i64;
@@ -425,7 +425,7 @@ rf_object_t vector_set(rf_object_t *vec, i64_t index, rf_object_t value)
         as_string(vec)[index] = value.schar;
         break;
     case TYPE_LIST:
-        rf_object_free(&as_list(vec)[index]);
+        drop(&as_list(vec)[index]);
         as_list(vec)[index] = value;
         break;
     default:
@@ -456,7 +456,7 @@ null_t vector_write(rf_object_t *vec, i64_t index, rf_object_t value)
 
         as_list(&lst)[index] = value;
 
-        rf_object_free(vec);
+        drop(vec);
 
         *vec = lst;
 
@@ -466,7 +466,7 @@ null_t vector_write(rf_object_t *vec, i64_t index, rf_object_t value)
     switch (vec->type)
     {
     case TYPE_BOOL:
-        as_vector_bool(vec)[index] = value.bool;
+        as_Bool(vec)[index] = value.bool;
         break;
     case TYPE_I64:
         as_vector_i64(vec)[index] = value.i64;
@@ -508,10 +508,10 @@ rf_object_t vector_filter(rf_object_t *vec, bool_t mask[], i64_t len)
     switch (vec->type)
     {
     case TYPE_BOOL:
-        res = vector_bool(ol);
+        res = Bool(ol);
         for (i = 0; (j < ol && i < l); i++)
             if (mask[i])
-                as_vector_bool(&res)[j++] = as_vector_bool(vec)[i];
+                as_Bool(&res)[j++] = as_Bool(vec)[i];
         if (len == NULL_I64)
             vector_shrink(&res, j);
         return res;
@@ -567,7 +567,7 @@ rf_object_t vector_filter(rf_object_t *vec, bool_t mask[], i64_t len)
         res = list(ol);
         for (i = 0; (j < ol && i < l); i++)
             if (mask[i])
-                as_list(&res)[j++] = rf_object_clone(&as_list(vec)[i]);
+                as_list(&res)[j++] = clone(&as_list(vec)[i]);
         if (len == NULL_I64)
             vector_shrink(&res, j);
         return res;
@@ -584,7 +584,7 @@ null_t vector_clear(rf_object_t *vec)
         rf_object_t *list = as_list(vec);
 
         for (i = 0; i < l; i++)
-            rf_object_free(&list[i]);
+            drop(&list[i]);
     }
 
     vector_shrink(vec, 0);
@@ -601,7 +601,7 @@ rf_object_t rf_list(rf_object_t *x, u32_t n)
     u32_t i;
 
     for (i = 0; i < n; i++)
-        as_list(&l)[i] = rf_object_clone(x + i);
+        as_list(&l)[i] = clone(x + i);
 
     return l;
 }
@@ -614,7 +614,7 @@ rf_object_t rf_enlist(rf_object_t *x, u32_t n)
     for (i = 0; i < n; i++)
     {
         rf_object_t *item = x + i;
-        vector_push(&l, rf_object_clone(item));
+        vector_push(&l, clone(item));
     }
 
     return l;

@@ -226,7 +226,7 @@ null_t counting_sort_asc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i
         indices[m[n]++] = i;
     }
 
-    rf_object_free(&mask);
+    drop(&mask);
 }
 
 null_t counting_sort_desc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i64_t max)
@@ -264,7 +264,7 @@ null_t counting_sort_desc(i64_t array[], i64_t indices[], i64_t len, i64_t min, 
         indices[m[n]++] = i;
     }
 
-    rf_object_free(&mask);
+    drop(&mask);
 }
 
 rf_object_t rf_sort_asc(rf_object_t *vec)

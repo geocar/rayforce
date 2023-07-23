@@ -77,7 +77,7 @@
 
 #define cerr(c, i, t, e)                                            \
     {                                                               \
-        rf_object_free(&(c)->lambda);                               \
+        drop(&(c)->lambda);                               \
         (c)->lambda = error(t, e);                                  \
         (c)->lambda.adt->span = debuginfo_get((c)->debuginfo, (i)); \
         return CC_ERROR;                                            \
@@ -86,7 +86,7 @@
 #define ccerr(c, i, t, e)                                           \
     {                                                               \
         str_t m = e;                                                \
-        rf_object_free(&(c)->lambda);                               \
+        drop(&(c)->lambda);                               \
         (c)->lambda = error(t, m);                                  \
         rf_free(m);                                                 \
         (c)->lambda.adt->span = debuginfo_get((c)->debuginfo, (i)); \
@@ -103,7 +103,7 @@ cc_result_t cc_compile_quote(bool_t has_consumer, cc_t *cc, rf_object_t *object)
         return CC_NULL;
 
     push_opcode(cc, car->id, code, OP_PUSH);
-    push_const(cc, rf_object_clone(&as_list(object)[1]));
+    push_const(cc, clone(&as_list(object)[1]));
 
     return as_list(object)[1].type;
 }
@@ -200,11 +200,11 @@ cc_result_t cc_compile_fn(cc_t *cc, rf_object_t *object, u32_t arity)
     b = as_list(object) + 1;
 
     arity -= 1;
-    fun = cc_compile_lambda(false, "anonymous", rf_object_clone(b), b + 1, car->id, arity, cc->debuginfo);
+    fun = cc_compile_lambda(false, "anonymous", clone(b), b + 1, car->id, arity, cc->debuginfo);
 
     if (fun.type == TYPE_ERROR)
     {
-        rf_object_free(&cc->lambda);
+        drop(&cc->lambda);
         cc->lambda = fun;
         return CC_ERROR;
     }
@@ -494,7 +494,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
     key = symboli64(KW_FROM);
     val = dict_get(params, &key);
     res = cc_compile_expr(true, cc, &val);
-    rf_object_free(&val);
+    drop(&val);
 
     if (res == CC_ERROR)
         return CC_ERROR;
@@ -522,7 +522,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         {
             v = dict_get(params, &k);
             find_used_symbols(&v, &syms);
-            rf_object_free(&v);
+            drop(&v);
 
             if (k.i64 == KW_BY)
                 continue;
@@ -536,12 +536,12 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
 
     if (k.type == TYPE_ERROR)
     {
-        rf_object_free(&cols);
-        rf_object_free(&syms);
+        drop(&cols);
+        drop(&syms);
         return CC_ERROR;
     }
 
-    rf_object_free(&syms);
+    drop(&syms);
 
     // compile filters
     key = symboli64(KW_WHERE);
@@ -551,11 +551,11 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         push_opcode(cc, car->id, code, OP_LPUSH);
 
         res = cc_compile_expr(true, cc, &val);
-        rf_object_free(&val);
+        drop(&val);
 
         if (res == CC_ERROR)
         {
-            rf_object_free(&cols);
+            drop(&cols);
             return CC_ERROR;
         }
 
@@ -583,7 +583,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
             push_u64(code, rf_take);
         }
         else
-            rf_object_free(&k);
+            drop(&k);
 
         push_opcode(cc, car->id, code, OP_SWAP);
 
@@ -611,7 +611,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
             push_u64(code, rf_take);
         }
         else
-            rf_object_free(&k);
+            drop(&k);
     }
 
     if (map || groupby)
@@ -623,11 +623,11 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
     if (!is_null(&val))
     {
         res = cc_compile_expr(true, cc, &val);
-        rf_object_free(&val);
+        drop(&val);
 
         if (res == CC_ERROR)
         {
-            rf_object_free(&cols);
+            drop(&cols);
             return CC_ERROR;
         }
 
@@ -692,7 +692,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
             {
                 v = dict_get(params, &k);
                 res = cc_compile_expr(true, cc, &v);
-                rf_object_free(&v);
+                drop(&v);
 
                 if (res == CC_ERROR)
                     return CC_ERROR;
@@ -709,7 +709,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, rf_object_t *object
         push_u64(code, rf_table);
     }
     else
-        rf_object_free(&cols);
+        drop(&cols);
 
     if (!has_consumer)
         push_opcode(cc, car->id, code, OP_POP);
@@ -897,7 +897,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, rf_object_t *object)
             return CC_NULL;
 
         push_opcode(cc, object->id, code, OP_PUSH);
-        push_const(cc, rf_object_clone(object));
+        push_const(cc, clone(object));
         func->stack_size++;
 
         return CC_OK;

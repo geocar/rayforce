@@ -45,7 +45,7 @@
 
 rf_object_t rf_env()
 {
-    return rf_object_clone(&runtime_get()->env.variables);
+    return clone(&runtime_get()->env.variables);
 }
 
 rf_object_t rf_memstat()
@@ -210,9 +210,9 @@ env_t create_env()
 
 null_t free_env(env_t *env)
 {
-    rf_object_free(&env->variables);
-    rf_object_free(&env->functions);
-    rf_object_free(&env->typenames);
+    drop(&env->variables);
+    drop(&env->functions);
+    drop(&env->typenames);
 }
 
 i64_t env_get_typename_by_type(env_t *env, type_t type)

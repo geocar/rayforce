@@ -31,7 +31,7 @@ extern "C"
 #endif
 
 // Type constants
-#define TYPE_NULL 0
+#define TYPE_LIST 0
 #define TYPE_BOOL 1
 #define TYPE_I64 2
 #define TYPE_F64 3
@@ -39,7 +39,6 @@ extern "C"
 #define TYPE_TIMESTAMP 5
 #define TYPE_GUID 6
 #define TYPE_CHAR 7
-#define TYPE_LIST 97
 #define TYPE_TABLE 98
 #define TYPE_DICT 99
 #define TYPE_LAMBDA 100
@@ -101,6 +100,7 @@ typedef struct rf_object_t
 {
     type_t type;
     u8_t flags;
+    u8_t code;
     u32_t rc;
     union
     {
@@ -116,7 +116,10 @@ typedef struct rf_object_t
 } *rf_object;
 
 // Constructors
-extern rf_object null();                                                     // null
+extern rf_object null();                                                     // create null
+extern rf_object atom(type_t type);                                          // create atom of type
+extern rf_object list(i64_t len, ...);                                       // create list
+extern rf_object vector(type_t type, i64_t len);                             // create vector of type
 extern rf_object bool(bool_t val);                                           // bool scalar
 extern rf_object i64(i64_t val);                                             // i64 scalar
 extern rf_object f64(f64_t val);                                             // f64 scalar
@@ -125,34 +128,32 @@ extern rf_object symboli64(i64_t id);                                        // 
 extern rf_object timestamp(i64_t val);                                       // timestamp
 extern rf_object guid(u8_t data[]);                                          // GUID
 extern rf_object schar(char_t c);                                            // char
-extern rf_object vector(type_t type, i64_t len);                             // vector of type
 extern rf_object string(i64_t len);                                          // string 
 
-#define vector_bool(len)      (vector(TYPE_BOOL,                       len ))  // bool vector
+#define Bool(len)      (vector(TYPE_BOOL,                       len ))  // bool vector
 #define vector_i64(len)       (vector(TYPE_I64,                        len ))  // i64 vector
 #define vector_f64(len)       (vector(TYPE_F64,                        len ))  // f64 vector
 #define vector_symbol(len)    (vector(TYPE_SYMBOL,                     len ))  // symbol vector
 #define vector_timestamp(len) (vector(TYPE_TIMESTAMP,                  len ))  // char vector
 #define vector_guid(len)      (vector(TYPE_GUID,                       len ))  // GUID vector
-#define list(len)             (vector(TYPE_LIST,                       len ))  // list
 
 extern rf_object table(rf_object keys, rf_object vals);                  // table
 extern rf_object dict(rf_object keys,  rf_object vals);                  // dict
 
 // Reference counting   
-extern rf_object rf_object_clone(rf_object object);                    // clone
-extern rf_object rf_object_cow(rf_object   object);                    // clone if refcount > 1
-extern i64_t     rf_object_rc(rf_object    object);                    // get refcount
+extern rf_object clone(rf_object object);                    // clone
+extern rf_object cow(rf_object   object);                    // clone if refcount > 1
+extern i64_t     rc(rf_object    object);                    // get refcount
 
 // Error
 extern rf_object error(i8_t code, str_t message);
 
 // Destructor
-extern null_t rf_object_free(rf_object   object);
+extern null_t drop(rf_object   object);
 
 // Accessors
 #define as_string(object)           ((object)->ptr)
-#define as_vector_bool(object)      ((bool_t *)(as_string(object)))
+#define as_Bool(object)      ((bool_t *)(as_string(object)))
 #define as_vector_i64(object)       ((i64_t *)(as_string(object)))
 #define as_vector_f64(object)       ((f64_t *)(as_string(object)))
 #define as_vector_symbol(object)    ((i64_t *)(as_string(object)))

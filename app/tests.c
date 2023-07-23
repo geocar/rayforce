@@ -182,7 +182,7 @@ null_t test_vector()
 
     debug("testing vector done");
 
-    rf_object_free(&v);
+    drop(&v);
 }
 
 null_t test_allocate_and_free()

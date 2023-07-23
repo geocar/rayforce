@@ -75,7 +75,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
         return vector_i64(0);
 
     if (x->adt->attrs.flags & VEC_ATTR_DISTINCT)
-        return rf_object_clone(x);
+        return clone(x);
 
     max = min = iv1[0];
 
@@ -119,7 +119,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
             }
         }
 
-        rf_object_free(&mask);
+        drop(&mask);
         vector_shrink(&vec, j);
 
         vec.adt->attrs.flags |= VEC_ATTR_DISTINCT;
@@ -163,7 +163,7 @@ rf_object_t rf_distinct_I64(rf_object_t *x)
 
         vec.adt->attrs.flags |= VEC_ATTR_DISTINCT;
         vector_shrink(&vec, j);
-        rf_object_free(&mask);
+        drop(&mask);
         set_free(set);
 
         return vec;
@@ -254,7 +254,7 @@ rf_object_t rf_group_I64(rf_object_t *x)
             }
         }
 
-        rf_object_free(&mask);
+        drop(&mask);
 
         vector_shrink(&keys, j);
         vector_shrink(&vals, j);
@@ -325,7 +325,7 @@ rf_object_t rf_group_I64(rf_object_t *x)
             }
         }
 
-        rf_object_free(&mask);
+        drop(&mask);
         ht_free(ht);
 
         vector_shrink(&keys, j);

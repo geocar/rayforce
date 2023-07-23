@@ -106,7 +106,7 @@ null_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
     if (is_error(&parsed))
     {
         print_error(&parsed, name, buf, len);
-        rf_object_free(&parsed);
+        drop(&parsed);
         return;
     }
 
@@ -114,18 +114,18 @@ null_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
     if (is_error(&compiled))
     {
         print_error(&compiled, name, buf, len);
-        rf_object_free(&parsed);
-        rf_object_free(&compiled);
+        drop(&parsed);
+        drop(&compiled);
         return;
     }
 
     // printf("%s\n", vm_code_fmt(&compiled));
 
     // release rc's of parsed asap
-    rf_object_free(&parsed);
+    drop(&parsed);
 
     executed = vm_exec(&runtime_get()->vm, &compiled);
-    rf_object_free(&compiled);
+    drop(&compiled);
 
     if (is_error(&executed))
         print_error(&executed, name, buf, len);
@@ -139,7 +139,7 @@ null_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
         }
     }
 
-    rf_object_free(&executed);
+    drop(&executed);
 
     return;
 }
@@ -184,11 +184,11 @@ i32_t main(i32_t argc, str_t argv[])
         else
             repl(as_string(&filename), &parser, as_string(&file), file.adt->len);
 
-        rf_object_free(&file);
+        drop(&file);
     }
     // --
 
-    rf_object_free(&filename);
+    drop(&filename);
 
     while (running)
     {
@@ -200,7 +200,7 @@ i32_t main(i32_t argc, str_t argv[])
         repl("top-level", &parser, line, LINE_SIZE);
     }
 
-    rf_object_free(&args);
+    drop(&args);
     parser_free(&parser);
     mmap_free(line, LINE_SIZE);
 
