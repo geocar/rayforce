@@ -54,8 +54,8 @@ typedef struct debuginfo_t
 } debuginfo_t;
 
 debuginfo_t debuginfo_new(str_t filename, str_t lambda);
-null_t debuginfo_free(debuginfo_t *debuginfo);
-null_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span);
+nil_t debuginfo_free(debuginfo_t *debuginfo);
+nil_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span);
 span_t debuginfo_get(debuginfo_t *debuginfo, u32_t index);
 
 #endif

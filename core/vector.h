@@ -51,17 +51,17 @@
  * t - type of element
  * n - number of elements
  */
-#define reserve(v, t, n)                                                                                                \
-    {                                                                                                                   \
-        i64_t occup = (v)->len * sizeof(t);                                                                             \
-        i64_t cap = capacity(occup);                                                                                    \
-        i64_t req_cap = n * sizeof(t);                                                                                  \
-        if (cap < req_cap + occup)                                                                                      \
-        {                                                                                                               \
-            i64_t new_cap = capacity(cap + req_cap);                                                                    \
+#define reserve(v, t, n)                                                                                           \
+    {                                                                                                              \
+        i64_t occup = (v)->len * sizeof(t);                                                                        \
+        i64_t cap = capacity(occup);                                                                               \
+        i64_t req_cap = n * sizeof(t);                                                                             \
+        if (cap < req_cap + occup)                                                                                 \
+        {                                                                                                          \
+            i64_t new_cap = capacity(cap + req_cap);                                                               \
             /*debug("realloc: len %lld n %lld from %lld to %lld occup: %lld", (v)->len, n, cap, new_cap, occup);*/ \
-            (v)->ptr = alloc_realloc((v)->ptr, new_cap);                                                                   \
-        }                                                                                                               \
+            (v)->ptr = alloc_realloc((v)->ptr, new_cap);                                                           \
+        }                                                                                                          \
     }
 
 /*
@@ -85,16 +85,16 @@ i64_t vector_find(obj_t vec, obj_t key);
 obj_t vector_get(obj_t vec, i64_t index);
 obj_t vector_filter(obj_t vec, bool_t mask[], i64_t len);
 obj_t vector_set(obj_t vec, i64_t index, obj_t value);
-null_t vector_write(obj_t vec, i64_t index, obj_t value);
+nil_t vector_write(obj_t vec, i64_t index, obj_t value);
 obj_t vector_push(obj_t vec, obj_t obj);
 obj_t list_push(obj_t vec, obj_t obj);
 obj_t rf_list(obj_t x, u32_t n);
 obj_t rf_enlist(obj_t x, u32_t n);
 
-null_t vector_reserve(obj_t vec, u32_t len);
-null_t vector_grow(obj_t vec, u32_t len);
-null_t vector_shrink(obj_t vec, u32_t len);
-null_t vector_free(obj_t vec);
-null_t vector_clear(obj_t vec);
+nil_t vector_reserve(obj_t vec, u32_t len);
+nil_t vector_grow(obj_t vec, u32_t len);
+nil_t vector_shrink(obj_t vec, u32_t len);
+nil_t vector_free(obj_t vec);
+nil_t vector_clear(obj_t vec);
 
 #endif

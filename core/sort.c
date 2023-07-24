@@ -26,7 +26,7 @@
 
 #define COUNTING_SORT_LIMIT 1024 * 1024
 
-inline __attribute__((always_inline)) null_t swap(i64_t *a, i64_t *b)
+inline __attribute__((always_inline)) nil_t swap(i64_t *a, i64_t *b)
 {
     i64_t t = *a;
     *a = *b;
@@ -71,7 +71,7 @@ i64_t partition_desc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
     return i + 1;
 }
 
-null_t quick_sort_asc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
+nil_t quick_sort_asc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
 {
     i64_t pi;
 
@@ -83,7 +83,7 @@ null_t quick_sort_asc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
     }
 }
 
-null_t quick_sort_desc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
+nil_t quick_sort_desc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
 {
     i64_t pi;
 
@@ -96,7 +96,7 @@ null_t quick_sort_desc(i64_t array[], i64_t indices[], i64_t low, i64_t high)
 }
 
 // heap sort
-null_t heapify_asc(i64_t array[], i64_t indices[], i64_t n, i64_t i)
+nil_t heapify_asc(i64_t array[], i64_t indices[], i64_t n, i64_t i)
 {
     i64_t largest = i;
     i64_t left = 2 * i + 1;
@@ -115,7 +115,7 @@ null_t heapify_asc(i64_t array[], i64_t indices[], i64_t n, i64_t i)
     }
 }
 
-null_t heapify_desc(i64_t array[], i64_t indices[], i64_t n, i64_t i)
+nil_t heapify_desc(i64_t array[], i64_t indices[], i64_t n, i64_t i)
 {
     i64_t largest = i;
     i64_t left = 2 * i + 1;
@@ -134,7 +134,7 @@ null_t heapify_desc(i64_t array[], i64_t indices[], i64_t n, i64_t i)
     }
 }
 
-null_t heap_sort_asc(i64_t array[], i64_t indices[], i64_t n)
+nil_t heap_sort_asc(i64_t array[], i64_t indices[], i64_t n)
 {
     for (i64_t i = n / 2 - 1; i >= 0; i--)
         heapify_asc(array, indices, n, i);
@@ -146,7 +146,7 @@ null_t heap_sort_asc(i64_t array[], i64_t indices[], i64_t n)
     }
 }
 
-null_t heap_sort_desc(i64_t array[], i64_t indices[], i64_t n)
+nil_t heap_sort_desc(i64_t array[], i64_t indices[], i64_t n)
 {
     for (i64_t i = n / 2 - 1; i >= 0; i--)
         heapify_asc(array, indices, n, i);
@@ -159,7 +159,7 @@ null_t heap_sort_desc(i64_t array[], i64_t indices[], i64_t n)
 }
 
 // insertion sort
-null_t insertion_sort_asc(i64_t array[], i64_t indices[], i64_t left, i64_t right)
+nil_t insertion_sort_asc(i64_t array[], i64_t indices[], i64_t left, i64_t right)
 {
     for (i64_t i = left + 1; i <= right; i++)
     {
@@ -174,7 +174,7 @@ null_t insertion_sort_asc(i64_t array[], i64_t indices[], i64_t left, i64_t righ
     }
 }
 
-null_t insertion_sort_desc(i64_t array[], i64_t indices[], i64_t left, i64_t right)
+nil_t insertion_sort_desc(i64_t array[], i64_t indices[], i64_t left, i64_t right)
 {
     for (i64_t i = left + 1; i <= right; i++)
     {
@@ -191,7 +191,7 @@ null_t insertion_sort_desc(i64_t array[], i64_t indices[], i64_t left, i64_t rig
 //
 
 // counting sort
-null_t counting_sort_asc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i64_t max)
+nil_t counting_sort_asc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i64_t max)
 {
     i64_t i, j = 0, n, p, range, *m;
     obj_t mask;
@@ -229,7 +229,7 @@ null_t counting_sort_asc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i
     drop(mask);
 }
 
-null_t counting_sort_desc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i64_t max)
+nil_t counting_sort_desc(i64_t array[], i64_t indices[], i64_t len, i64_t min, i64_t max)
 {
     i64_t i, j = 0, n, p, range, *m;
     obj_t mask;

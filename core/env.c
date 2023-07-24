@@ -69,7 +69,7 @@ obj_t rf_memstat()
 }
 
 // clang-format off
-null_t init_functions(obj_t functions)
+nil_t init_functions(obj_t functions)
 {
     // Unary
     // REC(functions,  "trace",      OP_TRACE);   
@@ -137,7 +137,7 @@ null_t init_functions(obj_t functions)
     // regf(functions,  "println",   TYPE_VARY,     FLAG_NONE,         rf_println);
 }    
     
-null_t init_typenames(obj_t typenames)    
+nil_t init_typenames(obj_t typenames)    
 {
     // regt(typenames,   -TYPE_BOOL,       "bool");
     // regt(typenames,   -TYPE_vector_i64,        "i64");
@@ -165,7 +165,7 @@ null_t init_typenames(obj_t typenames)
 }
 
 
-null_t init_kw_symbols()
+nil_t init_kw_symbols()
 {
     assert(intern_symbol("",       0)  == NULL_SYM);
     assert(intern_keyword("time",  4)  == KW_TIME);
@@ -210,7 +210,7 @@ env_t create_env()
     return env;
 }
 
-null_t free_env(env_t *env)
+nil_t free_env(env_t *env)
 {
     drop(&env->variables);
     drop(&env->functions);

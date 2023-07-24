@@ -55,7 +55,7 @@ obj_t dict_set(obj_t dict, obj_t key, obj_t val)
     return val;
 }
 
-null_t dict_clear(obj_t dict)
+nil_t dict_clear(obj_t dict)
 {
     obj_t keys = as_list(dict)[0];
     obj_t vals = as_list(dict)[1];

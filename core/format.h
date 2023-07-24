@@ -50,6 +50,6 @@ extern str_t str_fmt(i32_t limit, str_t fmt, ...);
 extern str_t obj_t_fmt(obj_t obj);
 extern i32_t obj_t_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj);
 extern str_t obj_t_fmt_n(obj_t obj, u32_t n);
-null_t print_error(obj_t error, str_t filename, str_t source, u32_t len);
+nil_t print_error(obj_t error, str_t filename, str_t source, u32_t len);
 
 #endif

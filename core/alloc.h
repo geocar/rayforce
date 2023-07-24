@@ -39,7 +39,7 @@
 
 typedef struct node_t
 {
-    null_t            *base; // base address of the root block (pool) + original order in 7's byte
+    nil_t            *base; // base address of the root block (pool) + original order in 7's byte
     union
     {
         struct node_t *next; // next block in the pool
@@ -56,22 +56,22 @@ typedef struct memstat_t
 
 typedef struct alloc_t
 {
-    null_t *blocks32;                     // pool of 32 bytes blocks
-    null_t *freelist32;                   // blocks of 32 bytes
-    null_t *blocks64;                     // pool of 64 bytes blocks
-    null_t *freelist64;                   // blocks of 64 bytes
+    nil_t *blocks32;                     // pool of 32 bytes blocks
+    nil_t *freelist32;                   // blocks of 32 bytes
+    nil_t *blocks64;                     // pool of 64 bytes blocks
+    nil_t *freelist64;                   // blocks of 64 bytes
     node_t *freelist[MAX_POOL_ORDER + 2]; // free list of blocks by order
     u64_t   avail;                        // mask of available blocks by order
 } __attribute__((aligned(PAGE_SIZE))) * alloc_t;
 
-extern null_t   *alloc_malloc(u64_t size);
-extern null_t   *alloc_realloc(null_t *block, u64_t size);
-extern null_t    alloc_free(null_t *block);
-extern null_t    alloc_mrequest(u64_t size);
+extern nil_t   *alloc_malloc(u64_t size);
+extern nil_t   *alloc_realloc(nil_t *block, u64_t size);
+extern nil_t    alloc_free(nil_t *block);
+extern nil_t    alloc_mrequest(u64_t size);
 extern alloc_t   alloc_init();
 extern alloc_t   alloc_get();
 extern i64_t     alloc_gc();
-extern null_t    alloc_cleanup();
+extern nil_t    alloc_cleanup();
 extern memstat_t alloc_memstat();
 // clang-format on
 

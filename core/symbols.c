@@ -93,7 +93,7 @@ pool_node_t *pool_node_new()
     return node;
 }
 
-null_t pool_node_free(pool_node_t *node)
+nil_t pool_node_free(pool_node_t *node)
 {
     mmap_free(node, STRINGS_POOL_SIZE);
 }
@@ -103,7 +103,7 @@ null_t pool_node_free(pool_node_t *node)
  * In case of symbols this avoids having to copy the string every time.
  * Stores string in the strings pool and returns the pointer to the string.
  */
-i64_t str_dup(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
+i64_t str_dup(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval)
 {
     symbols_t *symbols = (symbols_t *)seed;
 
@@ -143,7 +143,7 @@ symbols_t *symbols_new()
     return symbols;
 }
 
-null_t symbols_free(symbols_t *symbols)
+nil_t symbols_free(symbols_t *symbols)
 {
     pool_node_t *node = symbols->pool_node_0;
 

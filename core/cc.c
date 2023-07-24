@@ -447,7 +447,7 @@ cc_result_t cc_compile_map(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity
     return CC_OK;
 }
 
-null_t find_used_symbols(obj_t lst, obj_t syms)
+nil_t find_used_symbols(obj_t lst, obj_t syms)
 {
     // i64_t i, l;
 

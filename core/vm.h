@@ -80,7 +80,7 @@ typedef struct vm_t
 
 vm_t vm_new();
 obj_t vm_exec(vm_t *vm, obj_t fun) __attribute__((__noinline__));
-null_t vm_free(vm_t *vm);
+nil_t vm_free(vm_t *vm);
 str_t vm_code_fmt(obj_t fun);
 
 #endif

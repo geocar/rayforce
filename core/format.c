@@ -587,7 +587,7 @@ str_t obj_t_fmt_n(obj_t x, u32_t n)
     return s;
 }
 
-null_t print_error(obj_t error, str_t filename, str_t source, u32_t len)
+nil_t print_error(obj_t error, str_t filename, str_t source, u32_t len)
 {
     const str_t PADDING = "                                                  ";
     u16_t line_number = 0, i, l;

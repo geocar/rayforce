@@ -50,7 +50,7 @@ span_t span_start(parser_t *parser)
     return s;
 }
 
-null_t span_extend(parser_t *parser, span_t *span)
+nil_t span_extend(parser_t *parser, span_t *span)
 {
     span->end_line = parser->line;
     span->end_column = parser->column == 0 ? 0 : parser->column - 1;

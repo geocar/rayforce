@@ -184,7 +184,7 @@ obj_t vector_pop(obj_t vec)
     }
 }
 
-null_t vector_reserve(obj_t vec, u32_t len)
+nil_t vector_reserve(obj_t vec, u32_t len)
 {
     switch (vec->type)
     {
@@ -219,7 +219,7 @@ null_t vector_reserve(obj_t vec, u32_t len)
     }
 }
 
-null_t vector_grow(obj_t vec, u32_t len)
+nil_t vector_grow(obj_t vec, u32_t len)
 {
     debug_assert(is_vector(vec));
 
@@ -230,7 +230,7 @@ null_t vector_grow(obj_t vec, u32_t len)
     vec->len = len;
 }
 
-null_t vector_shrink(obj_t vec, u32_t len)
+nil_t vector_shrink(obj_t vec, u32_t len)
 {
     debug_assert(is_vector(vec));
 
@@ -441,7 +441,7 @@ obj_t vector_set(obj_t vec, i64_t index, obj_t value)
 /*
  * same as vector_set, but does not check bounds and does not free old value in case of list
  */
-null_t vector_write(obj_t vec, i64_t index, obj_t value)
+nil_t vector_write(obj_t vec, i64_t index, obj_t value)
 {
     // guid_t *g;
     // i64_t i, l;
@@ -581,7 +581,7 @@ obj_t vector_filter(obj_t vec, bool_t mask[], i64_t len)
     // }
 }
 
-null_t vector_clear(obj_t vec)
+nil_t vector_clear(obj_t vec)
 {
     // if (vec->type == TYPE_LIST)
     // {

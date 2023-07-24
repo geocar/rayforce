@@ -33,7 +33,7 @@
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
-#define MAP_FAILED (null_t *)-1
+#define MAP_FAILED (nil_t *)-1
 #else
 #include <sys/mman.h>
 #endif

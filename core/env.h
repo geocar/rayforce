@@ -65,7 +65,7 @@ typedef struct env_t
 } env_t;
 
 env_t create_env();
-null_t free_env(env_t *env);
+nil_t free_env(env_t *env);
 
 i64_t env_get_typename_by_type(env_t *env, type_t type);
 str_t env_get_typename(type_t type);

@@ -59,8 +59,8 @@
     }
 
 #else
-#define debug(fmt, ...) (null_t)0
-#define debug_assert(x) (null_t)0
+#define debug(fmt, ...) (nil_t)0
+#define debug_assert(x) (nil_t)0
 #endif
 
 #define panic(x)                                                   \

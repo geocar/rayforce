@@ -42,7 +42,7 @@ debuginfo_t debuginfo_new(str_t filename, str_t lambda)
     return debuginfo;
 }
 
-null_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span)
+nil_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span)
 {
     u64_t s;
     memcpy(&s, &span, sizeof(span_t));
@@ -62,7 +62,7 @@ span_t debuginfo_get(debuginfo_t *debuginfo, u32_t index)
     return span;
 }
 
-null_t debuginfo_free(debuginfo_t *debuginfo)
+nil_t debuginfo_free(debuginfo_t *debuginfo)
 {
     ht_free(debuginfo->spans);
 }

@@ -57,7 +57,7 @@ i64_t intern_symbol(str_t s, i64_t len);
 i64_t intern_keyword(str_t s, i64_t len);
 
 symbols_t *symbols_new();
-null_t symbols_free(symbols_t *symbols);
+nil_t symbols_free(symbols_t *symbols);
 i32_t i64_cmp(i64_t a, i64_t b);
 str_t symbols_get(i64_t key);
 

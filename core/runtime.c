@@ -30,7 +30,7 @@
 // Global runtime reference
 runtime_t _RUNTIME = NULL;
 
-null_t runtime_init(u16_t slaves)
+nil_t runtime_init(u16_t slaves)
 {
     alloc_init();
 
@@ -42,7 +42,7 @@ null_t runtime_init(u16_t slaves)
     _RUNTIME->vm = vm_new();
 }
 
-null_t runtime_cleanup()
+nil_t runtime_cleanup()
 {
     symbols_free(_RUNTIME->symbols);
     mmap_free(_RUNTIME->symbols, sizeof(symbols_t));

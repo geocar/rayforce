@@ -275,7 +275,7 @@ obj_t __attribute__((hot)) clone(obj_t obj)
 /*
  * Free an obj_t
  */
-null_t __attribute__((hot)) drop(obj_t obj)
+nil_t __attribute__((hot)) drop(obj_t obj)
 {
     i64_t i, rc, l;
     u16_t slaves = runtime_get()->slaves;

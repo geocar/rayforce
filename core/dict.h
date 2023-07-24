@@ -30,6 +30,6 @@
 
 obj_t dict_get(obj_t dict, obj_t key);
 obj_t dict_set(obj_t dict, obj_t key, obj_t val);
-null_t dict_clear(obj_t dict);
+nil_t dict_clear(obj_t dict);
 
 #endif

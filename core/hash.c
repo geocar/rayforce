@@ -52,13 +52,13 @@ ht_t *ht_new(i64_t size, u64_t (*hasher)(i64_t a), i32_t (*compare)(i64_t a, i64
     return table;
 }
 
-null_t ht_free(ht_t *table)
+nil_t ht_free(ht_t *table)
 {
     alloc_free(table->buckets);
     alloc_free(table);
 }
 
-null_t ht_rehash(ht_t *table)
+nil_t ht_rehash(ht_t *table)
 {
     i64_t i, old_size = table->size, key, val, factor, index;
     bucket_t *old_buckets = table->buckets, *new_buckets;
@@ -138,8 +138,8 @@ i64_t ht_insert(ht_t *table, i64_t key, i64_t val)
 /*
  * Does the same as ht_insert, but uses a lambda to set the obj_t of the bucket.
  */
-i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
-                     i64_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
+i64_t ht_insert_with(ht_t *table, i64_t key, i64_t val, nil_t *seed,
+                     i64_t (*func)(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval))
 {
     while (true)
     {
@@ -213,8 +213,8 @@ bool_t ht_upsert(ht_t *table, i64_t key, i64_t val)
 /*
  * Does the same as ht_upsert, but uses a lambda to set the val of the bucket.
  */
-bool_t ht_upsert_with(ht_t *table, i64_t key, i64_t val, null_t *seed,
-                      bool_t (*func)(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval))
+bool_t ht_upsert_with(ht_t *table, i64_t key, i64_t val, nil_t *seed,
+                      bool_t (*func)(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval))
 {
     while (true)
     {

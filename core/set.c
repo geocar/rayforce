@@ -45,13 +45,13 @@ set_t *set_new(i64_t size, u64_t (*hasher)(i64_t a), i32_t (*compare)(i64_t a, i
     return set;
 }
 
-null_t set_free(set_t *set)
+nil_t set_free(set_t *set)
 {
     alloc_free(set->keys);
     alloc_free(set);
 }
 
-null_t set_rehash(set_t *set)
+nil_t set_rehash(set_t *set)
 {
     i64_t i, old_size = set->size, key,
              *old_keys = set->keys, *new_keys;

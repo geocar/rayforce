@@ -28,7 +28,7 @@
 #define MAX_LINEAR_VALUE 1024 * 1024 * 64
 #define normalize(k) ((u64_t)(k - min))
 
-bool_t cnt_update(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
+bool_t cnt_update(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval)
 {
     UNUSED(key);
     UNUSED(*tkey);
@@ -39,7 +39,7 @@ bool_t cnt_update(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
     return true;
 }
 
-bool_t pos_update(i64_t key, i64_t val, null_t *seed, i64_t *tkey, i64_t *tval)
+bool_t pos_update(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval)
 {
     UNUSED(key);
     UNUSED(*tkey);

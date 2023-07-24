@@ -51,13 +51,13 @@
 
 static volatile bool_t running = true;
 
-null_t usage()
+nil_t usage()
 {
     printf("%s%s%s", BOLD, YELLOW, "Usage: rayforce [-f] [file...]\n");
     exit(EXIT_FAILURE);
 }
 
-null_t print_logo()
+nil_t print_logo()
 {
     str_t logo = str_fmt(0, LOGO, VERSION);
     printf("%s%s%s", DARK_CYAN, logo, RESET);
@@ -95,7 +95,7 @@ obj_t parse_cmdline(i32_t argc, str_t argv[])
     return dict(keys, vals);
 }
 
-null_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
+nil_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
 {
     obj_t parsed, compiled, executed;
     str_t formatted = NULL;
@@ -145,7 +145,7 @@ null_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
     return;
 }
 
-null_t int_handler(i32_t sig)
+nil_t int_handler(i32_t sig)
 {
     UNUSED(sig);
     running = false;

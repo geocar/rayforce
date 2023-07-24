@@ -25,7 +25,7 @@
 #include "alloc.h"
 #include "ops.h"
 
-null_t guid_generate(guid_t *g)
+nil_t guid_generate(guid_t *g)
 {
     i64_t i;
 

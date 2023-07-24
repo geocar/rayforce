@@ -37,7 +37,7 @@ typedef struct set_t
 
 // clang-format off
 set_t  *set_new(i64_t size, u64_t (*hasher)(i64_t a), i32_t (*compare)(i64_t a, i64_t b));
-null_t  set_free(set_t *set);
+nil_t  set_free(set_t *set);
 bool_t  set_insert(set_t *set, i64_t key);
 bool_t  set_contains(set_t *set, i64_t key);
 i64_t   set_next(set_t *set, i64_t *index);

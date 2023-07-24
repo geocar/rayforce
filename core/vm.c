@@ -96,7 +96,7 @@ obj_t __attribute__((hot)) vm_exec(vm_t *vm, obj_t fun)
     vm->bp = -1;
 
     // The indices of labels in the dispatch_table are the relevant opcodes
-    static null_t *dispatch_table[] = {
+    static nil_t *dispatch_table[] = {
         &&op_halt, &&op_push, &&op_pop, &&op_swap, &&op_dup, &&op_jne, &&op_jmp, &&op_call1, &&op_call2, &&op_calln,
         &&op_calld, &&op_ret, &&op_timer_set, &&op_timer_get, &&op_store, &&op_load, &&op_lset,
         &&op_lget, &&op_lpush, &&op_lpop, &&op_try, &&op_catch, &&op_throw,
@@ -431,7 +431,7 @@ op_fload:
     goto made_calld;
 }
 
-null_t vm_free(vm_t *vm)
+nil_t vm_free(vm_t *vm)
 {
     // clear stack (if any)
     while (vm->sp)

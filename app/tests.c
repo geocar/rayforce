@@ -136,7 +136,7 @@ int test_symbols()
     return 0;
 }
 
-null_t test_find()
+nil_t test_find()
 {
     // obj_tv = vector_i64(100000000);
     // for (int i = 0; i < 100000000; i++)
@@ -154,7 +154,7 @@ null_t test_find()
     // printf("Time: %f ms\n", cpu_time_used * 1000);
 }
 
-null_t test_string_match()
+nil_t test_string_match()
 {
     debug("-- %d\n", string_match("brown", "br?*wn"));
     debug("-- %d\n", string_match("broasdfasdfwn", "br?*wn"));
@@ -168,7 +168,7 @@ null_t test_string_match()
     return;
 }
 
-null_t test_vector()
+nil_t test_vector()
 {
     debug("testing vector");
 
@@ -185,20 +185,20 @@ null_t test_vector()
     drop(&v);
 }
 
-null_t test_allocate_and_free()
+nil_t test_allocate_and_free()
 {
     u64_t size = 1024; // size of the memory block to allocate
-    null_t *ptr = alloc_malloc(size);
+    nil_t *ptr = alloc_malloc(size);
     assert(ptr != NULL);
     alloc_free(ptr);
     printf("test_allocate_and_free passed\n");
 }
 
-null_t test_multiple_allocations()
+nil_t test_multiple_allocations()
 {
     u64_t size = 1024;
-    null_t *ptr1 = alloc_malloc(size);
-    null_t *ptr2 = alloc_malloc(size);
+    nil_t *ptr1 = alloc_malloc(size);
+    nil_t *ptr2 = alloc_malloc(size);
     assert(ptr1 != NULL);
     assert(ptr2 != NULL);
     assert(ptr1 != ptr2);
@@ -207,14 +207,14 @@ null_t test_multiple_allocations()
     printf("test_multiple_allocations passed\n");
 }
 
-null_t test_allocation_after_free()
+nil_t test_allocation_after_free()
 {
     u64_t size = 1024;
-    null_t *ptr1 = alloc_malloc(size);
+    nil_t *ptr1 = alloc_malloc(size);
     assert(ptr1 != NULL);
     alloc_free(ptr1);
 
-    null_t *ptr2 = alloc_malloc(size);
+    nil_t *ptr2 = alloc_malloc(size);
     assert(ptr2 != NULL);
 
     // the second allocation should be able to use the block freed by the first allocation
@@ -224,19 +224,19 @@ null_t test_allocation_after_free()
     printf("test_allocation_after_free passed\n");
 }
 
-null_t test_out_of_memory()
+nil_t test_out_of_memory()
 {
     u64_t size = 1ull << 38;
-    null_t *ptr = alloc_malloc(size);
+    nil_t *ptr = alloc_malloc(size);
     assert(ptr == NULL);
     printf("test_out_of_memory passed\n");
 }
 
-null_t test_large_number_of_allocations()
+nil_t test_large_number_of_allocations()
 {
     i64_t i, num_allocs = 10000000; // Large number of allocations
     u64_t size = 1024;
-    null_t **ptrs = alloc_malloc(num_allocs * sizeof(null_t *));
+    nil_t **ptrs = alloc_malloc(num_allocs * sizeof(nil_t *));
     for (i = 0; i < num_allocs; i++)
     {
         ptrs[i] = alloc_malloc(size);
@@ -251,11 +251,11 @@ null_t test_large_number_of_allocations()
     printf("test_large_number_of_allocations passed\n");
 }
 
-null_t test_varying_sizes()
+nil_t test_varying_sizes()
 {
     u64_t size = 16;       // Start size
     u64_t num_allocs = 10; // number of allocations
-    null_t *ptrs[num_allocs];
+    nil_t *ptrs[num_allocs];
     for (u64_t i = 0; i < num_allocs; i++)
     {
         ptrs[i] = alloc_malloc(size << i); // double the size at each iteration
@@ -269,11 +269,11 @@ null_t test_varying_sizes()
     printf("test_varying_sizes passed\n");
 }
 
-null_t test_alloc_free()
+nil_t test_alloc_free()
 {
-    null_t *ptr1 = alloc_malloc(8 * 10000000);
-    null_t *ptr2 = alloc_malloc(8 * 10000000);
-    null_t *ptr3 = alloc_malloc(8 * 100000);
+    nil_t *ptr1 = alloc_malloc(8 * 10000000);
+    nil_t *ptr2 = alloc_malloc(8 * 10000000);
+    nil_t *ptr3 = alloc_malloc(8 * 100000);
 
     alloc_free(ptr2);
     alloc_free(ptr3);
