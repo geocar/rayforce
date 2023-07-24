@@ -61,12 +61,12 @@ i64_t size_of_val(type_t type)
 obj_t vector(type_t type, i64_t len)
 {
     i64_t size = capacity(len * size_of_val(type));
-    obj_t vec = rf_malloc(sizeof(struct obj_t));
+    obj_t vec = alloc_malloc(sizeof(struct obj_t));
 
     vec->type = type;
     vec->rc = 1;
     vec->len = len;
-    vec->ptr = rf_malloc(size);
+    vec->ptr = alloc_malloc(size);
 
     return vec;
 }
@@ -226,7 +226,7 @@ null_t vector_grow(obj_t vec, u32_t len)
     // calculate size of vector with new length
     i64_t new_size = capacity(len * size_of_val(vec->type));
 
-    rf_realloc(vec->ptr, new_size);
+    alloc_realloc(vec->ptr, new_size);
     vec->len = len;
 }
 
@@ -240,7 +240,7 @@ null_t vector_shrink(obj_t vec, u32_t len)
     // calculate size of vector with new length
     i64_t new_size = capacity(len * size_of_val(vec->type));
 
-    rf_realloc(vec->ptr, new_size);
+    alloc_realloc(vec->ptr, new_size);
     vec->len = len;
 }
 

@@ -60,7 +60,7 @@
         {                                                                                                               \
             i64_t new_cap = capacity(cap + req_cap);                                                                    \
             /*debug("realloc: len %lld n %lld from %lld to %lld occup: %lld", (v)->len, n, cap, new_cap, occup);*/ \
-            (v)->ptr = rf_realloc((v)->ptr, new_cap);                                                                   \
+            (v)->ptr = alloc_realloc((v)->ptr, new_cap);                                                                   \
         }                                                                                                               \
     }
 

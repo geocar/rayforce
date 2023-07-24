@@ -66,11 +66,11 @@ i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt
     if (*len <= (size + *offset))
     {
         *len += size + 1;
-        s = rf_realloc(*dst, *len);
+        s = alloc_realloc(*dst, *len);
 
         if (s == NULL)
         {
-            rf_free(*dst);
+            alloc_free(*dst);
             panic("str_fmt_into: OOM");
         }
 
@@ -89,7 +89,7 @@ i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt
         if (n < 0)
         {
             if (*dst != NULL)
-                rf_free(*dst);
+                alloc_free(*dst);
 
             panic("str_fmt_into: OOM");
         }
@@ -104,11 +104,11 @@ i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt
         }
 
         size = n + 1;
-        s = rf_realloc(*dst, size);
+        s = alloc_realloc(*dst, size);
 
         if (s == NULL)
         {
-            rf_free(*dst);
+            alloc_free(*dst);
             panic("str_fmt_into: OOM");
         }
 
@@ -123,7 +123,7 @@ i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt
 str_t str_fmt(i32_t limit, str_t fmt, ...)
 {
     i32_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
-    str_t p = rf_malloc(size), s;
+    str_t p = alloc_malloc(size), s;
 
     while (1)
     {
@@ -134,7 +134,7 @@ str_t str_fmt(i32_t limit, str_t fmt, ...)
 
         if (n < 0)
         {
-            rf_free(p);
+            alloc_free(p);
             panic("str_fmt_into: OOM");
         }
 
@@ -145,11 +145,11 @@ str_t str_fmt(i32_t limit, str_t fmt, ...)
             return p;
 
         size = n + 1;
-        s = rf_realloc(p, size);
+        s = alloc_realloc(p, size);
 
         if (s == NULL)
         {
-            rf_free(p);
+            alloc_free(p);
             panic("str_fmt_into: OOM");
         }
 
@@ -421,7 +421,7 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, obj_t 
             n = n - strlen(s);
             str_fmt_into(dst, len, offset, 0, " %s%*.*s|", s, n, n, PADDING);
             // Free formatted column
-            rf_free(s);
+            alloc_free(s);
         }
     }
 
@@ -560,7 +560,7 @@ str_t obj_t_fmt_n(obj_t x, u32_t n)
         if (!end)
         {
             if (s)
-                rf_free(s);
+                alloc_free(s);
 
             return NULL;
         }
@@ -577,7 +577,7 @@ str_t obj_t_fmt_n(obj_t x, u32_t n)
     if (sz > 0 && memchr(start, '%', sz))
     {
         if (s)
-            rf_free(s);
+            alloc_free(s);
 
         return NULL;
     }

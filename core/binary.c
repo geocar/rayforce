@@ -1942,7 +1942,7 @@ obj_t rf_cast(obj_t x, obj_t y)
     //             msg = str_fmt(0, "invalid conversion from '%s' to 'i64'",
     //                           symbols_get(env_get_typename_by_type(env, as_list(y)[i].type)));
     //             err = error(ERR_TYPE, msg);
-    //             rf_free(msg);
+    //             alloc_free(msg);
     //             return err;
     //         }
 
@@ -1966,7 +1966,7 @@ obj_t rf_cast(obj_t x, obj_t y)
     //             msg = str_fmt(0, "invalid conversion from '%s' to 'f64'",
     //                           symbols_get(env_get_typename_by_type(env, as_list(y)[i].type)));
     //             err = error(ERR_TYPE, msg);
-    //             rf_free(msg);
+    //             alloc_free(msg);
     //             return err;
     //         }
 
@@ -1985,7 +1985,7 @@ obj_t rf_cast(obj_t x, obj_t y)
     //     if (strlen(as_string(y)) != 36)
     //         break;
 
-    //     res.guid = rf_malloc(sizeof(guid_t));
+    //     res.guid = alloc_malloc(sizeof(guid_t));
 
     //     i = sscanf(as_string(y),
     //                "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
@@ -1998,7 +1998,7 @@ obj_t rf_cast(obj_t x, obj_t y)
 
     //     if (i != 16)
     //     {
-    //         rf_free(res.guid);
+    //         alloc_free(res.guid);
     //         res = guid(NULL);
     //     }
 
@@ -2026,7 +2026,7 @@ obj_t rf_cast(obj_t x, obj_t y)
     //                   symbols_get(env_get_typename_by_type(&runtime_get()->env, y->type)),
     //                   symbols_get(x->i64));
     //     err = error(ERR_TYPE, msg);
-    //     rf_free(msg);
+    //     alloc_free(msg);
     //     return err;
     // }
 

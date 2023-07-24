@@ -37,8 +37,8 @@ ht_t *ht_new(i64_t size, u64_t (*hasher)(i64_t a), i32_t (*compare)(i64_t a, i64
 {
     size = next_power_of_two_u64(size);
     i64_t i;
-    ht_t *table = (ht_t *)rf_malloc(sizeof(struct ht_t));
-    bucket_t *buckets = (bucket_t *)rf_malloc(size * sizeof(bucket_t));
+    ht_t *table = (ht_t *)alloc_malloc(sizeof(struct ht_t));
+    bucket_t *buckets = (bucket_t *)alloc_malloc(size * sizeof(bucket_t));
 
     table->buckets = buckets;
     table->size = size;
@@ -54,8 +54,8 @@ ht_t *ht_new(i64_t size, u64_t (*hasher)(i64_t a), i32_t (*compare)(i64_t a, i64
 
 null_t ht_free(ht_t *table)
 {
-    rf_free(table->buckets);
-    rf_free(table);
+    alloc_free(table->buckets);
+    alloc_free(table);
 }
 
 null_t ht_rehash(ht_t *table)
@@ -65,7 +65,7 @@ null_t ht_rehash(ht_t *table)
 
     // Double the table size.
     table->size *= 2;
-    table->buckets = (bucket_t *)rf_malloc(table->size * sizeof(bucket_t));
+    table->buckets = (bucket_t *)alloc_malloc(table->size * sizeof(bucket_t));
     factor = table->size - 1;
 
     new_buckets = table->buckets;
@@ -95,7 +95,7 @@ null_t ht_rehash(ht_t *table)
         }
     }
 
-    rf_free(old_buckets);
+    alloc_free(old_buckets);
 }
 
 /*

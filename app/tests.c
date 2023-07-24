@@ -188,46 +188,46 @@ null_t test_vector()
 null_t test_allocate_and_free()
 {
     u64_t size = 1024; // size of the memory block to allocate
-    null_t *ptr = rf_malloc(size);
+    null_t *ptr = alloc_malloc(size);
     assert(ptr != NULL);
-    rf_free(ptr);
+    alloc_free(ptr);
     printf("test_allocate_and_free passed\n");
 }
 
 null_t test_multiple_allocations()
 {
     u64_t size = 1024;
-    null_t *ptr1 = rf_malloc(size);
-    null_t *ptr2 = rf_malloc(size);
+    null_t *ptr1 = alloc_malloc(size);
+    null_t *ptr2 = alloc_malloc(size);
     assert(ptr1 != NULL);
     assert(ptr2 != NULL);
     assert(ptr1 != ptr2);
-    rf_free(ptr1);
-    rf_free(ptr2);
+    alloc_free(ptr1);
+    alloc_free(ptr2);
     printf("test_multiple_allocations passed\n");
 }
 
 null_t test_allocation_after_free()
 {
     u64_t size = 1024;
-    null_t *ptr1 = rf_malloc(size);
+    null_t *ptr1 = alloc_malloc(size);
     assert(ptr1 != NULL);
-    rf_free(ptr1);
+    alloc_free(ptr1);
 
-    null_t *ptr2 = rf_malloc(size);
+    null_t *ptr2 = alloc_malloc(size);
     assert(ptr2 != NULL);
 
     // the second allocation should be able to use the block freed by the first allocation
     assert(ptr1 == ptr2);
 
-    rf_free(ptr2);
+    alloc_free(ptr2);
     printf("test_allocation_after_free passed\n");
 }
 
 null_t test_out_of_memory()
 {
     u64_t size = 1ull << 38;
-    null_t *ptr = rf_malloc(size);
+    null_t *ptr = alloc_malloc(size);
     assert(ptr == NULL);
     printf("test_out_of_memory passed\n");
 }
@@ -236,17 +236,17 @@ null_t test_large_number_of_allocations()
 {
     i64_t i, num_allocs = 10000000; // Large number of allocations
     u64_t size = 1024;
-    null_t **ptrs = rf_malloc(num_allocs * sizeof(null_t *));
+    null_t **ptrs = alloc_malloc(num_allocs * sizeof(null_t *));
     for (i = 0; i < num_allocs; i++)
     {
-        ptrs[i] = rf_malloc(size);
+        ptrs[i] = alloc_malloc(size);
         assert(ptrs[i] != NULL);
     }
     // Free memory in reverse order
     for (i64_t i = num_allocs - 1; i >= 0; i--)
-        rf_free(ptrs[i]);
+        alloc_free(ptrs[i]);
 
-    rf_free(ptrs);
+    alloc_free(ptrs);
 
     printf("test_large_number_of_allocations passed\n");
 }
@@ -258,34 +258,34 @@ null_t test_varying_sizes()
     null_t *ptrs[num_allocs];
     for (u64_t i = 0; i < num_allocs; i++)
     {
-        ptrs[i] = rf_malloc(size << i); // double the size at each iteration
+        ptrs[i] = alloc_malloc(size << i); // double the size at each iteration
         assert(ptrs[i] != NULL);
     }
     // Free memory in reverse order
     for (int i = num_allocs - 1; i >= 0; i--)
     {
-        rf_free(ptrs[i]);
+        alloc_free(ptrs[i]);
     }
     printf("test_varying_sizes passed\n");
 }
 
 null_t test_alloc_free()
 {
-    null_t *ptr1 = rf_malloc(8 * 10000000);
-    null_t *ptr2 = rf_malloc(8 * 10000000);
-    null_t *ptr3 = rf_malloc(8 * 100000);
+    null_t *ptr1 = alloc_malloc(8 * 10000000);
+    null_t *ptr2 = alloc_malloc(8 * 10000000);
+    null_t *ptr3 = alloc_malloc(8 * 100000);
 
-    rf_free(ptr2);
-    rf_free(ptr3);
-    rf_free(ptr1);
+    alloc_free(ptr2);
+    alloc_free(ptr3);
+    alloc_free(ptr1);
 
-    rf_alloc_gc();
+    alloc_gc();
 }
 
 i32_t main()
 {
     // runtime_init(0);
-    rf_alloc_init();
+    alloc_init();
 
     // test_allocate_and_free();
     // test_multiple_allocations();
@@ -300,5 +300,5 @@ i32_t main()
 
     // runtime_cleanup();
 
-    rf_alloc_cleanup();
+    alloc_cleanup();
 }

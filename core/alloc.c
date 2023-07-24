@@ -64,7 +64,7 @@ null_t print_blocks()
     }
 }
 
-null_t *rf_alloc_add_pool(u64_t order)
+null_t *alloc_add_pool(u64_t order)
 {
     u64_t size = blocksize(order);
     null_t *pool = mmap_malloc(size);
@@ -82,7 +82,7 @@ null_t *rf_alloc_add_pool(u64_t order)
     return (null_t *)node;
 }
 
-alloc_t rf_alloc_init()
+alloc_t alloc_init()
 {
     i32_t i;
 
@@ -112,12 +112,12 @@ alloc_t rf_alloc_init()
     return _ALLOC;
 }
 
-alloc_t rf_alloc_get()
+alloc_t alloc_get()
 {
     return _ALLOC;
 }
 
-null_t rf_alloc_cleanup()
+null_t alloc_cleanup()
 {
     i32_t i, order;
     node_t *node, *next;
@@ -146,7 +146,7 @@ null_t rf_alloc_cleanup()
     mmap_free(_ALLOC, sizeof(struct alloc_t));
 }
 
-memstat_t rf_alloc_memstat()
+memstat_t alloc_memstat()
 {
     memstat_t stat = {0};
     i32_t i = 0;
@@ -169,28 +169,28 @@ memstat_t rf_alloc_memstat()
 
 #ifdef SYS_MALLOC
 
-null_t *rf_malloc(u64_t size)
+null_t *alloc_malloc(u64_t size)
 {
     return malloc(size);
 }
 
-null_t rf_free(null_t *block)
+null_t alloc_free(null_t *block)
 {
     free(block);
 }
 
-null_t *rf_realloc(null_t *ptr, u64_t new_size)
+null_t *alloc_realloc(null_t *ptr, u64_t new_size)
 {
     return realloc(ptr, new_size);
 }
 
-i64_t rf_alloc_gc() { return 0; }
+i64_t alloc_gc() { return 0; }
 
-null_t rf_alloc_mrequest(u64_t size) {}
+null_t alloc_mrequest(u64_t size) {}
 
 #else
 
-null_t *rf_malloc(u64_t size)
+null_t *alloc_malloc(u64_t size)
 {
     u32_t i, order;
     null_t *block, *base;
@@ -233,11 +233,11 @@ null_t *rf_malloc(u64_t size)
     {
         if (capacity >= POOL_SIZE)
         {
-            block = rf_alloc_add_pool(order);
+            block = alloc_add_pool(order);
             return (null_t *)((node_t *)block + 1);
         }
 
-        node_t *node = (node_t *)rf_alloc_add_pool(MAX_ORDER);
+        node_t *node = (node_t *)alloc_add_pool(MAX_ORDER);
 
         node->next = NULL;
         _ALLOC->freelist[MAX_ORDER] = node;
@@ -270,7 +270,7 @@ null_t *rf_malloc(u64_t size)
     return (null_t *)((node_t *)block + 1);
 }
 
-null_t rf_free(null_t *block)
+null_t alloc_free(null_t *block)
 {
     null_t *buddy;
     node_t *node, **n;
@@ -340,18 +340,18 @@ null_t rf_free(null_t *block)
     }
 }
 
-null_t *rf_realloc(null_t *block, u64_t new_size)
+null_t *alloc_realloc(null_t *block, u64_t new_size)
 {
     node_t *node, *buddy;
     u64_t i, capacity, size, order;
     null_t *new_block, *base;
 
     if (block == NULL)
-        return rf_malloc(new_size);
+        return alloc_malloc(new_size);
 
     if (new_size == 0)
     {
-        rf_free(block);
+        alloc_free(block);
         return NULL;
     }
 
@@ -361,7 +361,7 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
         if (new_size <= 32)
             return block;
 
-        new_block = rf_malloc(new_size);
+        new_block = alloc_malloc(new_size);
         if (new_block)
             memcpy(new_block, block, 32);
 
@@ -377,7 +377,7 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
         if (new_size <= 64)
             return block;
 
-        new_block = rf_malloc(new_size);
+        new_block = alloc_malloc(new_size);
         if (new_block)
             memcpy(new_block, block, 64);
 
@@ -397,12 +397,12 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
     // grow
     if (new_size > size)
     {
-        new_block = rf_malloc(new_size);
+        new_block = alloc_malloc(new_size);
 
         if (new_block)
             memcpy(new_block, block, size);
 
-        rf_free(block);
+        alloc_free(block);
 
         return new_block;
     }
@@ -427,7 +427,7 @@ null_t *rf_realloc(null_t *block, u64_t new_size)
     return block;
 }
 
-i64_t rf_alloc_gc()
+i64_t alloc_gc()
 {
     i64_t i, order, total = 0;
     node_t *node, *prev, *next;
@@ -467,7 +467,7 @@ i64_t rf_alloc_gc()
     return total;
 }
 
-null_t rf_alloc_mrequest(u64_t size)
+null_t alloc_mrequest(u64_t size)
 {
     u32_t order;
     node_t *node;
@@ -488,7 +488,7 @@ null_t rf_alloc_mrequest(u64_t size)
         return;
 
     // add a new pool of requested size
-    node = (node_t *)rf_alloc_add_pool(order);
+    node = (node_t *)alloc_add_pool(order);
 
     if (node == NULL)
         return;

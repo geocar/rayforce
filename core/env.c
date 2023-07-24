@@ -51,7 +51,7 @@ obj_t rf_env()
 obj_t rf_memstat()
 {
     // obj_t keys, vals;
-    // memstat_t stat = rf_alloc_memstat();
+    // memstat_t stat = alloc_memstat();
 
     // keys = vector_symbol(3);
     // as_vector_symbol(&keys)[0] = symbol("total").i64;

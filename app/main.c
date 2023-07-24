@@ -61,7 +61,7 @@ null_t print_logo()
 {
     str_t logo = str_fmt(0, LOGO, VERSION);
     printf("%s%s%s", DARK_CYAN, logo, RESET);
-    rf_free(logo);
+    alloc_free(logo);
 }
 
 obj_t parse_cmdline(i32_t argc, str_t argv[])
@@ -136,7 +136,7 @@ null_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
         if (formatted != NULL)
         {
             printf("%s\n", formatted);
-            rf_free(formatted);
+            alloc_free(formatted);
         }
     }
 

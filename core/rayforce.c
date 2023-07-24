@@ -37,7 +37,7 @@ CASSERT(sizeof(struct obj_t) == 32, rayforce_h)
 
 obj_t atom(type_t type)
 {
-    obj_t a = (obj_t)rf_malloc(sizeof(struct obj_t));
+    obj_t a = (obj_t)alloc_malloc(sizeof(struct obj_t));
 
     a->type = -type;
     a->rc = 1;
@@ -48,11 +48,11 @@ obj_t atom(type_t type)
 obj_t list(i64_t len, ...)
 {
     i32_t i;
-    obj_t l = (obj_t)rf_malloc(sizeof(struct obj_t));
+    obj_t l = (obj_t)alloc_malloc(sizeof(struct obj_t));
 
     l->type = TYPE_LIST;
     l->rc = 1;
-    l->ptr = rf_malloc(sizeof(obj_t) * len);
+    l->ptr = alloc_malloc(sizeof(obj_t) * len);
 
     va_list args;
     va_start(args, len);
@@ -67,7 +67,7 @@ obj_t list(i64_t len, ...)
 
 obj_t error(i8_t code, str_t message)
 {
-    obj_t err = rf_malloc(sizeof(struct obj_t));
+    obj_t err = alloc_malloc(sizeof(struct obj_t));
 
     err->type = TYPE_ERROR;
     err->len = strlen(message);
@@ -125,7 +125,7 @@ obj_t guid(u8_t data[])
     // if (data == NULL)
     //     return guid;
 
-    // guid_t *g = (guid_t *)rf_malloc(sizeof(struct guid_t));
+    // guid_t *g = (guid_t *)alloc_malloc(sizeof(struct guid_t));
     // memcpy(g->data, data, sizeof(guid_t));
 
     // guid.guid = g;
@@ -297,21 +297,21 @@ null_t __attribute__((hot)) drop(obj_t obj)
     case TYPE_TIMESTAMP:
     case TYPE_CHAR:
         if (rc == 0)
-            rf_free(obj->ptr);
+            alloc_free(obj->ptr);
         return;
     case TYPE_LIST:
         l = obj->len;
         for (i = 0; i < l; i++)
             drop(as_list(obj)[i]);
         if (rc == 0)
-            rf_free(obj->ptr);
+            alloc_free(obj->ptr);
         return;
     case TYPE_TABLE:
     case TYPE_DICT:
         drop(&as_list(obj)[0]);
         drop(&as_list(obj)[1]);
         if (rc == 0)
-            rf_free(obj->ptr);
+            alloc_free(obj->ptr);
         return;
     case TYPE_LAMBDA:
         if (rc == 0)
@@ -321,12 +321,12 @@ null_t __attribute__((hot)) drop(obj_t obj)
             drop(&as_lambda(obj)->locals);
             drop(&as_lambda(obj)->code);
             debuginfo_free(&as_lambda(obj)->debuginfo);
-            rf_free(obj->ptr);
+            alloc_free(obj->ptr);
         }
         return;
     case TYPE_ERROR:
         if (rc == 0)
-            rf_free(obj->ptr);
+            alloc_free(obj->ptr);
         return;
     default:
         panic(str_fmt(0, "free: invalid type: %d", obj->type));

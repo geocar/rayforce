@@ -64,15 +64,15 @@ typedef struct alloc_t
     u64_t   avail;                        // mask of available blocks by order
 } __attribute__((aligned(PAGE_SIZE))) * alloc_t;
 
-extern null_t   *rf_malloc(u64_t size);
-extern null_t   *rf_realloc(null_t *block, u64_t size);
-extern null_t    rf_free(null_t *block);
-extern null_t    rf_alloc_mrequest(u64_t size);
-extern alloc_t   rf_alloc_init();
-extern alloc_t   rf_alloc_get();
-extern i64_t     rf_alloc_gc();
-extern null_t    rf_alloc_cleanup();
-extern memstat_t rf_alloc_memstat();
+extern null_t   *alloc_malloc(u64_t size);
+extern null_t   *alloc_realloc(null_t *block, u64_t size);
+extern null_t    alloc_free(null_t *block);
+extern null_t    alloc_mrequest(u64_t size);
+extern alloc_t   alloc_init();
+extern alloc_t   alloc_get();
+extern i64_t     alloc_gc();
+extern null_t    alloc_cleanup();
+extern memstat_t alloc_memstat();
 // clang-format on
 
 #endif

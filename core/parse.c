@@ -619,7 +619,7 @@ obj_t parse_list(parser_t *parser)
             drop(token);
             msg = str_fmt(0, "There is no opening found for: '%c'", token->i64);
             err = error(ERR_PARSE, msg);
-            rf_free(msg);
+            alloc_free(msg);
             err->id = token->id;
             return err;
         }
@@ -799,7 +799,7 @@ obj_t advance(parser_t *parser)
 
     msg = str_fmt(0, "Unexpected token: '%c'", *parser->current);
     err = error(ERR_PARSE, msg);
-    rf_free(msg);
+    alloc_free(msg);
     err->id = span_commit(parser, span_start(parser));
     return err;
 }
@@ -824,7 +824,7 @@ obj_t parse_program(parser_t *parser)
             drop(lst);
             msg = str_fmt(0, "Unexpected token: '%c'", token->i64);
             err = error(ERR_PARSE, msg);
-            rf_free(msg);
+            alloc_free(msg);
             err->id = token->id;
             return err;
         }

@@ -605,7 +605,7 @@ obj_t rf_fread(obj_t x)
         {
             fmsg = str_fmt(0, "file: '%s' does not exist", as_string(x));
             err = error(ERR_NOT_EXIST, fmsg);
-            rf_free(fmsg);
+            alloc_free(fmsg);
             err->id = x->id;
             return err;
         }
@@ -618,7 +618,7 @@ obj_t rf_fread(obj_t x)
         {
             fmsg = str_fmt(0, "file: '%s' read error", as_string(x));
             err = error(ERR_IO, fmsg);
-            rf_free(fmsg);
+            alloc_free(fmsg);
             close(fd);
             err->id = x->id;
             return err;

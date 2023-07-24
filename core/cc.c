@@ -87,7 +87,7 @@
         str_t m = e;               \
         drop(&(c)->lambda);        \
         (c)->lambda = error(t, m); \
-        rf_free(m);                \
+        alloc_free(m);             \
         return CC_ERROR;           \
     }
 
@@ -983,7 +983,7 @@ obj_t cc_compile(obj_t body, debuginfo_t *debuginfo)
     {
         msg = str_fmt(0, "compile '%s': expected list", "top-level");
         err = error(ERR_TYPE, msg);
-        rf_free(msg);
+        alloc_free(msg);
         return err;
     }
 
