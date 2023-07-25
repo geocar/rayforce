@@ -29,7 +29,7 @@
 #include "heap.h"
 #include "util.h"
 
-#include "debuginfo.h"
+#include "nfo.h"
 #include "runtime.h"
 #include "ops.h"
 #include "lambda.h"
@@ -442,9 +442,10 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, obj_t 
     return n;
 }
 
-i32_t error_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t error)
+i32_t error_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t obj)
 {
-    return str_fmt_into(dst, len, offset, limit, "** [E%.3d] error: %s", error->code, as_string(error));
+    return str_fmt_into(dst, len, offset, limit, "** [E%.3d] error: %s",
+                        as_list(obj)[0]->i64, as_string(as_list(obj)[1]));
 }
 
 i32_t internal_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t obj)

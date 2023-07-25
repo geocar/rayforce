@@ -25,7 +25,7 @@
 #define LAMBDA_H
 
 #include "rayforce.h"
-#include "debuginfo.h"
+#include "nfo.h"
 
 #define as_lambda(obj) ((lambda_t *)(as_string(obj)))
 
@@ -35,10 +35,10 @@ typedef struct lambda_t
     obj_t locals;      // list of dicts of local variables
     obj_t code;        // string of bytecode
     obj_t constants;   // list of lambda constants
-    debuginfo_t debuginfo; // debuginfo from cc phase
+    nfo_t nfo; // nfo from cc phase
     i32_t stack_size;      // size of stack frame
 } lambda_t;
 
-obj_t lambda(obj_t args, obj_t code, debuginfo_t debuginfo);
+obj_t lambda(obj_t args, obj_t code, nfo_t nfo);
 
 #endif

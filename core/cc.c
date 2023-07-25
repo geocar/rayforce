@@ -49,13 +49,13 @@
         as_string(c)[(c)->len++] = (u8_t)x; \
     }
 
-#define push_opcode(c, k, v, x)                               \
-    {                                                         \
-        debuginfo_t *d = (c)->debuginfo;                      \
-        debuginfo_t *p = &as_lambda(&(c)->lambda)->debuginfo; \
-        span_t u = debuginfo_get(d, k);                       \
-        debuginfo_insert(p, (u32_t)(v)->len, u);              \
-        push_u8(v, x);                                        \
+#define push_opcode(c, k, v, x)                   \
+    {                                             \
+        nfo_t *d = (c)->nfo;                      \
+        nfo_t *p = &as_lambda(&(c)->lambda)->nfo; \
+        span_t u = nfo_get(d, k);                 \
+        nfo_insert(p, (u32_t)(v)->len, u);        \
+        push_u8(v, x);                            \
     }
 
 #define push_u64(c, x)                                             \
@@ -199,7 +199,7 @@ cc_result_t cc_compile_fn(cc_t *cc, obj_t obj, u32_t arity)
     // b = as_list(obj) + 1;
 
     // arity -= 1;
-    // fun = cc_compile_lambda(false, "anonymous", clone(b), b + 1, car->id, arity, cc->debuginfo);
+    // fun = cc_compile_lambda(false, "anonymous", clone(b), b + 1, car->id, arity, cc->nfo);
 
     // if (fun.type == TYPE_ERROR)
     // {
@@ -911,24 +911,24 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
  * Compile lambda
  */
 obj_t cc_compile_lambda(bool_t top, str_t name, obj_t args,
-                        obj_t body, u32_t id, i32_t len, debuginfo_t *debuginfo)
+                        obj_t body, u32_t id, i32_t len, nfo_t *nfo)
 {
-    debuginfo_t *pi, di;
+    nfo_t *pi, di;
 
-    if (debuginfo == NULL)
+    if (nfo == NULL)
     {
-        di = debuginfo_new("top-level", name);
+        di = nfo_new("top-level", name);
         pi = &di;
     }
     else
     {
-        di = debuginfo_new(debuginfo->filename, name);
-        pi = debuginfo;
+        di = nfo_new(nfo->filename, name);
+        pi = nfo;
     }
 
     cc_t cc = {
         .top_level = top,
-        .debuginfo = pi,
+        .nfo = pi,
         .lambda = lambda(args, string(0), di),
     };
 
@@ -975,7 +975,7 @@ obj_t cc_compile_lambda(bool_t top, str_t name, obj_t args,
 /*
  * Compile top level expression
  */
-obj_t cc_compile(obj_t body, debuginfo_t *debuginfo)
+obj_t cc_compile(obj_t body, nfo_t *nfo)
 {
     str_t msg;
     obj_t err;
@@ -991,6 +991,6 @@ obj_t cc_compile(obj_t body, debuginfo_t *debuginfo)
     obj_t b = as_list(body);
     i32_t len = body->len;
 
-    // return cc_compile_lambda(true, "top-level", vector_symbol(0), b, body->id, len, debuginfo);
-    return cc_compile_lambda(true, "top-level", vector_symbol(0), b, 0, len, debuginfo);
+    // return cc_compile_lambda(true, "top-level", vector_symbol(0), b, body->id, len, nfo);
+    return cc_compile_lambda(true, "top-level", vector_symbol(0), b, 0, len, nfo);
 }

@@ -25,19 +25,19 @@
 #define PARSE_H
 
 #include "rayforce.h"
-#include "debuginfo.h"
+#include "nfo.h"
 
 /*
  * Parser structure
  */
 typedef struct parser_t
 {
-    debuginfo_t debuginfo; // debug info for current parser
-    u32_t count;           // number of parsed objs
-    str_t input;           // input string
-    str_t current;         // current character
-    i64_t line;            // current line
-    i64_t column;          // current column
+    nfo_t nfo;     // debug info for current parser
+    u32_t count;   // number of parsed objs
+    str_t input;   // input string
+    str_t current; // current character
+    i64_t line;    // current line
+    i64_t column;  // current column
 } __attribute__((aligned(16))) parser_t;
 
 obj_t advance(parser_t *parser);

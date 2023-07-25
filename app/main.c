@@ -37,7 +37,7 @@
 #include "../core/runtime.h"
 #include "../core/cc.h"
 #include "../core/util.h"
-#include "../core/debuginfo.h"
+#include "../core/nfo.h"
 #include "../core/heap.h"
 
 #define LINE_SIZE 2048
@@ -113,7 +113,7 @@ nil_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
         return;
     }
 
-    compiled = cc_compile(parsed, &parser->debuginfo);
+    compiled = cc_compile(parsed, &parser->nfo);
     if (is_error(compiled))
     {
         print_error(compiled, name, buf, len);

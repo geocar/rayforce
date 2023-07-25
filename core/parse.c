@@ -33,7 +33,7 @@
 
 #include "util.h"
 
-#include "debuginfo.h"
+#include "nfo.h"
 #include "runtime.h"
 #include "ops.h"
 #include "timestamp.h"
@@ -60,7 +60,7 @@ nil_t span_extend(parser_t *parser, span_t *span)
 
 u32_t span_commit(parser_t *parser, span_t span)
 {
-    debuginfo_insert(&parser->debuginfo, parser->count, span);
+    nfo_insert(&parser->nfo, parser->count, span);
     return parser->count++;
 }
 
@@ -858,8 +858,8 @@ obj_t parse(parser_t *parser, str_t filename, str_t input)
 {
     obj_t prg;
 
-    parser->debuginfo.lambda = "";
-    parser->debuginfo.filename = filename;
+    parser->nfo.lambda = "";
+    parser->nfo.filename = filename;
     parser->input = input;
     parser->current = input;
     parser->line = 0;
@@ -868,7 +868,7 @@ obj_t parse(parser_t *parser, str_t filename, str_t input)
     prg = parse_program(parser);
 
     // if (is_error(prg))
-    //     prg->span = debuginfo_get(&parser->debuginfo, prg->id );
+    //     prg->span = nfo_get(&parser->nfo, prg->id );
 
     return prg;
 }
@@ -876,7 +876,7 @@ obj_t parse(parser_t *parser, str_t filename, str_t input)
 parser_t parser_new()
 {
     parser_t parser = {
-        .debuginfo = debuginfo_new("", ""),
+        .nfo = nfo_new("", ""),
     };
 
     return parser;
@@ -884,5 +884,5 @@ parser_t parser_new()
 
 void parser_free(parser_t *parser)
 {
-    debuginfo_free(&parser->debuginfo);
+    nfo_free(&parser->nfo);
 }

@@ -28,7 +28,7 @@
 #include "rayforce.h"
 #include "lambda.h"
 #include "mmap.h"
-#include "debuginfo.h"
+#include "nfo.h"
 
 #define VM_STACK_SIZE PAGE_SIZE * 4
 

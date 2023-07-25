@@ -180,17 +180,12 @@ obj_t table(obj_t keys, obj_t vals)
     return t;
 }
 
-obj_t error(i8_t code, str_t message)
+obj_t error(i8_t code, str_t msg)
 {
-    i32_t len = strlen(message);
-    obj_t err = heap_malloc(sizeof(struct obj_t) + len + 1);
+    obj_t obj = list(3, i64(code), string_from_str(msg, strlen(msg)), NULL);
+    obj->type = TYPE_ERROR;
 
-    err->type = TYPE_ERROR;
-    err->len = len;
-    err->rc = 1;
-    strcpy(err->arr, message);
-
-    return err;
+    return obj;
 }
 
 obj_t shrink(obj_t *obj, u64_t len)
@@ -344,6 +339,8 @@ obj_t __attribute__((hot)) clone(obj_t obj)
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
     case TYPE_CHAR:
+    case TYPE_LAMBDA:
+    case TYPE_ERROR:
         return obj;
     case TYPE_LIST:
         l = obj->len;
@@ -354,10 +351,6 @@ obj_t __attribute__((hot)) clone(obj_t obj)
     case TYPE_TABLE:
         clone(as_list(obj)[0]);
         clone(as_list(obj)[1]);
-        return obj;
-    case TYPE_LAMBDA:
-        return obj;
-    case TYPE_ERROR:
         return obj;
     default:
         panic(str_fmt(0, "clone: invalid type: %d", obj->type));
@@ -392,9 +385,6 @@ nil_t __attribute__((hot)) drop(obj_t obj)
     case -TYPE_SYMBOL:
     case -TYPE_TIMESTAMP:
     case -TYPE_CHAR:
-        if (rc == 0)
-            heap_free(obj);
-        return;
     case TYPE_BOOL:
     case TYPE_I64:
     case TYPE_F64:
@@ -425,17 +415,21 @@ nil_t __attribute__((hot)) drop(obj_t obj)
             drop(as_lambda(obj)->args);
             drop(as_lambda(obj)->locals);
             drop(as_lambda(obj)->code);
-            debuginfo_free(&as_lambda(obj)->debuginfo);
+            nfo_free(&as_lambda(obj)->nfo);
             heap_free(obj);
         }
         return;
     case TYPE_ERROR:
         if (rc == 0)
+        {
+            drop(as_list(obj)[0]);
+            drop(as_list(obj)[1]);
+            drop(as_list(obj)[2]);
             heap_free(obj);
+        }
         return;
     default:
-        if (rc == 0)
-            heap_free(obj);
+        panic(str_fmt(0, "drop: invalid type: %d", obj->type));
     }
 }
 

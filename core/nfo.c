@@ -21,41 +21,48 @@
  *   SOFTWARE.
  */
 
-#ifndef DEBUGINFO_H
-#define DEBUGINFO_H
+#include "nfo.h"
+#include "string.h"
+#include "heap.h"
+#include "ops.h"
 
-#include "rayforce.h"
-#include "hash.h"
-
-/*
- * Points to a actual error position in a source code
- */
-typedef struct span_t
+i32_t u32_cmp(i64_t a, i64_t b)
 {
-    u16_t start_line;
-    u16_t end_line;
-    u16_t start_column;
-    u16_t end_column;
-} span_t;
+    return !((u32_t)a == (u32_t)b);
+}
 
-// CASSERT(sizeof(struct span_t) == 8, debuginfo_h);
-
-/*
- * Holds a dict with such fields:
- * file: Char
- * lambda: Char
- * spans: Dict of id -- span mappings
- */
-typedef struct debuginfo_t
+nfo_t nfo_new(str_t filename, str_t lambda)
 {
-    str_t filename;
-    str_t lambda;
-    ht_t *spans;
-} debuginfo_t;
+    nfo_t nfo = {
+        .filename = filename,
+        .lambda = lambda,
+        .spans = ht_new(32, &rfi_kmh_hash, &u32_cmp),
+    };
 
-debuginfo_t debuginfo_new(str_t filename, str_t lambda);
-nil_t debuginfo_free(debuginfo_t *debuginfo);
-nil_t debuginfo_insert(debuginfo_t *debuginfo, u32_t index, span_t span);
-span_t debuginfo_get(debuginfo_t *debuginfo, u32_t index);
+    return nfo;
+}
 
-#endif
+nil_t nfo_insert(nfo_t *nfo, u32_t index, span_t span)
+{
+    u64_t s;
+    memcpy(&s, &span, sizeof(span_t));
+    ht_upsert(nfo->spans, (i64_t)index, (i64_t)s);
+}
+
+span_t nfo_get(nfo_t *nfo, u32_t index)
+{
+    i64_t s = ht_get(nfo->spans, (i64_t)index);
+
+    if (s == NULL_I64)
+        return (span_t){0};
+
+    span_t span;
+    memcpy(&span, &s, sizeof(span_t));
+
+    return span;
+}
+
+nil_t nfo_free(nfo_t *nfo)
+{
+    ht_free(nfo->spans);
+}
