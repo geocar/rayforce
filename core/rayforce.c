@@ -261,7 +261,7 @@ bool_t is_null(obj_t obj)
            (obj->type == -TYPE_CHAR && obj->schar == '\0');
 }
 
-bool_t obj_t_eq(obj_t a, obj_t b)
+bool_t equal(obj_t a, obj_t b)
 {
     i64_t i, l;
 
@@ -307,6 +307,59 @@ bool_t obj_t_eq(obj_t a, obj_t b)
     }
 
     return false;
+}
+
+i64_t find_raw(obj_t obj, nil_t *val)
+{
+    i64_t i, l;
+
+    if (obj == NULL)
+        return NULL_I64;
+
+    switch (obj->type)
+    {
+    case -TYPE_I64:
+    case -TYPE_SYMBOL:
+    case -TYPE_F64:
+    case -TYPE_TIMESTAMP:
+    case -TYPE_CHAR:
+        return NULL_I64;
+    case TYPE_I64:
+    case TYPE_SYMBOL:
+    case TYPE_TIMESTAMP:
+        l = obj->len;
+        for (i = 0; i < l; i++)
+            if (as_vector_i64(obj)[i] == val)
+                return i;
+        return NULL_I64;
+    case TYPE_F64:
+        l = obj->len;
+        for (i = 0; i < l; i++)
+            if (as_vector_f64(obj)[i] == *(f64_t *)&val)
+                return i;
+        return NULL_I64;
+    case TYPE_CHAR:
+        l = obj->len;
+        for (i = 0; i < l; i++)
+            if (as_string(obj)[i] == *(char_t *)&val)
+                return i;
+        return NULL_I64;
+    case TYPE_LIST:
+        l = obj->len;
+        for (i = 0; i < l; i++)
+            if (equal(as_list(obj)[i], val))
+                return i;
+        return NULL_I64;
+    case TYPE_DICT:
+    case TYPE_TABLE:
+        l = as_list(obj)[0]->len;
+        for (i = 0; i < l; i++)
+            if (equal(as_list(as_list(obj)[0])[i], val))
+                return i;
+        return NULL_I64;
+    default:
+        panic(str_fmt(0, "find: invalid type: %d", obj->type));
+    }
 }
 
 /*

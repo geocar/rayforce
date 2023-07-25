@@ -365,14 +365,14 @@ obj_t rf_table(obj_t x, obj_t y)
     //     }
     // }
 
-    // // there are no scalars and all columns are of the same length
+    // // there are no atoms and all columns are of the same length
     // if (!s)
     // {
     //     drop(l);
     //     return table(clone(x), clone(y));
     // }
 
-    // // otherwise we need to expand scalars to vectors
+    // // otherwise we need to expand atoms to vectors
     // lst = list(len);
 
     // if (cl == 0)
@@ -1699,7 +1699,7 @@ obj_t rf_take(obj_t x, obj_t y)
     //     {
     //         c = rf_take(&as_list(&as_list(x)[1])[i], y);
 
-    //         if (is_scalar(&c))
+    //         if (is_atom(&c))
     //             c = rf_enlist(&c, 1);
 
     //         if (c.type == TYPE_ERROR)

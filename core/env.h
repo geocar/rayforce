@@ -28,7 +28,6 @@
 #include "heap.h"
 #include "vm.h"
 
-
 // offset in array of typenames for each type
 #define TYPE_OFFSET TYPE_CHAR
 #define MAX_TYPE (TYPE_ERROR + TYPE_OFFSET + 2)
@@ -68,8 +67,8 @@ env_t create_env();
 nil_t free_env(env_t *env);
 
 i64_t env_get_typename_by_type(env_t *env, type_t type);
+type_t env_get_type_by_typename(env_t *env, i64_t name);
 str_t env_get_typename(type_t type);
-type_t env_get_type_by_typename(env_t *env, obj_t sym);
 obj_t env_set(env_t *env, obj_t key, obj_t val);
 obj_t env_get(env_t *env, obj_t key);
 

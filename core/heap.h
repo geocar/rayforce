@@ -55,8 +55,8 @@ typedef struct memstat_t
 
 typedef struct heap_t
 {
-    nil_t *blocks16;                      // pool of 16 bytes blocks
-    nil_t *freelist16;                    // blocks of 16 bytes
+    nil_t  *blocks16;                     // pool of 16 bytes blocks
+    nil_t  *freelist16;                   // blocks of 16 bytes
     node_t *freelist[MAX_POOL_ORDER + 2]; // free list of blocks by order
     u64_t   avail;                        // mask of available blocks by order
 } __attribute__((aligned(PAGE_SIZE))) *heap_t;

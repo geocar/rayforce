@@ -116,21 +116,20 @@ typedef struct obj_t
     };
 } *obj_t;
 
-
 // Constructors
-extern obj_t null();                         // create null
-extern obj_t atom(type_t type);              // create atom of type
-extern obj_t list(u64_t len, ...);           // create list
-extern obj_t vector(type_t type, u64_t len); // create vector of type
-extern obj_t bool(bool_t val);               // bool scalar
-extern obj_t i64(i64_t val);                 // i64 scalar
-extern obj_t f64(f64_t val);                 // f64 scalar
-extern obj_t symbol(str_t ptr);              // symbol
-extern obj_t symboli64(i64_t id);            // symbol from i64
-extern obj_t timestamp(i64_t val);           // timestamp
-extern obj_t guid(u8_t data[]);              // GUID
-extern obj_t schar(char_t c);                // char
-extern obj_t string(u64_t len);              // string 
+extern obj_t null();                                        // create null
+extern obj_t atom(type_t type);                             // create atom of type
+extern obj_t list(u64_t len, ...);                          // create list
+extern obj_t vector(type_t type, u64_t len);                // create vector of type
+extern obj_t bool(bool_t val);                              // bool atom
+extern obj_t i64(i64_t val);                                // i64 atom
+extern obj_t f64(f64_t val);                                // f64 atom
+extern obj_t symbol(str_t ptr);                             // symbol
+extern obj_t symboli64(i64_t id);                           // symbol from i64
+extern obj_t timestamp(i64_t val);                          // timestamp
+extern obj_t guid(u8_t data[]);                             // GUID
+extern obj_t schar(char_t c);                               // char
+extern obj_t string(u64_t len);                             // string 
 
 #define vector_bool(len)      (vector(TYPE_BOOL,      len)) // bool vector
 #define vector_i64(len)       (vector(TYPE_I64,       len)) // i64 vector
@@ -166,7 +165,7 @@ extern nil_t drop(obj_t obj);
 // Checkers
 extern bool_t is_null(obj_t obj);
 #define is_error(obj)  (obj && (obj)->type == TYPE_ERROR)
-#define is_scalar(obj) (obj && (obj)->type < 0)
+#define is_atom(obj) (obj && (obj)->type < 0)
 #define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type < TYPE_TABLE)
 
 // Joins
@@ -176,6 +175,12 @@ extern obj_t join_sym(obj_t *obj, str_t  str); // join interned string to a symb
 
 // Reductions
 extern obj_t shrink(obj_t *obj, u64_t len);
+
+// Search
+extern i64_t find_raw(obj_t obj, nil_t *val); // find raw value in a list, return index (obj->len if not found)
+
+// Comparison
+extern bool_t equal(obj_t a, obj_t b);
 
 #ifdef __cplusplus
 }

@@ -221,28 +221,22 @@ nil_t free_env(env_t *env)
 
 i64_t env_get_typename_by_type(env_t *env, type_t type)
 {
-    // obj_tk, n;
-    // k = i64(type);
-    // n = dict_get(&env->typenames, &k);
+    i64_t i = find_raw(as_list(env->typenames)[0], type);
 
-    // return n.i64;
+    if (i == env->typenames->len)
+        return NULL_I64;
 
-    return NULL_I64;
+    return as_vector_symbol(as_list(env->typenames)[1])[i];
 }
 
-type_t env_get_type_by_typename(env_t *env, obj_t sym)
+type_t env_get_type_by_typename(env_t *env, i64_t name)
 {
-    // i64_t i, l;
-    // l = as_list(&env->typenames)[1]->len;
+    i64_t i = find_raw(as_list(env->typenames)[1], name);
 
-    // i = vector_find(&as_list(&env->typenames)[1], &sym);
+    if (i == env->typenames->len)
+        return TYPE_NONE;
 
-    // if (i == l)
-    //     return TYPE_NONE;
-
-    // return (type_t)as_vector_i64(&as_list(&env->typenames)[0])[i];
-
-    return 0;
+    return (type_t)as_vector_i64(as_list(env->typenames)[0])[i];
 }
 
 str_t env_get_typename(type_t type)

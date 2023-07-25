@@ -59,7 +59,7 @@ obj_t rf_call_unary_atomic(unary_t f, obj_t x)
     //         return item;
 
     //     // probably we can fold it in a vector if all other values will be of the same type
-    //     if (is_scalar(item))
+    //     if (is_atom(item))
     //         res = vector(-item->type, l);
     //     else
     //         res = list(l);
@@ -237,7 +237,7 @@ obj_t rf_avg(obj_t x)
         }
         else
         {
-            // scalar version
+            // atom version
             for (i = 0; i < l; i++)
             {
                 if (iv[i] ^ NULL_I64)
@@ -293,7 +293,7 @@ obj_t rf_min(obj_t x)
             return i64(imin);
         }
 
-        // scalar version
+        // atom version
         // find first nonnull value
         for (i = 0; i < l; i++)
             if (iv[i] ^ NULL_I64)
@@ -373,7 +373,7 @@ obj_t rf_max(obj_t x)
             return i64(imax);
         }
 
-        // scalar version
+        // atom version
         // find first nonnull value
         for (i = 0; i < l; i++)
             if (iv[i] ^ NULL_I64)
