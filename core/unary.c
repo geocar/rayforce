@@ -96,14 +96,9 @@ obj_t rf_call_unary(u8_t flags, unary_t f, obj_t x)
     }
 }
 
-obj_t rf_get_variable(obj_t x)
+obj_t rf_get(obj_t x)
 {
-    return error(ERR_NOT_FOUND, "symbol not found");
-    // obj_t v = dict_get(&runtime_get()->env.variables, x);
-    // if (is_null(v))
-    //     return error(ERR_NOT_FOUND, "symbol not found");
-
-    // return v;
+    return at_obj(runtime_get()->env.variables, clone(x));
 }
 
 obj_t rf_type(obj_t x)

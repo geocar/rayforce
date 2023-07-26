@@ -49,7 +49,7 @@ obj_t rf_ge(obj_t x, obj_t y);
 obj_t rf_and(obj_t x, obj_t y);
 obj_t rf_or(obj_t x, obj_t y);
 obj_t rf_and(obj_t x, obj_t y);
-obj_t rf_get(obj_t x, obj_t y);
+obj_t rf_at(obj_t x, obj_t y);
 obj_t rf_find(obj_t x, obj_t y);
 obj_t rf_concat(obj_t x, obj_t y);
 obj_t rf_filter(obj_t x, obj_t y);

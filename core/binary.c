@@ -1090,7 +1090,7 @@ obj_t rf_or(obj_t x, obj_t y)
     return null();
 }
 
-obj_t rf_get(obj_t x, obj_t y)
+obj_t rf_at(obj_t x, obj_t y)
 {
     // i32_t i;
     // i64_t yl, xl;

@@ -332,19 +332,54 @@ obj_t at_idx(obj_t obj, u64_t idx)
     switch (obj->type)
     {
     case TYPE_I64:
-        return i64(as_vector_i64(obj)[idx]);
+        if (idx < obj->len)
+            return i64(as_vector_i64(obj)[idx]);
+        return i64(NULL_I64);
     case TYPE_SYMBOL:
-        return symboli64(as_vector_symbol(obj)[idx]);
+        if (idx < obj->len)
+            return symboli64(as_vector_symbol(obj)[idx]);
+        return symboli64(NULL_I64);
     case TYPE_TIMESTAMP:
-        return timestamp(as_vector_timestamp(obj)[idx]);
+        if (idx < obj->len)
+            return timestamp(as_vector_timestamp(obj)[idx]);
+        return timestamp(NULL_I64);
     case TYPE_F64:
-        return f64(as_vector_f64(obj)[idx]);
+        if (idx < obj->len)
+            return f64(as_vector_f64(obj)[idx]);
+        return f64(NULL_F64);
     case TYPE_CHAR:
-        return schar(as_string(obj)[idx]);
+        if (idx < obj->len)
+            return schar(as_string(obj)[idx]);
+        return schar('\0');
     case TYPE_LIST:
-        return clone(as_list(obj)[idx]);
+        if (idx < obj->len)
+            return clone(as_list(obj)[idx]);
+        return null();
     default:
-        panic(str_fmt(0, "at index: invalid type: %d", obj->type));
+        panic(str_fmt(0, "at_idx: invalid type: %d", obj->type));
+    }
+}
+
+obj_t at_obj(obj_t obj, obj_t idx)
+{
+    obj_t res;
+
+    if (obj == NULL)
+        return null();
+
+    switch (MTYPE2(obj->type, idx->type))
+    {
+    case MTYPE2(TYPE_I64, -TYPE_I64):
+    case MTYPE2(TYPE_SYMBOL, -TYPE_I64):
+    case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
+    case MTYPE2(TYPE_F64, -TYPE_I64):
+    case MTYPE2(TYPE_CHAR, -TYPE_I64):
+    case MTYPE2(TYPE_LIST, -TYPE_I64):
+        res = at_idx(obj, idx->i64);
+        drop(idx);
+        return res;
+    default:
+        panic(str_fmt(0, "at_obj: invalid type: %d", obj->type));
     }
 }
 
@@ -398,12 +433,15 @@ obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
             {
                 res = join_obj(&as_list(*obj)[0], idx);
                 if (res->type == TYPE_ERROR)
+                {
+                    drop(idx);
                     return res;
+                }
 
                 res = join_obj(&as_list(*obj)[1], val);
 
                 if (res->type == TYPE_ERROR)
-                    return res;
+                    panic("set_obj: inconsistent update");
 
                 return *obj;
             }

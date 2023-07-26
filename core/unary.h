@@ -29,7 +29,7 @@
 typedef obj_t (*unary_t)(obj_t);
 
 obj_t rf_call_unary(u8_t flags, unary_t f, obj_t x);
-obj_t rf_get_variable(obj_t x);
+obj_t rf_get(obj_t x);
 obj_t rf_type(obj_t x);
 obj_t rf_count(obj_t x);
 obj_t rf_til(obj_t x);
