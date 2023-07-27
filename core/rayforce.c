@@ -40,6 +40,7 @@ obj_t atom(type_t type)
 
     a->type = -type;
     a->rc = 1;
+    a->attrs = 0;
 
     return a;
 }

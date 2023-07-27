@@ -813,10 +813,10 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
             return CC_NULL;
 
         // Symbol is quoted
-        if (obj->attrs & ATTR_QUOTED)
+        if (obj->attrs & ATTR_QUOTED == ATTR_QUOTED)
         {
             push_opcode(cc, obj, code, OP_PUSH);
-            push_const(cc, clone(obj));
+            push_const(cc, symboli64(obj->i64));
             func->stack_size++;
 
             return CC_OK;
