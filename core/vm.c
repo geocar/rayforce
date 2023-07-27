@@ -130,7 +130,7 @@ op_halt:
     if (vm->sp > 0)
         return stack_pop(vm);
     else
-        return null();
+        return null(0);
 op_push:
     vm->ip++;
     n = code[vm->ip++];
@@ -310,7 +310,7 @@ op_lget:
     b = vm->ip++;
     x1 = stack_pop(vm);
     j = f->locals->len;
-    x2 = null();
+    x2 = null(0);
     for (i = 0; i < j; i++)
     {
         x2 = at_obj(as_list(f->locals)[j - i - 1], x1);
@@ -347,7 +347,7 @@ op_catch:
     b = vm->ip++;
     // x1 = vm->acc;
     // x1.type = TYPE_CHAR;
-    // vm->acc = null();
+    // vm->acc = null(0);
     // stack_push(vm, x1);
     dispatch();
 op_throw:

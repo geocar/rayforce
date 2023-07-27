@@ -167,11 +167,11 @@ obj_t parse_timestamp(parser_t *parser)
         current += 4;
     }
     else
-        return null();
+        return null(0);
 
     // skip dot
     if (*current != '.')
-        return null();
+        return null(0);
 
     current++;
 
@@ -184,11 +184,11 @@ obj_t parse_timestamp(parser_t *parser)
         current += 2;
     }
     else
-        return null();
+        return null(0);
 
     // skip dot
     if (*current != '.')
-        return null();
+        return null(0);
 
     current++;
 
@@ -201,11 +201,11 @@ obj_t parse_timestamp(parser_t *parser)
         current += 2;
     }
     else
-        return null();
+        return null(0);
 
     // skip D
     if (*current != 'D')
-        return null();
+        return null(0);
 
     current++;
 
@@ -218,11 +218,11 @@ obj_t parse_timestamp(parser_t *parser)
         current += 2;
     }
     else
-        return null();
+        return null(0);
 
     // skip colon
     if (*current != ':')
-        return null();
+        return null(0);
 
     current++;
 
@@ -235,11 +235,11 @@ obj_t parse_timestamp(parser_t *parser)
         current += 2;
     }
     else
-        return null();
+        return null(0);
 
     // skip colon
     if (*current != ':')
-        return null();
+        return null(0);
 
     current++;
 
@@ -252,11 +252,11 @@ obj_t parse_timestamp(parser_t *parser)
         current += 2;
     }
     else
-        return null();
+        return null(0);
 
     // skip dot
     if (*current != '.')
-        return null();
+        return null(0);
 
     current++;
 
@@ -264,7 +264,7 @@ obj_t parse_timestamp(parser_t *parser)
     nanos = strtoul(current, &end, 10);
 
     if (end == current)
-        return null();
+        return null(0);
 
     ts.nanos = nanos;
     shift(parser, end - parser->current);
@@ -454,7 +454,7 @@ obj_t parse_symbol(parser_t *parser)
     {
         shift(parser, 4);
         span_extend(parser, &span);
-        res = null();
+        res = null(0);
         nfo_insert(&parser->nfo, res, span);
 
         return res;
@@ -785,7 +785,7 @@ obj_t advance(parser_t *parser)
             return tok;
 
         if (is_at_term(tok))
-            tok = null();
+            tok = null(0);
 
         return list(2, symbol("`"), tok);
     }

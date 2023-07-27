@@ -107,7 +107,7 @@ obj_t rf_print(obj_t *x, i64_t n)
     printf("%s", s);
     heap_free(s);
 
-    return null();
+    return null(0);
 }
 
 obj_t rf_println(obj_t *x, i64_t n)
@@ -120,5 +120,5 @@ obj_t rf_println(obj_t *x, i64_t n)
     printf("%s\n", s);
     heap_free(s);
 
-    return null();
+    return null(0);
 }

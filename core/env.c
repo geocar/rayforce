@@ -69,7 +69,7 @@ obj_t rf_memstat()
 
     // return dict(keys, vals);
 
-    return null();
+    return null(0);
 }
 
 // clang-format off
@@ -143,6 +143,7 @@ nil_t init_functions(obj_t functions)
     
 nil_t init_typenames(obj_t typenames)    
 {
+    regt(typenames,   -TYPE_ERROR,      "Null");
     regt(typenames,   -TYPE_BOOL,       "bool");
     regt(typenames,   -TYPE_I64,        "i64");
     regt(typenames,   -TYPE_F64,        "f64");
@@ -225,7 +226,7 @@ i64_t env_get_typename_by_type(env_t *env, type_t type)
     i64_t i = find_raw(as_list(env->typenames)[0], type);
 
     if (i == as_list(env->typenames)[0])
-        return NULL_I64;
+        return as_vector_symbol(as_list(env->typenames)[1])[0];
 
     return as_vector_symbol(as_list(env->typenames)[1])[i];
 }

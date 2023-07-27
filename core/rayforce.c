@@ -44,9 +44,25 @@ obj_t atom(type_t type)
     return a;
 }
 
-obj_t null()
+obj_t null(type_t type)
 {
-    return NULL;
+    switch (type)
+    {
+    case TYPE_BOOL:
+        return bool(false);
+    case TYPE_I64:
+        return i64(NULL_I64);
+    case TYPE_F64:
+        return f64(NULL_F64);
+    case TYPE_CHAR:
+        return schar('\0');
+    case TYPE_SYMBOL:
+        return symboli64(NULL_I64);
+    case TYPE_TIMESTAMP:
+        return timestamp(NULL_I64);
+    default:
+        return NULL;
+    }
 }
 
 obj_t bool(bool_t val)
@@ -243,19 +259,19 @@ obj_t join_obj(obj_t *obj, obj_t val)
     //     return lst;
     // }
 
-    switch (MTYPE2((*obj)->type, val->type))
+    switch (mtype2((*obj)->type, val->type))
     {
-    case MTYPE2(TYPE_I64, -TYPE_I64):
-    case MTYPE2(TYPE_SYMBOL, -TYPE_SYMBOL):
-    case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+    case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_SYMBOL, -TYPE_SYMBOL):
+    case mtype2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
         res = join_raw(obj, val->i64);
         drop(val);
         return res;
-    case MTYPE2(TYPE_F64, -TYPE_F64):
+    case mtype2(TYPE_F64, -TYPE_F64):
         res = join_raw(obj, *(nil_t **)&val->f64);
         drop(val);
         return res;
-    case MTYPE2(TYPE_CHAR, -TYPE_CHAR):
+    case mtype2(TYPE_CHAR, -TYPE_CHAR):
         res = join_raw(obj, *(nil_t **)&val->schar);
         drop(val);
         return res;
@@ -327,7 +343,7 @@ obj_t write_sym(obj_t *obj, u64_t idx, str_t str)
 obj_t at_idx(obj_t obj, u64_t idx)
 {
     if (obj == NULL || !is_vector(obj))
-        return null();
+        return null(0);
 
     switch (obj->type)
     {
@@ -354,7 +370,7 @@ obj_t at_idx(obj_t obj, u64_t idx)
     case TYPE_LIST:
         if (idx < obj->len)
             return clone(as_list(obj)[idx]);
-        return null();
+        return null(0);
     default:
         panic(str_fmt(0, "at_idx: invalid type: %d", obj->type));
     }
@@ -362,46 +378,56 @@ obj_t at_idx(obj_t obj, u64_t idx)
 
 obj_t at_obj(obj_t obj, obj_t idx)
 {
+    u64_t i;
     obj_t res;
 
     if (obj == NULL)
-        return null();
+        return null(0);
 
-    switch (MTYPE2(obj->type, idx->type))
+    switch (mtype2(obj->type, idx->type))
     {
-    case MTYPE2(TYPE_I64, -TYPE_I64):
-    case MTYPE2(TYPE_SYMBOL, -TYPE_I64):
-    case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
-    case MTYPE2(TYPE_F64, -TYPE_I64):
-    case MTYPE2(TYPE_CHAR, -TYPE_I64):
-    case MTYPE2(TYPE_LIST, -TYPE_I64):
+    case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_SYMBOL, -TYPE_I64):
+    case mtype2(TYPE_TIMESTAMP, -TYPE_I64):
+    case mtype2(TYPE_F64, -TYPE_I64):
+    case mtype2(TYPE_CHAR, -TYPE_I64):
+    case mtype2(TYPE_LIST, -TYPE_I64):
         res = at_idx(obj, idx->i64);
         drop(idx);
         return res;
     default:
+        if (obj->type == TYPE_DICT)
+        {
+            i = find_obj(as_list(obj)[0], idx);
+            if (i == as_list(obj)[0]->len)
+                return null(as_list(obj)[1]->type);
+
+            return at_idx(as_list(obj)[1], i);
+        }
+
         panic(str_fmt(0, "at_obj: invalid type: %d", obj->type));
     }
 }
 
 obj_t set_idx(obj_t *obj, u64_t idx, obj_t val)
 {
-    switch (MTYPE2((*obj)->type, val->type))
+    switch (mtype2((*obj)->type, val->type))
     {
-    case MTYPE2(TYPE_I64, -TYPE_I64):
-    case MTYPE2(TYPE_SYMBOL, -TYPE_I64):
-    case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
+    case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_SYMBOL, -TYPE_I64):
+    case mtype2(TYPE_TIMESTAMP, -TYPE_I64):
         as_vector_i64(*obj)[idx] = val->i64;
         drop(val);
         return *obj;
-    case MTYPE2(TYPE_F64, -TYPE_F64):
+    case mtype2(TYPE_F64, -TYPE_F64):
         as_vector_f64(*obj)[idx] = val->f64;
         drop(val);
         return *obj;
-    case MTYPE2(TYPE_CHAR, -TYPE_CHAR):
+    case mtype2(TYPE_CHAR, -TYPE_CHAR):
         as_string(*obj)[idx] = val->schar;
         drop(val);
         return *obj;
-    case MTYPE2(TYPE_LIST, -TYPE_I64):
+    case mtype2(TYPE_LIST, -TYPE_I64):
         as_list(*obj)[idx] = val;
         return *obj;
     default:
@@ -414,14 +440,14 @@ obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
     obj_t res;
     u64_t i;
 
-    switch (MTYPE2((*obj)->type, idx->type))
+    switch (mtype2((*obj)->type, idx->type))
     {
-    case MTYPE2(TYPE_I64, -TYPE_I64):
-    case MTYPE2(TYPE_SYMBOL, -TYPE_I64):
-    case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
-    case MTYPE2(TYPE_F64, -TYPE_I64):
-    case MTYPE2(TYPE_CHAR, -TYPE_I64):
-    case MTYPE2(TYPE_LIST, -TYPE_I64):
+    case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_SYMBOL, -TYPE_I64):
+    case mtype2(TYPE_TIMESTAMP, -TYPE_I64):
+    case mtype2(TYPE_F64, -TYPE_I64):
+    case mtype2(TYPE_CHAR, -TYPE_I64):
+    case mtype2(TYPE_LIST, -TYPE_I64):
         res = set_idx(obj, idx->i64, val);
         drop(idx);
         return res;
@@ -608,45 +634,45 @@ obj_t cast(type_t type, obj_t obj)
         return res;
     }
 
-    switch (MTYPE2(type, obj->type))
+    switch (mtype2(type, obj->type))
     {
-    case MTYPE2(-TYPE_I64, -TYPE_F64):
+    case mtype2(-TYPE_I64, -TYPE_F64):
         return i64((i64_t)obj->f64);
-    case MTYPE2(-TYPE_F64, -TYPE_I64):
+    case mtype2(-TYPE_F64, -TYPE_I64):
         return f64((f64_t)obj->i64);
-    case MTYPE2(-TYPE_I64, -TYPE_TIMESTAMP):
+    case mtype2(-TYPE_I64, -TYPE_TIMESTAMP):
         return i64(obj->i64);
-    case MTYPE2(-TYPE_TIMESTAMP, -TYPE_I64):
+    case mtype2(-TYPE_TIMESTAMP, -TYPE_I64):
         return timestamp(obj->i64);
-    case MTYPE2(-TYPE_SYMBOL, TYPE_CHAR):
+    case mtype2(-TYPE_SYMBOL, TYPE_CHAR):
         return symbol(as_string(obj));
-    case MTYPE2(-TYPE_I64, TYPE_CHAR):
+    case mtype2(-TYPE_I64, TYPE_CHAR):
         return i64(strtol(as_string(obj), NULL, 10));
-    case MTYPE2(-TYPE_F64, TYPE_CHAR):
+    case mtype2(-TYPE_F64, TYPE_CHAR):
         return f64(strtod(as_string(obj), NULL));
-    case MTYPE2(TYPE_TABLE, TYPE_DICT):
+    case mtype2(TYPE_TABLE, TYPE_DICT):
         return table(clone(as_list(obj)[0]), clone(as_list(obj)[1]));
-    case MTYPE2(TYPE_DICT, TYPE_TABLE):
+    case mtype2(TYPE_DICT, TYPE_TABLE):
         return dict(clone(as_list(obj)[0]), clone(as_list(obj)[1]));
-    case MTYPE2(TYPE_F64, TYPE_I64):
+    case mtype2(TYPE_F64, TYPE_I64):
         l = obj->len;
         res = vector_f64(l);
         for (i = 0; i < l; i++)
             as_vector_f64(res)[i] = (f64_t)as_vector_i64(obj)[i];
         return res;
-    case MTYPE2(TYPE_I64, TYPE_F64):
+    case mtype2(TYPE_I64, TYPE_F64):
         l = obj->len;
         res = vector_i64(l);
         for (i = 0; i < l; i++)
             as_vector_i64(res)[i] = (i64_t)as_vector_f64(obj)[i];
         return res;
-    case MTYPE2(TYPE_BOOL, TYPE_I64):
+    case mtype2(TYPE_BOOL, TYPE_I64):
         l = obj->len;
         res = vector_bool(l);
         for (i = 0; i < l; i++)
             as_vector_bool(res)[i] = (bool_t)as_vector_i64(obj)[i];
         return res;
-        // case MTYPE2(-TYPE_GUID, TYPE_CHAR):
+        // case mtype2(-TYPE_GUID, TYPE_CHAR):
         //     res = guid(NULL);
 
         //     if (strlen(as_string(obj)) != 36)
@@ -671,13 +697,13 @@ obj_t cast(type_t type, obj_t obj)
 
         //     break;
 
-    case MTYPE2(TYPE_I64, TYPE_TIMESTAMP):
+    case mtype2(TYPE_I64, TYPE_TIMESTAMP):
         l = obj->len;
         res = vector_i64(l);
         for (i = 0; i < l; i++)
             as_vector_i64(res)[i] = as_vector_timestamp(obj)[i];
         return res;
-    case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
+    case mtype2(TYPE_TIMESTAMP, TYPE_I64):
         l = obj->len;
         res = vector_timestamp(l);
         for (i = 0; i < l; i++)

@@ -129,7 +129,7 @@ nil_t repl(str_t name, parser_t *parser, str_t buf, i32_t len)
 
     if (is_error(executed))
         print_error(executed, name, buf, len);
-    else if (!is_null(executed))
+    else if (executed)
     {
         formatted = obj_fmt(executed);
         if (formatted != NULL)

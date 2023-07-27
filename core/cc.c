@@ -403,7 +403,7 @@ cc_result_t cc_compile_map(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity
 
     // // reserve space for map result (accumulator)
     // push_opcode(cc, car->id, code, OP_PUSH);
-    // push_const(cc, null());
+    // push_const(cc, null(0));
 
     // // compile args
     // for (i = 0; i < arity; i++)
@@ -952,7 +952,7 @@ obj_t cc_compile_lambda(bool_t top, str_t name, obj_t args, obj_t body, nfo_t *n
     if (len == 0)
     {
         push_opcode(&cc, body, code, OP_PUSH);
-        push_const(&cc, null());
+        push_const(&cc, null(0));
         goto epilogue;
     }
 

@@ -117,7 +117,7 @@ typedef struct obj_t
 } *obj_t;
 
 // Constructors
-extern obj_t null();                                        // create null
+extern obj_t null(type_t type);                             // create null of type
 extern obj_t atom(type_t type);                             // create atom of type
 extern obj_t list(u64_t len, ...);                          // create list
 extern obj_t vector(type_t type, u64_t len);                // create vector of type
