@@ -213,7 +213,7 @@ obj_t distinct(obj_t x)
 
     l = x->len;
 
-    set = ht(l, 1);
+    set = hash_table(l, 1);
     vec = vector_i64(l);
 
     for (i = 0; i < l; i++)

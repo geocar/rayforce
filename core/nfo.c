@@ -32,7 +32,7 @@ nfo_t nfo_new(str_t filename, str_t lambda)
     nfo_t nfo = {
         .filename = filename,
         .lambda = lambda,
-        .spans = ht(32, 2),
+        .spans = hash_table(32, 2),
     };
 
     return nfo;

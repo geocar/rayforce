@@ -34,7 +34,7 @@
 /*
  * Create a new hash table as a vector
  */
-obj_t ht(u64_t size, u64_t bucket_size)
+obj_t hash_table(u64_t size, u64_t bucket_size)
 {
     u64_t i;
     obj_t obj;
@@ -52,7 +52,7 @@ obj_t ht(u64_t size, u64_t bucket_size)
 nil_t ht_rehash(obj_t *obj, hash_f hash)
 {
     u64_t i, l, size = (*obj)->len, mul = (*obj)->mul, key, val, factor, index;
-    obj_t new_ht = ht(size * 2, mul);
+    obj_t new_ht = hash_table(size * 2, mul);
 
     factor = new_ht->len - 1;
 

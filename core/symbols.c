@@ -122,8 +122,8 @@ symbols_t *symbols_new()
     symbols->pool_node = node;
     symbols->strings_pool = (str_t)(node + sizeof(pool_node_t *)); // Skip the node size of next ptr
 
-    symbols->str_to_id = ht(SYMBOLS_POOL_SIZE, 2);
-    symbols->id_to_str = ht(SYMBOLS_POOL_SIZE, 2);
+    symbols->str_to_id = hash_table(SYMBOLS_POOL_SIZE, 2);
+    symbols->id_to_str = hash_table(SYMBOLS_POOL_SIZE, 2);
     symbols->next_sym_id = 0;
     symbols->next_kw_id = -1;
 
