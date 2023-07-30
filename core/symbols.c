@@ -122,8 +122,8 @@ symbols_t *symbols_new()
     symbols->pool_node = node;
     symbols->strings_pool = (str_t)(node + sizeof(pool_node_t *)); // Skip the node size of next ptr
 
-    symbols->str_to_id = ht_tab(SYMBOLS_POOL_SIZE);
-    symbols->id_to_str = ht_tab(SYMBOLS_POOL_SIZE);
+    symbols->str_to_id = ht_tab(SYMBOLS_POOL_SIZE, TYPE_I64);
+    symbols->id_to_str = ht_tab(SYMBOLS_POOL_SIZE, TYPE_I64);
     symbols->next_sym_id = 0;
     symbols->next_kw_id = -1;
 
@@ -150,26 +150,26 @@ i64_t intern_symbol(str_t s, i64_t len)
     str_t p;
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t *b = ht_tab_get_with(&symbols->str_to_id, (i64_t)&str_slice,
-                               &string_hash, &string_str_cmp);
+    i64_t idx = ht_tab_get_with(&symbols->str_to_id, (i64_t)&str_slice,
+                                &string_hash, &string_str_cmp);
 
     // insert new symbol
-    if (b[0] == NULL_I64)
+    if (as_i64(as_list(symbols->str_to_id)[0])[idx] == NULL_I64)
     {
         p = str_intern(symbols, s, len);
-        b[0] = p;
-        b[1] = symbols->next_sym_id;
+        as_i64(as_list(symbols->str_to_id)[0])[idx] = p;
+        as_i64(as_list(symbols->str_to_id)[1])[idx] = symbols->next_sym_id;
 
         // insert id into id_to_str
-        b = ht_tab_get(&symbols->id_to_str, symbols->next_sym_id);
-        b[0] = symbols->next_sym_id;
-        b[1] = p;
+        idx = ht_tab_get(&symbols->id_to_str, symbols->next_sym_id);
+        as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_sym_id;
+        as_i64(as_list(symbols->id_to_str)[1])[idx] = p;
 
         return symbols->next_sym_id++;
     }
     // symbol is already interned
     else
-        return b[1];
+        return as_i64(as_list(symbols->str_to_id)[1])[idx];
 }
 
 i64_t intern_keyword(str_t s, i64_t len)
@@ -177,34 +177,34 @@ i64_t intern_keyword(str_t s, i64_t len)
     str_t p;
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t *b = ht_tab_get_with(&symbols->str_to_id, (i64_t)&str_slice,
-                               &string_hash, &string_str_cmp);
+    i64_t idx = ht_tab_get_with(&symbols->str_to_id, (i64_t)&str_slice,
+                                &string_hash, &string_str_cmp);
 
     // insert new symbol
-    if (b[0] == NULL_I64)
+    if (as_i64(as_list(symbols->str_to_id)[0])[idx] == NULL_I64)
     {
         p = str_intern(symbols, s, len);
-        b[0] = p;
-        b[1] = symbols->next_kw_id;
+        as_i64(as_list(symbols->str_to_id)[0])[idx] = p;
+        as_i64(as_list(symbols->str_to_id)[1])[idx] = symbols->next_kw_id;
 
         // insert id into id_to_str
-        b = ht_tab_get(&symbols->id_to_str, symbols->next_kw_id);
-        b[0] = symbols->next_kw_id;
-        b[1] = p;
+        idx = ht_tab_get(&symbols->id_to_str, symbols->next_kw_id);
+        as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_kw_id;
+        as_i64(as_list(symbols->id_to_str)[1])[idx] = p;
 
         return symbols->next_kw_id--;
     }
     // symbol is already interned
     else
-        return b[1];
+        return as_i64(as_list(symbols->str_to_id)[1])[idx];
 }
 
 str_t symbols_get(i64_t key)
 {
     symbols_t *symbols = runtime_get()->symbols;
-    i64_t *b = ht_tab_get(&symbols->id_to_str, key);
-    if (b[0] == NULL_I64)
+    i64_t idx = ht_tab_get(&symbols->id_to_str, key);
+    if (as_i64(as_list(symbols->id_to_str)[0])[idx] == NULL_I64)
         return "";
 
-    return (str_t)b[1];
+    return (str_t)as_i64(as_list(symbols->id_to_str)[1])[idx];
 }

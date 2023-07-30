@@ -267,49 +267,50 @@ obj_t distinct(obj_t x)
         return vec;
     }
 
-    set = ht_set(l);
-    vec = vector_i64(l);
+    raise(ERR_NOT_IMPLEMENTED, "nyi");
+    // set = ht_set(l);
+    // vec = vector_i64(l);
 
-    for (i = 0; i < l; i++)
-    {
-        p = ht_set_get(&set, as_i64(x)[i]);
-        if (p[0] == NULL_I64)
-        {
-            p[0] = as_i64(x)[i];
-            as_i64(vec)[j++] = as_i64(x)[i];
-        }
-    }
+    // for (i = 0; i < l; i++)
+    // {
+    //     p = ht_set_get(&set, as_i64(x)[i]);
+    //     if (p[0] == NULL_I64)
+    //     {
+    //         p[0] = as_i64(x)[i];
+    //         as_i64(vec)[j++] = as_i64(x)[i];
+    //     }
+    // }
 
-    vec->attrs |= ATTR_DISTINCT;
+    // vec->attrs |= ATTR_DISTINCT;
 
-    drop(set);
-    resize(&vec, j);
+    // drop(set);
+    // resize(&vec, j);
 
-    return vec;
+    // return vec;
 }
 
 obj_t group(obj_t x)
 {
-    i64_t i, j = 0, xl = x->len, range, inrange = 0, min, max, *m, n;
+    i64_t i, j = 0, xl = x->len, range, inrange = 0, min, max, idx, n;
     obj_t keys, vals, mask, v, ht;
 
     if (xl == 0)
         return dict(vector_i64(0), list(0));
 
-    ht = ht_tab(xl);
+    ht = ht_tab(xl, TYPE_I64);
 
     // calculate counts for each key
     for (i = 0; i < xl; i++)
     {
-        m = ht_tab_get(&ht, as_i64(x)[i]);
-        if (m[0] == NULL_I64)
+        idx = ht_tab_get(&ht, as_i64(x)[i]);
+        if (as_i64(as_list(ht)[0])[idx] == NULL_I64)
         {
-            m[0] = as_i64(x)[i];
-            m[1] = 1;
+            as_i64(as_list(ht)[0])[idx] = as_i64(x)[i];
+            as_i64(as_list(ht)[1])[idx] = 1;
             j++;
         }
         else
-            m[1] += 1;
+            as_i64(as_list(ht)[1])[idx] += 1;
     }
 
     keys = vector_i64(j);
@@ -319,20 +320,20 @@ obj_t group(obj_t x)
     j = 0;
     for (i = 0; i < xl; i++)
     {
-        m = ht_tab_get(&ht, as_i64(x)[i]);
-        if (m[1] & (1ll << 62))
+        idx = ht_tab_get(&ht, as_i64(x)[i]);
+        if (as_i64(as_list(ht)[1])[idx] & (1ll << 62))
         {
-            v = (obj_t)(m[1] & ~(1ll << 62));
+            v = (obj_t)(as_i64(as_list(ht)[1])[idx] & ~(1ll << 62));
             as_i64(v)[v->len++] = i;
         }
         else
         {
             as_i64(keys)[j] = as_i64(x)[i];
-            v = vector_i64(m[1]);
+            v = vector_i64(as_i64(as_list(ht)[1])[idx]);
             v->len = 1;
             as_i64(v)[0] = i;
             as_list(vals)[j++] = v;
-            m[1] = (i64_t)v | 1ll << 62;
+            as_i64(as_list(ht)[1])[idx] = (i64_t)v | 1ll << 62;
         }
     }
 

@@ -31,58 +31,46 @@
 #include "heap.h"
 #include "util.h"
 
-typedef struct b_t
-{
-    i64_t k;
-    i64_t v;
-} b_t;
-
-#define as_bt(x) ((b_t *)as_string(x))
-
-obj_t ht_tab(u64_t size)
+obj_t ht_tab(u64_t size, type_t vals)
 {
     u64_t i;
-    obj_t obj;
+    obj_t k, v;
 
     size = next_power_of_two_u64(size);
-    obj = vector(TYPE_I64, size * 2);
+    k = vector(TYPE_I64, size);
+
+    if (vals >= 0)
+        v = vector(vals, size);
+    else
+        v = NULL;
 
     for (i = 0; i < size; i++)
-        as_bt(obj)[i].k = NULL_I64;
+        as_i64(k)[i] = NULL_I64;
 
-    return obj;
+    return list(2, k, v);
 }
 
-obj_t ht_set(u64_t size)
+nil_t rehash(obj_t *obj, hash_f hash)
 {
-    u64_t i;
-    obj_t obj;
+    u64_t i, l, size, key, val, factor, index;
+    obj_t new_obj;
+    type_t type;
 
-    size = next_power_of_two_u64(size);
-    obj = vector(TYPE_I64, size);
-
-    for (i = 0; i < size; i++)
-        as_i64(obj)[i] = NULL_I64;
-
-    return obj;
-}
-
-nil_t rehash_tab(obj_t *obj, hash_f hash)
-{
-    u64_t i, l, size = (*obj)->len, key, val, factor, index;
-    obj_t new_obj = ht_tab(size); // will multiply size by 2
-
+    size = as_list(*obj)[0]->len;
+    type = is_null(as_list(*obj)[1]) ? -1 : as_list(*obj)[1]->type;
+    debug("REHASH  TYPE: %d!!!", type);
+    new_obj = ht_tab(size * 2, type);
     factor = new_obj->len - 1;
 
-    for (i = 0; i < size / 2; i++)
+    for (i = 0; i < size; i++)
     {
-        if (as_bt(*obj)[i].k != NULL_I64)
+        if (as_i64(as_list(*obj)[0])[i] != NULL_I64)
         {
-            key = as_bt(*obj)[i].k;
-            val = as_bt(*obj)[i].v;
+            key = as_i64(as_list(*obj)[0])[i];
+            val = at_idx(as_list(*obj)[1], i);
             index = hash ? hash(key) & factor : key & factor;
 
-            while (as_bt(new_obj)[i].k != NULL_I64)
+            while (as_i64(as_list(new_obj)[0])[i] != NULL_I64)
             {
                 if (index == size)
                     panic("hash tab is full!!");
@@ -90,8 +78,8 @@ nil_t rehash_tab(obj_t *obj, hash_f hash)
                 index = index + 1;
             }
 
-            as_bt(new_obj)[index].k = key;
-            as_bt(new_obj)[index].v = val;
+            as_i64(as_list(new_obj)[0])[index] = key;
+            set_idx(&as_list(new_obj)[1], i, val);
         }
     }
 
@@ -100,113 +88,34 @@ nil_t rehash_tab(obj_t *obj, hash_f hash)
     *obj = new_obj;
 }
 
-nil_t rehash_set(obj_t *obj, hash_f hash)
-{
-    u64_t i, l, size = (*obj)->len, key, factor, index;
-    obj_t new_obj = ht_set(size * 2);
-
-    factor = new_obj->len - 1;
-
-    for (i = 0; i < size; i++)
-    {
-        if (as_i64(*obj)[i] != NULL_I64)
-        {
-            key = as_bt(*obj)[i].k;
-            index = hash ? hash(key) & factor : key & factor;
-
-            while (as_i64(new_obj)[i] != NULL_I64)
-            {
-                if (index == size * 2)
-                    panic("hash set is full!!");
-
-                index = index + 1;
-            }
-
-            as_i64(new_obj)[index] = key;
-        }
-    }
-
-    drop(*obj);
-
-    *obj = new_obj;
-}
-
-i64_t *ht_tab_get(obj_t *obj, i64_t key)
+i64_t ht_tab_get(obj_t *obj, i64_t key)
 {
     u64_t i, size;
-    b_t *b;
 
     while (true)
     {
-        size = (*obj)->len / 2;
+        size = as_list(*obj)[0]->len;
 
-        for (i = key & (size - 1); i < size; i++)
-        {
-            b = as_bt(*obj) + i;
-            if (b->k == NULL_I64 || b->k == key)
-                return b;
-        }
+        for (i = (u64_t)key & (size - 1); i < size; i++)
+            if ((as_i64(as_list(*obj)[0])[i] == NULL_I64) || (as_i64(as_list(*obj)[0])[i] == key))
+                return i;
 
-        rehash_tab(obj, NULL);
+        rehash(obj, NULL);
     }
 }
 
-i64_t *ht_tab_get_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp)
+i64_t ht_tab_get_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp)
 {
     u64_t i, size;
-    b_t *b;
 
     while (true)
     {
-        size = (*obj)->len / 2;
+        size = as_list(*obj)[0]->len;
 
         for (i = hash(key) & (size - 1); i < size; i++)
-        {
-            b = as_bt(*obj) + i;
-            if (b->k == NULL_I64 || (cmp(b->k, key) == 0))
-                return b;
-        }
+            if (as_i64(as_list(*obj)[0])[i] == NULL_I64 || cmp(as_i64(as_list(*obj)[0])[i], key) == 0)
+                return i;
 
-        rehash_tab(obj, hash);
-    }
-}
-
-i64_t *ht_set_get(obj_t *obj, i64_t key)
-{
-    u64_t i, size;
-    i64_t *b;
-
-    while (true)
-    {
-        size = (*obj)->len;
-
-        for (i = key & (size - 1); i < size; i++)
-        {
-            b = as_i64(*obj) + i;
-            if (b[0] == NULL_I64 || b[0] == key)
-                return b;
-        }
-
-        rehash_set(obj, NULL);
-    }
-}
-
-i64_t *ht_set_get_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp)
-{
-    u64_t i, size;
-    i64_t *b;
-
-    while (true)
-    {
-        size = (*obj)->len;
-
-        for (i = hash(key) & (size - 1); i < size; i++)
-        {
-            b = as_i64(*obj) + i;
-            if (b[0] == NULL_I64 || (cmp(b[0], key) == 0))
-                return b;
-        }
-
-        rehash_set(obj, hash);
+        rehash(obj, hash);
     }
 }
