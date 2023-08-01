@@ -824,7 +824,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
         if (obj->i64 == KW_SELF)
         {
             push_opcode(cc, obj, code, OP_LOAD);
-            push_u64(code, -(VM_SPILL_REGS + 1));
+            push_u64(code, VM_SPILL_REGS + 1);
             func->stack_size++;
 
             return CC_OK;
@@ -852,7 +852,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
         if (id < (i64_t)func->args->len)
         {
             push_opcode(cc, obj, code, OP_LOAD);
-            push_u64(code, -(func->args->len - id + VM_SPILL_REGS + 1));
+            push_u64(code, func->args->len - id + VM_SPILL_REGS + 1);
             func->stack_size++;
 
             return CC_OK;

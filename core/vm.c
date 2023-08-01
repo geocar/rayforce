@@ -151,6 +151,7 @@ op_jne:
     load_u64(l, vm);
     if (!rfi_as_bool(x2))
         vm->ip = l;
+    drop(x2);
     dispatch();
 op_jmp:
     vm->ip++;
@@ -300,12 +301,12 @@ op_store:
     b = vm->ip++;
     load_u64(t, vm);
     x1 = stack_pop(vm);
-    vm->stack[vm->bp + t] = x1;
+    vm->stack[vm->bp - t] = x1;
     dispatch();
 op_load:
     b = vm->ip++;
     load_u64(t, vm);
-    x1 = vm->stack[vm->bp + t];
+    x1 = vm->stack[vm->bp - t];
     stack_push(vm, clone(x1));
     dispatch();
 op_lset:
