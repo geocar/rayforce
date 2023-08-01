@@ -313,9 +313,11 @@ op_lset:
     b = vm->ip++;
     x2 = stack_pop(vm);
     x1 = stack_pop(vm);
-    // if (f->locals->len == 0)
-    //     vector_push(&f->locals, dict(vector_symbol(0), list(0)));
-    // dict_set(&as_list(f->locals)[f->locals->len - 1], x1, x2);
+    if (f->locals->len == 0)
+        join_obj(&f->locals, dict(vector_symbol(0), list(0)));
+    set_obj(&as_list(f->locals)[f->locals->len - 1], x1, clone(x2));
+    drop(x1);
+    stack_push(vm, x2);
     dispatch();
 op_lget:
     b = vm->ip++;
@@ -330,6 +332,7 @@ op_lget:
     }
     if (is_null(x2))
         x2 = rf_get(x1);
+    drop(x1);
     unwrap(x2, b);
     stack_push(vm, x2);
     dispatch();
