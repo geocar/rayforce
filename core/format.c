@@ -260,7 +260,6 @@ i32_t vector_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t 
 
     i32_t i, n = str_fmt_into(dst, len, offset, limit, "["), indent = 0;
     i64_t l;
-    obj_t v = NULL;
 
     if (n > limit)
         return n;
@@ -329,7 +328,7 @@ i32_t string_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t 
 
 i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
 {
-    obj_t keys = as_list(obj)[0], vals = as_list(obj)[1], v;
+    obj_t keys = as_list(obj)[0], vals = as_list(obj)[1];
     i32_t i, n, dict_height = keys->len;
 
     if (dict_height == 0)
@@ -363,7 +362,7 @@ i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
 i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, obj_t obj)
 {
     i64_t *header = as_symbol(as_list(obj)[0]);
-    obj_t columns = as_list(obj)[1], column_widths, c;
+    obj_t columns = as_list(obj)[1], column_widths;
     i32_t table_width, table_height;
     str_t s, formatted_columns[TABLE_MAX_WIDTH][TABLE_MAX_HEIGHT] = {{NULL}};
     i32_t i, j, l, o, n = str_fmt_into(dst, len, offset, 0, "|");
@@ -445,20 +444,18 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, obj_t 
 i32_t error_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t obj)
 {
     return str_fmt_into(dst, len, offset, limit, "** [E%.3d] error: %s",
-                        as_list(obj)[0]->i64, as_string(as_list(obj)[1]));
+                        (i32_t)as_list(obj)[0]->i64, as_string(as_list(obj)[1]));
 }
 
 i32_t internal_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t obj)
 {
-    obj_t functions = &runtime_get()->env.functions;
+    obj_t functions = runtime_get()->env.functions;
     i64_t id, sym;
 
-    // id = vector_find(&as_list(functions)[1], obj);
-    // sym = as_symbol(as_list(functions)[0])[id];
+    id = at_obj(as_list(functions)[1], obj)->i64;
+    sym = as_symbol(as_list(functions)[0])[id];
 
-    // return symbol_fmt_into(dst, len, offset, limit, sym);
-
-    return str_fmt_into(dst, len, offset, limit, "<internal>");
+    return symbol_fmt_into(dst, len, offset, limit, sym);
 }
 
 i32_t lambda_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t obj)
@@ -610,7 +607,7 @@ nil_t print_error(obj_t error, str_t filename, str_t source, u32_t len)
     str_t start = source;
     str_t end = NULL;
     str_t error_desc, lf = "", p, msg;
-    span_t span = *(span_t *)&as_list(error)[2];
+    span_t span = *(span_t *)as_list(error)[2];
 
     switch (as_list(error)[0]->i64)
     {
@@ -659,12 +656,12 @@ nil_t print_error(obj_t error, str_t filename, str_t source, u32_t len)
 
     if (!source)
     {
-        printf("%s** [E%.3d] error%s: %s\n %s-->%s %s:%d:%d\n    %s %s %s\n", TOMATO, as_list(error)[0]->i64, RESET,
+        printf("%s** [E%.3d] error%s: %s\n %s-->%s %s:%d:%d\n    %s %s %s\n", TOMATO, (i32_t)as_list(error)[0]->i64, RESET,
                error_desc, CYAN, RESET, filename, span.end_line, span.end_column, TOMATO, as_string(as_list(error)[1]), RESET);
         return;
     }
 
-    printf("%s** [E%.3d] error%s: %s\n %s-->%s %s:%d:%d\n    %s|%s\n", TOMATO, as_list(error)[0]->i64, RESET,
+    printf("%s** [E%.3d] error%s: %s\n %s-->%s %s:%d:%d\n    %s|%s\n", TOMATO, (i32_t)as_list(error)[0]->i64, RESET,
            error_desc, CYAN, RESET, filename, span.end_line, span.end_column, CYAN, RESET);
 
     while (1)

@@ -38,18 +38,18 @@
         obj_t _o = atom(-t);                                    \
         _o->attrs = f;                                          \
         _o->i64 = (i64_t)o;                                     \
-        join_raw(&as_list(r)[1], _o);                           \
+        join_raw(&as_list(r)[1], (i64_t)_o);                    \
     };
 
-#define regt(r, i, s)                \
-    {                                \
-        join_raw(&as_list(r)[0], i); \
-        join_sym(&as_list(r)[1], s); \
+#define regt(r, i, s)                       \
+    {                                       \
+        join_raw(&as_list(r)[0], (i64_t)i); \
+        join_sym(&as_list(r)[1], s);        \
     };
 
 obj_t rf_env()
 {
-    return clone(&runtime_get()->env.variables);
+    return clone(runtime_get()->env.variables);
 }
 
 obj_t rf_memstat()
@@ -139,6 +139,7 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "format",    TYPE_VARY,     FLAG_NONE,         rf_format);
     regf(functions,  "print",     TYPE_VARY,     FLAG_NONE,         rf_print);
     regf(functions,  "println",   TYPE_VARY,     FLAG_NONE,         rf_println);
+    regf(functions,  "map",       TYPE_VARY,     FLAG_NONE,         rf_map_vary);
 }    
     
 nil_t init_typenames(obj_t typenames)    
@@ -227,7 +228,7 @@ i64_t env_get_typename_by_type(env_t *env, type_t type)
 {
     i64_t i = find_raw(as_list(env->typenames)[0], type);
 
-    if (i == as_list(env->typenames)[0])
+    if (i == (i64_t)as_list(env->typenames)[0]->len)
         return as_symbol(as_list(env->typenames)[1])[0];
 
     return as_symbol(as_list(env->typenames)[1])[i];
@@ -237,7 +238,7 @@ type_t env_get_type_by_typename(env_t *env, i64_t name)
 {
     i64_t i = find_raw(as_list(env->typenames)[1], name);
 
-    if (i == as_list(env->typenames)[1]->len)
+    if (i == (i64_t)as_list(env->typenames)[1]->len)
         return TYPE_ERROR;
 
     return (type_t)as_i64(as_list(env->typenames)[0])[i];

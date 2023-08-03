@@ -157,13 +157,13 @@ i64_t intern_symbol(str_t s, i64_t len)
     if (as_i64(as_list(symbols->str_to_id)[0])[idx] == NULL_I64)
     {
         p = str_intern(symbols, s, len);
-        as_i64(as_list(symbols->str_to_id)[0])[idx] = p;
+        as_i64(as_list(symbols->str_to_id)[0])[idx] = (i64_t)p;
         as_i64(as_list(symbols->str_to_id)[1])[idx] = symbols->next_sym_id;
 
         // insert id into id_to_str
         idx = ht_tab_get(&symbols->id_to_str, symbols->next_sym_id);
         as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_sym_id;
-        as_i64(as_list(symbols->id_to_str)[1])[idx] = p;
+        as_i64(as_list(symbols->id_to_str)[1])[idx] = (i64_t)p;
 
         return symbols->next_sym_id++;
     }
@@ -184,13 +184,13 @@ i64_t intern_keyword(str_t s, i64_t len)
     if (as_i64(as_list(symbols->str_to_id)[0])[idx] == NULL_I64)
     {
         p = str_intern(symbols, s, len);
-        as_i64(as_list(symbols->str_to_id)[0])[idx] = p;
+        as_i64(as_list(symbols->str_to_id)[0])[idx] = (i64_t)p;
         as_i64(as_list(symbols->str_to_id)[1])[idx] = symbols->next_kw_id;
 
         // insert id into id_to_str
         idx = ht_tab_get(&symbols->id_to_str, symbols->next_kw_id);
         as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_kw_id;
-        as_i64(as_list(symbols->id_to_str)[1])[idx] = p;
+        as_i64(as_list(symbols->id_to_str)[1])[idx] = (i64_t)p;
 
         return symbols->next_kw_id--;
     }

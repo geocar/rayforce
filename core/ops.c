@@ -282,7 +282,7 @@ obj_t distinct(obj_t x)
 obj_t group(obj_t x)
 {
     i64_t i, j = 0, xl = x->len, idx, min, max, range;
-    obj_t keys, vals, mask, v, ht;
+    obj_t keys, vals, v, ht;
 
     if (xl == 0)
         return dict(vector_i64(0), list(0));

@@ -553,7 +553,7 @@ obj_t rf_key(obj_t x)
     {
     case mtype(TYPE_TABLE):
     case mtype(TYPE_DICT):
-        return clone(&as_list(x)[0]);
+        return clone(as_list(x)[0]);
     default:
         return clone(x);
     }
@@ -565,7 +565,7 @@ obj_t rf_value(obj_t x)
     {
     case mtype(TYPE_TABLE):
     case mtype(TYPE_DICT):
-        return clone(&as_list(x)[1]);
+        return clone(as_list(x)[1]);
     default:
         return clone(x);
     }

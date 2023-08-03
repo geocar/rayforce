@@ -52,7 +52,7 @@ obj_t ht_tab(u64_t size, type_t vals)
 
 nil_t rehash(obj_t *obj, hash_f hash)
 {
-    u64_t i, l, size, key, val, factor, index;
+    u64_t i, size, key, val, factor, index;
     obj_t new_obj;
     type_t type;
 
@@ -68,7 +68,7 @@ nil_t rehash(obj_t *obj, hash_f hash)
             key = as_i64(as_list(*obj)[0])[i];
 
             if (type > -1)
-                val = at_idx(as_list(*obj)[1], i);
+                val = (i64_t)at_idx(as_list(*obj)[1], i);
 
             index = hash ? hash(key) & factor : key & factor;
 
@@ -83,7 +83,7 @@ nil_t rehash(obj_t *obj, hash_f hash)
             as_i64(as_list(new_obj)[0])[index] = key;
 
             if (type > -1)
-                set_idx(&as_list(new_obj)[1], i, val);
+                set_idx(&as_list(new_obj)[1], i, (obj_t)val);
         }
     }
 

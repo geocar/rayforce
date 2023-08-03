@@ -165,9 +165,9 @@ i32_t main(i32_t argc, str_t argv[])
 
     runtime_init(0);
 
-    obj_t args = parse_cmdline(argc, argv), file;
-    i64_t i;
-    str_t filename, line, ptr;
+    obj_t args = parse_cmdline(argc, argv), filename, file;
+    u64_t i;
+    str_t line, ptr;
     parser_t parser = parser_new();
 
 #if defined(__linux__) || defined(__APPLE__) && defined(__MACH__)
@@ -183,9 +183,9 @@ i32_t main(i32_t argc, str_t argv[])
         filename = as_list(as_list(args)[1])[i];
         file = rf_fread(filename);
         if (file->type == TYPE_ERROR)
-            print_error(file, filename, NULL, 0);
+            print_error(file, as_string(filename), NULL, 0);
         else
-            repl(filename, &parser, as_string(file), file->len);
+            repl(as_string(filename), &parser, as_string(file), file->len);
 
         drop(file);
     }

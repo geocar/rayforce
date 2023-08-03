@@ -38,7 +38,7 @@
 #include "vary.h"
 #include "cc.h"
 
-CASSERT(sizeof(struct vm_t) == 64, vm_h)
+CASSERT(sizeof(struct vm_t) == 40, vm_h)
 CASSERT(OP_INVALID < 127, vm_h)
 
 #define stack_push(x) (vm->stack[vm->sp++] = x)
@@ -74,51 +74,36 @@ obj_t __attribute__((hot)) vm_exec(vm_t *vm, obj_t fun)
     str_t code = as_string(f->code);
     obj_t x0, x1, x2, x3, *addr;
     u8_t n, attrs;
-    u64_t l, p;
+    u64_t l;
     i64_t i, j, b;
     vm_t cvm;
 
     // init registers
     vm->ip = 0;
     vm->bp = vm->sp;
-    vm->cnt = 0;
-    vm->acc = null(0);
 
     // The indices of labels in the dispatch_table are the relevant opcodes
     static nil_t *dispatch_table[] = {
-        &&op_ret, &&op_push_const, &&op_push_acc, &&op_pop, &&op_swap, &&op_dup, &&op_cmp, &&op_jne, &&op_jmp, &&op_call1, &&op_call2, &&op_calln,
-        &&op_calld, &&op_timer_set, &&op_timer_get, &&op_store, &&op_load, &&op_lset,
-        &&op_lget, &&op_lpush, &&op_lpop, &&op_try, &&op_catch, &&op_throw,
-        &&op_trace, &&op_alloc, &&op_map, &&op_collect, &&op_eval, &&op_fload};
+        &&op_ret, &&op_push, &&op_pop, &&op_swap, &&op_dup, &&op_jne, &&op_jmp, &&op_call1,
+        &&op_call2, &&op_calln, &&op_calld, &&op_timer_set, &&op_timer_get, &&op_store, &&op_load,
+        &&op_lset, &&op_lget, &&op_lpush, &&op_lpop, &&op_try, &&op_catch, &&op_throw, &&op_trace};
 
 #define dispatch() goto *dispatch_table[(i32_t)code[vm->ip]]
 
-#define unwrap(x, y)                            \
-    {                                           \
-        obj_t _o = x, _v;                       \
-        if (_o && _o->type == TYPE_ERROR)       \
-        {                                       \
-            span_t span = nfo_get(&f->nfo, y);  \
-            *(span_t *)&as_list(_o)[2] = span;  \
-            while (vm->sp > 0)                  \
-            {                                   \
-                _v = stack_pop();               \
-                if ((u64_t)_v == VM_STACK_STUB) \
-                {                               \
-                    f = stack_pop();            \
-                    code = as_string(f->code);  \
-                    vm->cnt = stack_pop();      \
-                    vm->acc = stack_pop();      \
-                    vm->ip = stack_pop();       \
-                    vm->bp = stack_pop();       \
-                }                               \
-                else                            \
-                {                               \
-                    drop(_v);                   \
-                }                               \
-            }                                   \
-            return _o;                          \
-        }                                       \
+#define unwrap(x, y)                                  \
+    {                                                 \
+        obj_t _o = x, _v;                             \
+        if (_o && _o->type == TYPE_ERROR)             \
+        {                                             \
+            span_t span = nfo_get(&f->nfo, (i64_t)y); \
+            *(span_t *)as_list(_o)[2] = span;         \
+            while (vm->sp > 0)                        \
+            {                                         \
+                _v = stack_pop();                     \
+                drop(_v);                             \
+            }                                         \
+            return _o;                                \
+        }                                             \
     }
 
 #define load_u64(x, v)                                    \
@@ -129,22 +114,16 @@ obj_t __attribute__((hot)) vm_exec(vm_t *vm, obj_t fun)
         x = *(u64_t *)_p;                                 \
     }
 
-op_dispatch:
-    dispatch();
 op_ret:
     if (vm->sp > 0)
         return stack_pop();
     else
         return null(0);
-op_push_const:
+op_push:
     vm->ip++;
     n = code[vm->ip++];
     x1 = clone(as_list(f->constants)[n]);
     stack_push(x1);
-    dispatch();
-op_push_acc:
-    vm->ip++;
-    stack_push(vm->acc);
     dispatch();
 op_pop:
     vm->ip++;
@@ -160,19 +139,15 @@ op_swap:
 op_dup:
     vm->ip++;
     addr = stack_peek();
-    stack_push(clone(addr));
-    dispatch();
-op_cmp:
-    vm->ip++;
-    x1 = stack_pop();
-    vm->cmp = rfi_as_bool(x1);
-    drop(x1);
+    stack_push(clone(*addr));
     dispatch();
 op_jne:
     vm->ip++;
+    x1 = stack_pop();
     load_u64(l, vm);
-    if (!vm->cmp)
+    if (!rfi_as_bool(x1))
         vm->ip = l;
+    drop(x1);
     dispatch();
 op_jmp:
     vm->ip++;
@@ -219,7 +194,6 @@ made_calln:
 op_calld:
     b = vm->ip++;
     n = code[vm->ip++];
-made_calld:
     x0 = stack_pop();
     switch (x0->type)
     {
@@ -350,81 +324,6 @@ op_trace:
     // x1 = stack_pop();
     // vm->trace = (u8_t)x1.i64;
     dispatch();
-op_alloc:
-    b = vm->ip++;
-    n = code[vm->ip++];
-    x1 = stack_pop(); // result of first iteration
-    addr = stack_peek_n(n);
-    l = is_vector(*addr) ? (*addr)->len : 1;
-    vm->cnt = 0;
-
-    // check lengths
-    for (i = 0; i < n; i++)
-    {
-        addr = stack_peek_n(n - i);
-        if (is_vector(*addr) && (*addr)->len != l)
-            unwrap(error(ERR_TYPE, "map: arguments must be of the same length or atoms"), b);
-    }
-
-    switch (l)
-    {
-    case 0:
-        vm->cmp = false;
-        break;
-    case 1:
-        vm->cmp = false;
-        vm->acc = x1;
-        break;
-    default:
-        vm->acc = (x1->type < 0) ? vector(-x1->type, l) : vector(TYPE_LIST, l);
-        write_obj(&vm->acc, vm->cnt++, x1);
-        vm->cmp = true;
-    }
-
-    dispatch();
-op_map:
-    b = vm->ip++;
-    // arguments count
-    n = code[vm->ip++];
-    // push arguments
-    for (i = 0, j = 0; i < n; i++)
-    {
-        addr = stack_peek_n(n - i + j++);
-        if (is_vector(*addr))
-            stack_push(at_idx(*addr, vm->cnt));
-        else
-            stack_push(clone(*addr));
-    }
-    dispatch();
-op_collect:
-    b = vm->ip++;
-    x1 = stack_pop();
-    write_obj(&vm->acc, vm->cnt++, x1);
-    vm->cmp = vm->cnt == vm->acc->len;
-    dispatch();
-op_eval:
-    b = vm->ip++;
-    // x1 = stack_pop();
-    // if (x1.type != TYPE_LIST)
-    // {
-    //     drop(x1);
-    //     unwrap(error(ERR_TYPE, "eval: expects list"), b);
-    // }
-    // x2 = cc_compile_lambda("anonymous", vector_symbol(0), as_list(x1), x1.id, x1->len, NULL);
-    // drop(x1);
-    // unwrap(x2, b);
-    // stack_push( x2);
-    // n = 0;
-    goto made_calld;
-op_fload:
-    b = vm->ip++;
-    // x1 = stack_pop();
-    // x2 = rf_read_parse_compile(&x1);
-    // drop(x1);
-    // unwrap(x2, b);
-    // stack_push( x2);
-    // n = 0;
-    goto made_calld;
 }
 
 nil_t vm_free(vm_t *vm)
@@ -441,7 +340,7 @@ nil_t vm_free(vm_t *vm)
  */
 str_t vm_code_fmt(obj_t fun)
 {
-#define load_u64(x, c, v)                        \
+#define get_u64(x, c, v)                         \
     {                                            \
         str_t _p = align8(c + v);                \
         u64_t _o = _p - (c + v) + sizeof(u64_t); \
@@ -465,14 +364,10 @@ str_t vm_code_fmt(obj_t fun)
             b = ip++;
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] ret\n", c++, b);
             break;
-        case OP_PUSH_CONST:
+        case OP_PUSH:
             b = ip++;
             n = code[ip++];
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] push <const id: %d>\n", c++, b, n);
-            break;
-        case OP_PUSH_ACC:
-            b = ip++;
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] push <acc>\n", c++, b);
             break;
         case OP_POP:
             b = ip++;
@@ -480,31 +375,31 @@ str_t vm_code_fmt(obj_t fun)
             break;
         case OP_JNE:
             b = ip++;
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] jne <to: %lld>\n", c++, b, p);
             break;
         case OP_JMP:
             b = ip++;
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] jmp <to: %lld>\n", c++, b, p);
             break;
         case OP_CALL1:
             b = ip++;
             n = code[ip++];
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call1 <attrs: %d fn: %p>\n", c++, b, n, p);
             break;
         case OP_CALL2:
             b = ip++;
             n = code[ip++];
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] call2 <attrs: %d fn: %p>\n", c++, b, n, p);
             break;
         case OP_CALLN:
             b = ip++;
             m = code[ip++];
             n = code[ip++];
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] calln <argn: %d attrs: %d fn: %p>\n", c++, b, m, n, p);
             break;
         case OP_CALLD:
@@ -522,12 +417,12 @@ str_t vm_code_fmt(obj_t fun)
             break;
         case OP_STORE:
             b = ip++;
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] store <at: %d>\n", c++, b, (i32_t)p);
             break;
         case OP_LOAD:
             b = ip++;
-            load_u64(p, code, ip);
+            get_u64(p, code, ip);
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] load <at: %d>\n", c++, b, (i32_t)p);
             break;
         case OP_LSET:
@@ -552,20 +447,6 @@ str_t vm_code_fmt(obj_t fun)
             break;
         case OP_TRACE:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] trace\n", c++, ip++);
-            break;
-        case OP_ALLOC:
-            b = ip++;
-            n = code[ip++];
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] alloc <cnt: %d>\n", c++, b, n);
-            break;
-        case OP_MAP:
-            b = ip++;
-            n = code[ip++];
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] map <argn: %d>\n", c++, b, n);
-            break;
-        case OP_COLLECT:
-            b = ip++;
-            str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] collect\n", c++, b);
             break;
         default:
             str_fmt_into(&s, &l, &o, 0, "%.4d: unknown %d\n", c++, ip++);

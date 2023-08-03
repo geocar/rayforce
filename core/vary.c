@@ -22,11 +22,13 @@
  */
 
 #include <stdio.h>
+#include "vm.h"
 #include "vary.h"
 #include "heap.h"
 #include "string.h"
 #include "format.h"
 #include "util.h"
+#include "runtime.h"
 
 obj_t rf_call_vary_atomic(vary_f f, obj_t *x, i64_t n)
 {
@@ -50,6 +52,25 @@ obj_t rf_call_vary(u8_t attrs, vary_f f, obj_t *x, i64_t n)
         return rf_call_vary_atomic(f, x, n);
     default:
         return f(x, n);
+    }
+}
+
+obj_t rf_map_vary(obj_t *x, i64_t n)
+{
+    i64_t i;
+    vm_t vm;
+
+    switch ((*x)->type)
+    {
+    case TYPE_LAMBDA:
+        vm = vm_new(runtime_get()->vm.stack);
+        for (i = 0; i < n - 1; i++)
+        {
+                }
+        vm.sp = runtime_get()->vm.sp;
+        return vm_exec(&vm, *x);
+    default:
+        return i64(123);
     }
 }
 

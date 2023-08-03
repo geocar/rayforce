@@ -60,7 +60,7 @@ obj_t parse_error(parser_t *parser, i64_t id, str_t msg)
 {
     obj_t obj = error(ERR_PARSE, msg);
     span_t span = nfo_get(&parser->nfo, id);
-    *(span_t *)(&as_list(obj)[2]) = span;
+    *(span_t *)(as_list(obj)[2]) = span;
 
     heap_free(msg);
 
@@ -128,7 +128,7 @@ obj_t to_token(parser_t *parser)
 {
     obj_t tok = schar(*parser->current);
     tok->type = TYPE_CHAR;
-    nfo_insert(&parser->nfo, tok, span_start(parser));
+    nfo_insert(&parser->nfo, (i64_t)tok, span_start(parser));
 
     return tok;
 }
@@ -148,7 +148,7 @@ obj_t parse_timestamp(parser_t *parser)
         {
             shift(parser, 2);
             res = timestamp(NULL_I64);
-            nfo_insert(&parser->nfo, res, span);
+            nfo_insert(&parser->nfo, (i64_t)res, span);
 
             return res;
         }
@@ -271,7 +271,7 @@ obj_t parse_timestamp(parser_t *parser)
     res = timestamp(rf_timestamp_into_i64(ts));
 
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, res, span);
+    nfo_insert(&parser->nfo, (i64_t)res, span);
 
     return res;
 }
@@ -291,7 +291,7 @@ obj_t parse_number(parser_t *parser)
         {
             shift(parser, 2);
             num = i64(NULL_I64);
-            nfo_insert(&parser->nfo, num, span);
+            nfo_insert(&parser->nfo, (i64_t)num, span);
 
             return num;
         }
@@ -300,7 +300,7 @@ obj_t parse_number(parser_t *parser)
         {
             shift(parser, 2);
             num = f64(NULL_F64);
-            nfo_insert(&parser->nfo, num, span);
+            nfo_insert(&parser->nfo, (i64_t)num, span);
 
             return num;
         }
@@ -309,7 +309,7 @@ obj_t parse_number(parser_t *parser)
         {
             shift(parser, 2);
             num = timestamp(NULL_I64);
-            nfo_insert(&parser->nfo, num, span);
+            nfo_insert(&parser->nfo, (i64_t)num, span);
 
             return num;
         }
@@ -318,7 +318,7 @@ obj_t parse_number(parser_t *parser)
         {
             shift(parser, 2);
             num = guid(NULL);
-            nfo_insert(&parser->nfo, num, span);
+            nfo_insert(&parser->nfo, (i64_t)num, span);
 
             return num;
         }
@@ -357,7 +357,7 @@ obj_t parse_number(parser_t *parser)
 
     shift(parser, end - parser->current);
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, num, span);
+    nfo_insert(&parser->nfo, (i64_t)num, span);
 
     return num;
 }
@@ -366,7 +366,7 @@ obj_t parse_char(parser_t *parser)
 {
     span_t span = span_start(parser);
     str_t pos = parser->current + 1; // skip '''
-    obj_t res, err;
+    obj_t res = NULL;
     i64_t id;
     char_t ch;
 
@@ -374,7 +374,7 @@ obj_t parse_char(parser_t *parser)
     {
         shift(parser, pos - parser->current);
         span_extend(parser, &span);
-        nfo_insert(&parser->nfo, res, span);
+        nfo_insert(&parser->nfo, (i64_t)res, span);
 
         res = null(TYPE_SYMBOL);
         res->attrs = ATTR_QUOTED;
@@ -403,7 +403,7 @@ obj_t parse_char(parser_t *parser)
         res->attrs = ATTR_QUOTED;
         shift(parser, pos - parser->current);
         span_extend(parser, &span);
-        nfo_insert(&parser->nfo, res, span);
+        nfo_insert(&parser->nfo, (i64_t)res, span);
 
         return res;
     }
@@ -412,7 +412,7 @@ obj_t parse_char(parser_t *parser)
 
     shift(parser, 3);
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, res, span);
+    nfo_insert(&parser->nfo, (i64_t)res, span);
 
     return res;
 }
@@ -448,7 +448,7 @@ obj_t parse_string(parser_t *parser)
 
     shift(parser, len + 2);
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, str, span);
+    nfo_insert(&parser->nfo, (i64_t)str, span);
 
     return str;
 }
@@ -465,7 +465,7 @@ obj_t parse_symbol(parser_t *parser)
         shift(parser, 4);
         span_extend(parser, &span);
         res = bool(true);
-        nfo_insert(&parser->nfo, res, span);
+        nfo_insert(&parser->nfo, (i64_t)res, span);
 
         return res;
     }
@@ -475,7 +475,7 @@ obj_t parse_symbol(parser_t *parser)
         shift(parser, 5);
         span_extend(parser, &span);
         res = bool(false);
-        nfo_insert(&parser->nfo, res, span);
+        nfo_insert(&parser->nfo, (i64_t)res, span);
 
         return res;
     }
@@ -485,7 +485,7 @@ obj_t parse_symbol(parser_t *parser)
         shift(parser, 4);
         span_extend(parser, &span);
         res = null(0);
-        nfo_insert(&parser->nfo, res, span);
+        nfo_insert(&parser->nfo, (i64_t)res, span);
 
         return res;
     }
@@ -501,7 +501,7 @@ obj_t parse_symbol(parser_t *parser)
     res->type = -TYPE_SYMBOL;
     shift(parser, pos - parser->current);
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, res, span);
+    nfo_insert(&parser->nfo, (i64_t)res, span);
 
     return res;
 }
@@ -510,7 +510,6 @@ obj_t parse_vector(parser_t *parser)
 {
     obj_t tok, vec = vector_i64(0), err;
     i32_t i;
-    f64_t f;
     span_t span = span_start(parser);
 
     shift(parser, 1); // skip '['
@@ -526,7 +525,7 @@ obj_t parse_vector(parser_t *parser)
 
         if (is_at(tok, '\0') || is_at_term(tok))
         {
-            err = parse_error(parser, tok, str_fmt(0, "Expected ']'"));
+            err = parse_error(parser, (i64_t)tok, str_fmt(0, "Expected ']'"));
             drop(vec);
             drop(tok);
 
@@ -537,7 +536,7 @@ obj_t parse_vector(parser_t *parser)
         {
             if (vec->len > 0 && vec->type != TYPE_BOOL)
             {
-                err = parse_error(parser, tok, str_fmt(0, "Invalid token in vector"));
+                err = parse_error(parser, (i64_t)tok, str_fmt(0, "Invalid token in vector"));
                 drop(vec);
                 drop(tok);
 
@@ -554,11 +553,11 @@ obj_t parse_vector(parser_t *parser)
             else if (vec->type == TYPE_F64)
             {
                 f64_t f = (f64_t)tok->i64;
-                join_raw(&vec, *(nil_t **)&f);
+                join_raw(&vec, *(i64_t *)&f);
             }
             else
             {
-                err = parse_error(parser, tok, str_fmt(0, "Invalid token in vector"));
+                err = parse_error(parser, (i64_t)tok, str_fmt(0, "Invalid token in vector"));
                 drop(vec);
                 drop(tok);
 
@@ -568,18 +567,18 @@ obj_t parse_vector(parser_t *parser)
         else if (tok->type == -TYPE_F64)
         {
             if (vec->type == TYPE_F64)
-                join_raw(&vec, *(nil_t **)&tok->f64);
+                join_raw(&vec, *(i64_t *)&tok->f64);
             else if (vec->type == TYPE_I64)
             {
                 vec->type = TYPE_F64;
                 for (i = 0; i < (i32_t)vec->len; i++)
                     as_f64(vec)[i] = (f64_t)as_i64(vec)[i];
 
-                join_raw(&vec, *(nil_t **)&tok->f64);
+                join_raw(&vec, *(i64_t *)&tok->f64);
             }
             else
             {
-                err = parse_error(parser, tok, str_fmt(0, "Invalid token in vector"));
+                err = parse_error(parser, (i64_t)tok, str_fmt(0, "Invalid token in vector"));
                 drop(vec);
                 drop(tok);
 
@@ -595,7 +594,7 @@ obj_t parse_vector(parser_t *parser)
             }
             else
             {
-                err = parse_error(parser, tok, str_fmt(0, "Invalid token in vector"));
+                err = parse_error(parser, (i64_t)tok, str_fmt(0, "Invalid token in vector"));
                 drop(vec);
                 drop(tok);
 
@@ -606,12 +605,12 @@ obj_t parse_vector(parser_t *parser)
         {
             if (vec->type == TYPE_TIMESTAMP || (vec->len == 0))
             {
-                join_raw(&vec, tok);
+                join_raw(&vec, (i64_t)tok);
                 vec->type = TYPE_TIMESTAMP;
             }
             else
             {
-                err = parse_error(parser, tok, str_fmt(0, "Invalid token in vector"));
+                err = parse_error(parser, (i64_t)tok, str_fmt(0, "Invalid token in vector"));
                 drop(vec);
                 drop(tok);
 
@@ -620,7 +619,7 @@ obj_t parse_vector(parser_t *parser)
         }
         else
         {
-            err = parse_error(parser, tok, str_fmt(0, "Invalid token in vector"));
+            err = parse_error(parser, (i64_t)tok, str_fmt(0, "Invalid token in vector"));
             drop(vec);
             drop(tok);
 
@@ -634,7 +633,7 @@ obj_t parse_vector(parser_t *parser)
 
     drop(tok);
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, vec, span);
+    nfo_insert(&parser->nfo, (i64_t)vec, span);
 
     return vec;
 }
@@ -643,7 +642,6 @@ obj_t parse_list(parser_t *parser)
 {
     obj_t lst = list(0), tok, err;
     span_t span = span_start(parser);
-    str_t msg;
 
     shift(parser, 1); // skip '('
     tok = advance(parser);
@@ -669,7 +667,7 @@ obj_t parse_list(parser_t *parser)
 
         if (is_at_term(tok))
         {
-            err = parse_error(parser, tok, str_fmt(0, "There is no opening found for: '%c'", tok->schar));
+            err = parse_error(parser, (i64_t)tok, str_fmt(0, "There is no opening found for: '%c'", tok->schar));
             drop(lst);
             drop(tok);
 
@@ -683,7 +681,7 @@ obj_t parse_list(parser_t *parser)
     }
 
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, lst, span);
+    nfo_insert(&parser->nfo, (i64_t)lst, span);
     drop(tok);
 
     return lst;
@@ -732,7 +730,7 @@ obj_t parse_dict(parser_t *parser)
 
         if (!is_at(tok, ':'))
         {
-            err = parse_error(parser, tok, str_fmt(0, "Expected ':'"));
+            err = parse_error(parser, (i64_t)tok, str_fmt(0, "Expected ':'"));
             drop(vals);
             drop(keys);
             drop(tok);
@@ -773,7 +771,7 @@ obj_t parse_dict(parser_t *parser)
     d = dict(keys, vals);
 
     span_extend(parser, &span);
-    nfo_insert(&parser->nfo, d, span);
+    nfo_insert(&parser->nfo, (i64_t)d, span);
 
     return d;
 }
@@ -781,7 +779,6 @@ obj_t parse_dict(parser_t *parser)
 obj_t advance(parser_t *parser)
 {
     obj_t tok, err;
-    str_t msg;
 
     // Skip all whitespaces
     while (is_whitespace(*parser->current))
@@ -847,8 +844,8 @@ obj_t advance(parser_t *parser)
         return tok;
     }
 
-    nfo_insert(&parser->nfo, tok, span_start(parser));
-    err = parse_error(parser, tok, str_fmt(0, "Unexpected token: '%c'", *parser->current));
+    nfo_insert(&parser->nfo, (i64_t)tok, span_start(parser));
+    err = parse_error(parser, (i64_t)tok, str_fmt(0, "Unexpected token: '%c'", *parser->current));
     drop(tok);
 
     return err;
@@ -857,7 +854,6 @@ obj_t advance(parser_t *parser)
 obj_t parse_program(parser_t *parser)
 {
     obj_t tok, lst = list(0), err;
-    str_t msg;
     span_t span;
 
     span = span_start(parser);
@@ -874,7 +870,7 @@ obj_t parse_program(parser_t *parser)
 
         if (is_at_term(tok))
         {
-            err = parse_error(parser, tok, str_fmt(0, "Unexpected token: '%c'", tok->schar));
+            err = parse_error(parser, (i64_t)tok, str_fmt(0, "Unexpected token: '%c'", tok->schar));
             drop(lst);
             drop(tok);
             return err;
@@ -890,7 +886,7 @@ obj_t parse_program(parser_t *parser)
         join_obj(&lst, tok);
     }
 
-    nfo_insert(&parser->nfo, lst, span);
+    nfo_insert(&parser->nfo, (i64_t)lst, span);
 
     return lst;
 }

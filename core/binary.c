@@ -102,7 +102,7 @@ obj_t rf_call_binary_left_atomic(binary_f f, obj_t x, obj_t y)
 
         res = list(l);
 
-        write_obj(res, 0, item);
+        write_obj(&res, 0, item);
 
         for (i = 1; i < l; i++)
         {
@@ -117,7 +117,7 @@ obj_t rf_call_binary_left_atomic(binary_f f, obj_t x, obj_t y)
                 return item;
             }
 
-            write_obj(res, i, item);
+            write_obj(&res, i, item);
         }
 
         return res;
@@ -143,7 +143,7 @@ obj_t rf_call_binary_right_atomic(binary_f f, obj_t x, obj_t y)
 
         res = list(l);
 
-        write_obj(res, 0, item);
+        write_obj(&res, 0, item);
 
         for (i = 1; i < l; i++)
         {
@@ -158,7 +158,7 @@ obj_t rf_call_binary_right_atomic(binary_f f, obj_t x, obj_t y)
                 return item;
             }
 
-            write_obj(res, i, item);
+            write_obj(&res, i, item);
         }
 
         return res;
@@ -192,7 +192,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
 
         res = list(l);
 
-        write_obj(res, 0, item);
+        write_obj(&res, 0, item);
 
         for (i = 1; i < l; i++)
         {
@@ -209,7 +209,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
                 return item;
             }
 
-            write_obj(res, i, item);
+            write_obj(&res, i, item);
         }
 
         return res;
@@ -226,7 +226,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
 
         res = list(l);
 
-        write_obj(res, 0, item);
+        write_obj(&res, 0, item);
 
         for (i = 1; i < l; i++)
         {
@@ -241,7 +241,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
                 return item;
             }
 
-            write_obj(res, i, item);
+            write_obj(&res, i, item);
         }
 
         return res;
@@ -258,7 +258,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
 
         res = list(l);
 
-        write_obj(res, 0, item);
+        write_obj(&res, 0, item);
 
         for (i = 1; i < l; i++)
         {
@@ -273,7 +273,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
                 return item;
             }
 
-            write_obj(res, i, item);
+            write_obj(&res, i, item);
         }
 
         return res;
@@ -360,7 +360,7 @@ obj_t rf_table(obj_t x, obj_t y)
 
         l = list(1);
         as_list(l)[0] = clone(y);
-        y = &l;
+        y = l;
     }
 
     if (x->len != y->len)
@@ -462,7 +462,7 @@ obj_t rf_rand(obj_t x, obj_t y)
 obj_t rf_add(obj_t x, obj_t y)
 {
     u64_t i, l;
-    obj_t vec, v;
+    obj_t vec;
 
     switch (mtype2(x->type, y->type))
     {
@@ -1077,6 +1077,8 @@ obj_t rf_or(obj_t x, obj_t y)
 
 obj_t rf_at(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     // i32_t i;
     // i64_t yl, xl;
     // obj_t vec;
@@ -1202,6 +1204,8 @@ obj_t rf_at(obj_t x, obj_t y)
 
 obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     //     u64_t i, n, range, xl = x->len, yl = y->len;
     //     i64_t max = 0, min = 0;
     //     obj_t vec = vector_i64(yl), found;
@@ -1267,7 +1271,7 @@ obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y)
 
 obj_t rf_find(obj_t x, obj_t y)
 {
-    i64_t l, i;
+    // i64_t l, i;
 
     switch (mtype2(x->type, y->type))
     {
@@ -1494,6 +1498,8 @@ obj_t rf_concat(obj_t x, obj_t y)
 
 obj_t rf_filter(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     // i32_t i, j = 0;
     // i64_t l, p = NULL_I64;
     // obj_t res, *vals, col;
@@ -1637,7 +1643,7 @@ obj_t rf_filter(obj_t x, obj_t y)
 obj_t rf_take(obj_t x, obj_t y)
 {
     u64_t i, l, m;
-    obj_t res, cols, sym, c;
+    obj_t res;
 
     switch (mtype2(x->type, y->type))
     {
@@ -1781,8 +1787,11 @@ obj_t rf_take(obj_t x, obj_t y)
 
 obj_t rf_in(obj_t x, obj_t y)
 {
-    i64_t i, xl, yl;
-    obj_t vec, set;
+    unused(x);
+    unused(y);
+
+    // i64_t i, xl, yl;
+    // obj_t vec, set;
 
     // switch
     //     mtype2(x->type, y->type)
@@ -1814,7 +1823,10 @@ obj_t rf_in(obj_t x, obj_t y)
 
 obj_t rf_sect(obj_t x, obj_t y)
 {
-    obj_t mask, res;
+    unused(x);
+    unused(y);
+
+    // obj_t mask, res;
 
     // switch (mtype2(x->type, y->type))
     // {
@@ -1833,8 +1845,10 @@ obj_t rf_sect(obj_t x, obj_t y)
 
 obj_t rf_except(obj_t x, obj_t y)
 {
-    i64_t i, j = 0, l;
-    obj_t mask, res;
+    unused(x);
+    unused(y);
+    // i64_t i, j = 0, l;
+    // obj_t mask, res;
 
     // switch (mtype2(x->type, y->type))
     // {
@@ -1868,6 +1882,8 @@ obj_t rf_except(obj_t x, obj_t y)
 
 obj_t rf_group_Table(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     // i64_t i, l;
     // obj_t res;
 
@@ -1890,6 +1906,8 @@ obj_t rf_group_Table(obj_t x, obj_t y)
 
 obj_t rf_xasc(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     // obj_t idx, col, res;
 
     // switch (mtype2(x->type, y->type))
@@ -1920,6 +1938,8 @@ obj_t rf_xasc(obj_t x, obj_t y)
 
 obj_t rf_xdesc(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     // obj_t idx, col, res;
 
     // switch (mtype2(x->type, y->type))

@@ -108,6 +108,7 @@ obj_t symboli64(i64_t id)
 obj_t guid(u8_t data[])
 {
 
+    (void)(data);
     // if (data == NULL)
     //     return guid;
 
@@ -158,7 +159,7 @@ obj_t string(u64_t len)
 
 obj_t list(u64_t len, ...)
 {
-    i32_t i;
+    u64_t i;
     obj_t l = (obj_t)heap_malloc(sizeof(struct obj_t) + sizeof(obj_t) * len);
     va_list args;
 
@@ -219,7 +220,7 @@ obj_t resize(obj_t *obj, u64_t len)
     return *obj;
 }
 
-obj_t join_raw(obj_t *obj, nil_t *val)
+obj_t join_raw(obj_t *obj, i64_t val)
 {
     i64_t off, occup, req;
     i32_t size = size_of((*obj)->type);
@@ -241,22 +242,22 @@ obj_t join_obj(obj_t *obj, obj_t val)
     type_t t = val ? val->type : TYPE_LIST;
 
     // change vector type to a list
-    // if (obj->type && obj->type != -val->type)
-    // {
-    //     l = obj->len;
-    //     lst = list(l + 1);
+    if ((*obj)->type && (*obj)->type != -val->type)
+    {
+        l = (*obj)->len;
+        lst = list(l + 1);
 
-    //     for (i = 0; i < l; i++)
-    //         as_list(lst)[i] = vector_get(vec, i);
+        for (i = 0; i < l; i++)
+            as_list(lst)[i] = at_idx(*obj, i);
 
-    //     as_list(&lst)[index] = value;
+        as_list(lst)[i] = val;
 
-    //     drop(vec);
+        drop(*obj);
 
-    //     *vec = lst;
+        *obj = lst;
 
-    //     return lst;
-    // }
+        return lst;
+    }
 
     switch (mtype2((*obj)->type, t))
     {
@@ -267,24 +268,24 @@ obj_t join_obj(obj_t *obj, obj_t val)
         drop(val);
         return res;
     case mtype2(TYPE_F64, -TYPE_F64):
-        res = join_raw(obj, *(nil_t **)&val->f64);
+        res = join_raw(obj, *(i64_t *)&val->f64);
         drop(val);
         return res;
     case mtype2(TYPE_CHAR, -TYPE_CHAR):
-        res = join_raw(obj, *(nil_t **)&val->schar);
+        res = join_raw(obj, *(i64_t *)&val->schar);
         drop(val);
         return res;
     default:
         if ((*obj)->type == TYPE_LIST)
         {
-            res = join_raw(obj, val);
+            res = join_raw(obj, (i64_t)val);
             return res;
         }
 
         raise(ERR_TYPE, "join: invalid types: %d, %d", (*obj)->type, val->type);
     }
 
-    return join_raw(obj, val);
+    return join_raw(obj, (i64_t)val);
 }
 
 obj_t join_sym(obj_t *obj, str_t str)
@@ -293,16 +294,16 @@ obj_t join_sym(obj_t *obj, str_t str)
     return join_raw(obj, sym);
 }
 
-obj_t write_raw(obj_t *obj, u64_t idx, nil_t *val)
+obj_t write_raw(obj_t *obj, u64_t idx, i64_t val)
 {
     i32_t size = size_of((*obj)->type);
     memcpy((*obj)->arr + idx * size, &val, size);
-    return obj;
+    return *obj;
 }
 
 obj_t write_obj(obj_t *obj, u64_t idx, obj_t val)
 {
-    i64_t i, l;
+    u64_t i, l;
     obj_t ret;
 
     if (*obj == NULL || !is_vector(*obj))
@@ -335,15 +336,15 @@ obj_t write_obj(obj_t *obj, u64_t idx, obj_t val)
         drop(val);
         break;
     case TYPE_F64:
-        ret = write_raw(obj, idx, *(nil_t **)&val->f64);
+        ret = write_raw(obj, idx, *(i64_t *)&val->f64);
         drop(val);
         break;
     case TYPE_CHAR:
-        ret = write_raw(obj, idx, *(nil_t **)&val->schar);
+        ret = write_raw(obj, idx, val->schar);
         drop(val);
         break;
     case TYPE_LIST:
-        ret = write_raw(obj, idx, val);
+        ret = write_raw(obj, idx, (i64_t)val);
         break;
     default:
         panic(str_fmt(0, "write obj: invalid type: %d", (*obj)->type));
@@ -497,9 +498,6 @@ obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
 
 obj_t pop_obj(obj_t *obj)
 {
-    u64_t i;
-    obj_t res;
-
     if (obj == NULL || (*obj)->len == 0)
         return null(0);
 
@@ -581,7 +579,7 @@ bool_t equal(obj_t a, obj_t b)
     return false;
 }
 
-i64_t find_raw(obj_t obj, nil_t *val)
+i64_t find_raw(obj_t obj, i64_t val)
 {
     i64_t i, l;
 
@@ -613,7 +611,7 @@ i64_t find_raw(obj_t obj, nil_t *val)
     case TYPE_LIST:
         l = obj->len;
         for (i = 0; i < l; i++)
-            if (equal(as_list(obj)[i], val))
+            if (equal(as_list(obj)[i], (obj_t)val))
                 return i;
         return l;
     default:
@@ -623,8 +621,6 @@ i64_t find_raw(obj_t obj, nil_t *val)
 
 i64_t find_obj(obj_t obj, obj_t val)
 {
-    i64_t i, l;
-
     if (obj == NULL || !is_vector(obj))
         return NULL_I64;
 
@@ -635,11 +631,11 @@ i64_t find_obj(obj_t obj, obj_t val)
     case TYPE_TIMESTAMP:
         return find_raw(obj, val->i64);
     case TYPE_F64:
-        return find_raw(obj, *(nil_t **)&val->f64);
+        return find_raw(obj, *(i64_t *)&val->f64);
     case TYPE_CHAR:
-        return find_raw(obj, *(nil_t **)&val->schar);
+        return find_raw(obj, *(i64_t *)&val->schar);
     case TYPE_LIST:
-        return find_raw(obj, val);
+        return find_raw(obj, (i64_t)val);
     default:
         panic(str_fmt(0, "find: invalid type: %d", obj->type));
     }
@@ -765,7 +761,6 @@ obj_t __attribute__((hot)) clone(obj_t obj)
     if (obj == NULL)
         return NULL;
 
-    u64_t i, l;
     u16_t slaves = runtime_get()->slaves;
 
     if (slaves)
@@ -842,8 +837,8 @@ nil_t __attribute__((hot)) drop(obj_t obj)
 
 obj_t cow(obj_t obj)
 {
-    i64_t i, l;
-    obj_t new = NULL;
+    // i64_t i, l;
+    // obj_t new = NULL;
 
     // TODO: implement copy on write
     return obj;

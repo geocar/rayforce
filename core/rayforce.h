@@ -168,7 +168,7 @@ extern bool_t is_null(obj_t obj);
 #define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type < TYPE_TABLE)
 
 // Joins
-extern obj_t join_raw(obj_t *obj, nil_t *val); // join raw value into a list
+extern obj_t join_raw(obj_t *obj, i64_t  val); // join raw value into a list
 extern obj_t join_obj(obj_t *obj, obj_t  val); // join object to a list
 extern obj_t join_sym(obj_t *obj, str_t  str); // join interned string to a symbol vector
 
@@ -176,7 +176,7 @@ extern obj_t join_sym(obj_t *obj, str_t  str); // join interned string to a symb
 extern obj_t pop_obj(obj_t *obj); // pop object from a list
 
 // Writes
-extern obj_t write_raw(obj_t *obj, u64_t idx, nil_t *val); // write raw value into a list
+extern obj_t write_raw(obj_t *obj, u64_t idx, i64_t  val); // write raw value into a list
 extern obj_t write_obj(obj_t *obj, u64_t idx, obj_t  val); // write object to a list
 extern obj_t write_sym(obj_t *obj, u64_t idx, str_t  str); // write interned string to a symbol vector
 
@@ -192,7 +192,7 @@ extern obj_t set_obj(obj_t *obj, obj_t idx, obj_t val); // set obj indexed by ob
 extern obj_t resize(obj_t *obj, u64_t len);
 
 // Search
-extern i64_t find_raw(obj_t obj, nil_t *val); // find raw value in a list, return index (obj->len if not found)
+extern i64_t find_raw(obj_t obj, i64_t  val); // find raw value in a list, return index (obj->len if not found)
 extern i64_t find_obj(obj_t obj, obj_t  val); // find object in a list, return index (obj->len if not found)
 extern i64_t find_sym(obj_t obj, str_t  str); // find interned string in a symbol vector, return index (obj->len if not found)
 

@@ -31,9 +31,9 @@
 #include "env.h"
 #include "runtime.h"
 #include "unary.h"
+#include "vary.h"
 #include "binary.h"
 #include "lambda.h"
-
 #include "ops.h"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -48,14 +48,14 @@
     {                                           \
         lambda_t *_f = as_lambda((c)->lambda);  \
         push_u8(&_f->code, _f->constants->len); \
-        join_raw(&_f->constants, k);            \
+        join_raw(&_f->constants, (i64_t)k);     \
     }
 
 #define push_opcode(c, k, v, x)                  \
     {                                            \
         nfo_t *d = (c)->nfo;                     \
         nfo_t *p = &as_lambda((c)->lambda)->nfo; \
-        span_t u = nfo_get(d, k);                \
+        span_t u = nfo_get(d, (i64_t)k);         \
         nfo_insert(p, (u32_t)((*v))->len, u);    \
         push_u8(v, x);                           \
     }
@@ -74,16 +74,16 @@
 
 #define push_u64(c, x) push_un(c, x, u64_t)
 
-#define cerr(c, i, t, ...)                        \
-    {                                             \
-        str_t _m = str_fmt(0, __VA_ARGS__);       \
-        nfo_t *_d = (c)->nfo;                     \
-        span_t _u = nfo_get(_d, i);               \
-        drop((c)->lambda);                        \
-        (c)->lambda = error(t, _m);               \
-        heap_free(_m);                            \
-        *(span_t *)&as_list((c)->lambda)[2] = _u; \
-        return CC_ERROR;                          \
+#define cerr(c, i, t, ...)                       \
+    {                                            \
+        str_t _m = str_fmt(0, __VA_ARGS__);      \
+        nfo_t *_d = (c)->nfo;                    \
+        span_t _u = nfo_get(_d, (i64_t)i);       \
+        drop((c)->lambda);                       \
+        (c)->lambda = error(t, _m);              \
+        heap_free(_m);                           \
+        *(span_t *)as_list((c)->lambda)[2] = _u; \
+        return CC_ERROR;                         \
     }
 
 cc_result_t cc_compile_quote(bool_t has_consumer, cc_t *cc, obj_t obj)
@@ -95,7 +95,7 @@ cc_result_t cc_compile_quote(bool_t has_consumer, cc_t *cc, obj_t obj)
     if (!has_consumer)
         return CC_NULL;
 
-    push_opcode(cc, car, code, OP_PUSH_CONST);
+    push_opcode(cc, car, code, OP_PUSH);
     push_const(cc, clone(as_list(obj)[1]));
 
     return CC_OK;
@@ -104,7 +104,7 @@ cc_result_t cc_compile_quote(bool_t has_consumer, cc_t *cc, obj_t obj)
 cc_result_t cc_compile_time(cc_t *cc, obj_t obj, u32_t arity)
 {
     cc_result_t res;
-    obj_t car = &as_list(obj)[0];
+    obj_t car = as_list(obj)[0];
     lambda_t *func = as_lambda(cc->lambda);
     obj_t *code = &func->code;
 
@@ -135,7 +135,7 @@ cc_result_t cc_compile_set(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity
     if (as_list(obj)[1]->type != -TYPE_SYMBOL)
         cerr(cc, car, ERR_TYPE, "'set' first argument must be a symbol");
 
-    push_opcode(cc, car, code, OP_PUSH_CONST);
+    push_opcode(cc, car, code, OP_PUSH);
     push_const(cc, clone(as_list(obj)[1]));
     res = cc_compile_expr(true, cc, as_list(obj)[2]);
 
@@ -165,7 +165,7 @@ cc_result_t cc_compile_let(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity
     if (as_list(obj)[1]->type != -TYPE_SYMBOL)
         cerr(cc, car, ERR_TYPE, "'let' first argument must be a symbol");
 
-    push_opcode(cc, car, code, OP_PUSH_CONST);
+    push_opcode(cc, car, code, OP_PUSH);
     push_const(cc, clone(as_list(obj)[1]));
 
     res = cc_compile_expr(true, cc, as_list(obj)[2]);
@@ -199,7 +199,7 @@ cc_result_t cc_compile_fn(cc_t *cc, obj_t obj, u32_t arity)
         return CC_ERROR;
     }
 
-    push_opcode(cc, obj, code, OP_PUSH_CONST);
+    push_opcode(cc, obj, code, OP_PUSH);
     push_const(cc, fun);
     func->stack_size++;
 
@@ -221,8 +221,6 @@ cc_result_t cc_compile_cond(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arit
 
     if (res == CC_ERROR)
         return CC_ERROR;
-
-    push_opcode(cc, car, code, OP_CMP);
 
     push_opcode(cc, car, code, OP_JNE);
     push_u64(code, 0);
@@ -258,72 +256,72 @@ cc_result_t cc_compile_cond(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arit
 
 cc_result_t cc_compile_try(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
 {
-    // cc_result_t res;
-    // i64_t lbl1, lbl2;
-    // obj_t car = &as_list(obj)[0];
-    // lambda_t *func = as_lambda(&cc->lambda);
-    // obj_t code = &func->code;
+    cc_result_t res;
+    i64_t lbl1, lbl2;
+    obj_t car = as_list(obj)[0];
+    lambda_t *func = as_lambda(&cc->lambda);
+    obj_t *code = &func->code;
 
-    // if (arity != 2)
-    //     cerr(cc, car->id, ERR_LENGTH, "'try': expects 2 arguments");
+    if (arity != 2)
+        cerr(cc, car, ERR_LENGTH, "'try': expects 2 arguments");
 
-    // push_opcode(cc, car->id, code, OP_TRY);
-    // push_u64(code, 0);
-    // lbl1 = code->len - sizeof(u64_t);
+    push_opcode(cc, car, code, OP_TRY);
+    push_u64(code, 0);
+    lbl1 = (*code)->len - sizeof(u64_t);
 
-    // // compile expression under trap
-    // res = cc_compile_expr(true, cc, &as_list(obj)[1]);
+    // compile expression under trap
+    res = cc_compile_expr(true, cc, as_list(obj)[1]);
 
-    // if (res == CC_ERROR)
-    //     return CC_ERROR;
+    if (res == CC_ERROR)
+        return CC_ERROR;
 
-    // push_opcode(cc, car->id, code, OP_JMP);
-    // push_u64(code, 0);
-    // lbl2 = code->len - sizeof(u64_t);
+    push_opcode(cc, car, code, OP_JMP);
+    push_u64(code, 0);
+    lbl2 = (*code)->len - sizeof(u64_t);
 
-    // *(u64_t *)(as_string(code) + lbl1) = code->len;
+    *(u64_t *)(as_string(*code) + lbl1) = (*code)->len;
 
-    // // compile expression under catch
-    // res = cc_compile_expr(has_consumer, cc, &as_list(obj)[2]);
+    // compile expression under catch
+    res = cc_compile_expr(has_consumer, cc, as_list(obj)[2]);
 
-    // if (res == CC_ERROR)
-    //     return CC_ERROR;
+    if (res == CC_ERROR)
+        return CC_ERROR;
 
-    // *(u64_t *)(as_string(code) + lbl2) = code->len;
+    *(u64_t *)(as_string(*code) + lbl2) = (*code)->len;
 
     return CC_OK;
 }
 
 cc_result_t cc_compile_throw(cc_t *cc, obj_t obj, u32_t arity)
 {
-    // cc_result_t res;
-    // obj_t car = &as_list(obj)[0];
-    // lambda_t *func = as_lambda(&cc->lambda);
-    // obj_t code = &func->code;
+    cc_result_t res;
+    obj_t car = as_list(obj)[0];
+    lambda_t *func = as_lambda(&cc->lambda);
+    obj_t *code = &func->code;
 
-    // if (arity != 1)
-    //     cerr(cc, car->id, ERR_LENGTH, "'throw': expects 1 argument");
+    if (arity != 1)
+        cerr(cc, car, ERR_LENGTH, "'throw': expects 1 argument");
 
-    // res = cc_compile_expr(true, cc, &as_list(obj)[1]);
+    res = cc_compile_expr(true, cc, as_list(obj)[1]);
 
-    // if (res == CC_ERROR)
-    //     return CC_ERROR;
+    if (res == CC_ERROR)
+        return CC_ERROR;
 
-    // push_opcode(cc, car->id, code, OP_THROW);
+    push_opcode(cc, car, code, OP_THROW);
 
     return CC_OK;
 }
 
 type_t cc_compile_catch(cc_t *cc, obj_t obj, u32_t arity)
 {
-    // obj_t car = &as_list(obj)[0];
-    // lambda_t *func = as_lambda(&cc->lambda);
-    // obj_t code = &func->code;
+    obj_t car = as_list(obj)[0];
+    lambda_t *func = as_lambda(&cc->lambda);
+    obj_t *code = &func->code;
 
-    // if (arity != 0)
-    //     cerr(cc, car->id, ERR_LENGTH, "'catch': expects 0 arguments");
+    if (arity != 0)
+        cerr(cc, car, ERR_LENGTH, "'catch': expects 0 arguments");
 
-    // push_opcode(cc, car->id, code, OP_CATCH);
+    push_opcode(cc, car, code, OP_CATCH);
 
     return CC_OK;
 }
@@ -338,7 +336,7 @@ cc_result_t cc_compile_call(cc_t *cc, obj_t car, u8_t arity)
     // self is a special case
     if (car->type == -TYPE_SYMBOL && car->i64 == KW_SELF)
     {
-        push_opcode(cc, car, code, OP_PUSH_CONST);
+        push_opcode(cc, car, code, OP_PUSH);
         push_const(cc, cc->lambda);
 
         push_opcode(cc, car, code, OP_CALLD);
@@ -351,7 +349,7 @@ cc_result_t cc_compile_call(cc_t *cc, obj_t car, u8_t arity)
 
     i = find_obj(as_list(runtime_get()->env.functions)[0], car);
 
-    if (i == as_list(runtime_get()->env.functions)[0]->len)
+    if (i == (i64_t)as_list(runtime_get()->env.functions)[0]->len)
     {
         res = cc_compile_expr(true, cc, car);
 
@@ -400,391 +398,321 @@ cc_result_t cc_compile_call(cc_t *cc, obj_t car, u8_t arity)
     }
 }
 
-cc_result_t cc_compile_map(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-{
-    cc_result_t res = CC_NULL;
-    lambda_t *func = as_lambda(cc->lambda);
-    obj_t *code = &func->code;
-    i64_t i, lbl0, lbl1;
-
-    if (arity < 2)
-        cerr(cc, obj, ERR_LENGTH, "'map' takes at least two arguments");
-
-    arity -= 1;
-
-    // compile args
-    for (i = 0; i < arity; i++)
-    {
-        res = cc_compile_expr(true, cc, as_list(obj)[2 + i]);
-
-        if (res == CC_ERROR)
-            return CC_ERROR;
-    }
-
-    // first iteration
-    push_opcode(cc, obj, code, OP_MAP);
-    push_u8(code, arity);
-
-    // compile lambda
-    res = cc_compile_call(cc, as_list(obj)[1], arity);
-
-    if (res == CC_ERROR)
-        return CC_ERROR;
-
-    // allocate acc vector due to a result of first iteration
-    push_opcode(cc, obj, code, OP_ALLOC);
-    push_u8(code, arity);
-
-    // check if iteration is done
-    push_opcode(cc, obj, code, OP_JNE);
-    push_u64(code, 0);
-    lbl1 = (*code)->len - sizeof(u64_t);
-
-    lbl0 = (*code)->len;
-    push_opcode(cc, obj, code, OP_MAP);
-    push_u8(code, arity);
-
-    // compile lambda
-    res = cc_compile_call(cc, as_list(obj)[1], arity);
-
-    if (res == CC_ERROR)
-        return CC_ERROR;
-
-    push_opcode(cc, obj, code, OP_COLLECT);
-
-    // check if iteration is done
-    push_opcode(cc, obj, code, OP_JNE);
-    push_u64(code, lbl0);
-
-    *(u64_t *)(as_string(*code) + lbl1) = (*code)->len;
-
-    // pop arguments
-    for (i = 0; i < arity; i++)
-        push_opcode(cc, obj, code, OP_POP);
-
-    push_opcode(cc, obj, code, OP_PUSH_ACC);
-
-    if (!has_consumer)
-        push_opcode(cc, obj, code, OP_POP);
-
-    return CC_OK;
-}
-
-nil_t find_used_symbols(obj_t lst, obj_t syms)
-{
-    // i64_t i, l;
-
-    // switch (lst->type)
-    // {
-    // case -TYPE_SYMBOL:
-    //     if (lst->i64 > 0)
-    //         vector_push(syms, *lst);
-    //     return;
-    // case TYPE_LIST:
-    //     l = lst->len;
-    //     if (l == 0)
-    //         return;
-    //     for (i = 0; i < l; i++)
-    //         find_used_symbols(&as_list(lst)[i], syms);
-    //     return;
-    // default:
-    //     return;
-    // }
-}
-
-cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-{
-    // cc_result_t res;
-    // i64_t i, l;
-    // obj_t car, *params, key, val, cols, syms, k, v;
-    // lambda_t *func = as_lambda(&cc->lambda);
-    // obj_t code = &func->code;
-    // bool_t groupby = false, map = false;
-
-    // car = &as_list(obj)[0];
-
-    // if (arity == 0)
-    //     cerr(cc, car->id, ERR_LENGTH, "'select' takes at least two arguments");
-
-    // params = &as_list(obj)[1];
-
-    // if (params->type != TYPE_DICT)
-    //     cerr(cc, car->id, ERR_LENGTH, "'select' takes dict of params");
-
-    // l = as_list(params)[0]->len;
-
-    // // compile table
-    // key = symboli64(KW_FROM);
-    // val = dict_get(params, &key);
-    // res = cc_compile_expr(true, cc, &val);
-    // drop(val);
-
-    // if (res == CC_ERROR)
-    //     return CC_ERROR;
-
-    // // determine which of columns are used in select and which names will be used for result columns
-    // cols = vector_symbol(0);
-    // syms = vector_symbol(0);
-
-    // // first check by because it is special case in mapping
-    // key = symboli64(KW_BY);
-    // val = dict_get(params, &key);
-    // if (!is_null(&val))
-    // {
-    //     groupby = true;
-    //     if (val.type == -TYPE_SYMBOL)
-    //         vector_push(&cols, val);
-    //     else
-    //         vector_push(&cols, symbol("x"));
-    // }
-
-    // for (i = 0; i < l; i++)
-    // {
-    //     k = vector_get(&as_list(params)[0], i);
-    //     if (k.i64 != KW_FROM && k.i64 != KW_WHERE)
-    //     {
-    //         v = dict_get(params, &k);
-    //         find_used_symbols(&v, &syms);
-    //         drop(v);
-
-    //         if (k.i64 == KW_BY)
-    //             continue;
-
-    //         vector_push(&cols, k);
-    //         map = true;
-    //     }
-    // }
-
-    // k = rf_distinct(&syms);
-
-    // if (k.type == TYPE_ERROR)
-    // {
-    //     drop(cols);
-    //     drop(syms);
-    //     return CC_ERROR;
-    // }
-
-    // drop(syms);
-
-    // // compile filters
-    // key = symboli64(KW_WHERE);
-    // val = dict_get(params, &key);
-    // if (!is_null(&val))
-    // {
-    //     push_opcode(cc, car->id, code, OP_LPUSH);
-
-    //     res = cc_compile_expr(true, cc, &val);
-    //     drop(val);
-
-    //     if (res == CC_ERROR)
-    //     {
-    //         drop(cols);
-    //         return CC_ERROR;
-    //     }
-
-    //     push_opcode(cc, obj->id, code, OP_CALL1);
-    //     push_opcode(cc, obj->id, code, 0);
-    //     push_u64(code, rf_where);
-
-    //     push_opcode(cc, car->id, code, OP_LPOP);
-
-    //     // reduce by used columns (if any)
-    //     if (map)
-    //     {
-
-    //         push_opcode(cc, car->id, code, OP_DUP);
-    //         push_opcode(cc, car->id, code, OP_CALL1);
-    //         push_opcode(cc, car->id, code, 0);
-    //         push_u64(code, rf_key);
-    //         push_opcode(cc, car->id, code, OP_PUSH_CONST);
-    //         push_const(cc, k);
-    //         push_opcode(cc, car->id, code, OP_CALL2);
-    //         push_opcode(cc, car->id, code, 0);
-    //         push_u64(code, rf_sect);
-    //         push_opcode(cc, car->id, code, OP_CALL2);
-    //         push_opcode(cc, car->id, code, 0);
-    //         push_u64(code, rf_take);
-    //     }
-    //     else
-    //         drop(k);
-
-    //     push_opcode(cc, car->id, code, OP_SWAP);
-
-    //     // apply filters
-    //     push_opcode(cc, car->id, code, OP_CALL2);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_take);
-    // }
-    // else
-    // {
-    //     // reduce by used columns (if any)
-    //     if (map)
-    //     {
-    //         push_opcode(cc, car->id, code, OP_DUP);
-    //         push_opcode(cc, car->id, code, OP_CALL1);
-    //         push_opcode(cc, car->id, code, 0);
-    //         push_u64(code, rf_key);
-    //         push_opcode(cc, car->id, code, OP_PUSH_CONST);
-    //         push_const(cc, k);
-    //         push_opcode(cc, car->id, code, OP_CALL2);
-    //         push_opcode(cc, car->id, code, 0);
-    //         push_u64(code, rf_sect);
-    //         push_opcode(cc, car->id, code, OP_CALL2);
-    //         push_opcode(cc, car->id, code, 0);
-    //         push_u64(code, rf_take);
-    //     }
-    //     else
-    //         drop(k);
-    // }
-
-    // if (map || groupby)
-    //     push_opcode(cc, car->id, code, OP_LPUSH);
-
-    // // Group?
-    // key = symboli64(KW_BY);
-    // val = dict_get(params, &key);
-    // if (!is_null(&val))
-    // {
-    //     res = cc_compile_expr(true, cc, &val);
-    //     drop(val);
-
-    //     if (res == CC_ERROR)
-    //     {
-    //         drop(cols);
-    //         return CC_ERROR;
-    //     }
-
-    //     push_opcode(cc, obj->id, code, OP_CALL1);
-    //     push_opcode(cc, obj->id, code, 0);
-    //     push_u64(code, rf_group);
-
-    //     push_opcode(cc, obj->id, code, OP_DUP);
-    //     push_opcode(cc, obj->id, code, OP_CALL1);
-    //     push_opcode(cc, obj->id, code, 0);
-    //     push_u64(code, rf_value);
-
-    //     push_opcode(cc, car->id, code, OP_LPOP);
-
-    //     // remove column used for grouping from result
-    //     push_opcode(cc, obj->id, code, OP_DUP);
-    //     push_opcode(cc, car->id, code, OP_CALL1);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_key);
-    //     push_opcode(cc, car->id, code, OP_PUSH_CONST);
-    //     push_const(cc, vector_get(&cols, 0));
-    //     push_opcode(cc, car->id, code, OP_CALL2);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_except);
-    //     push_opcode(cc, car->id, code, OP_CALL2);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_take);
-
-    //     push_opcode(cc, car->id, code, OP_SWAP);
-
-    //     // apply grouping
-    //     push_opcode(cc, car->id, code, OP_CALL2);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_group_Table);
-
-    //     push_opcode(cc, car->id, code, OP_LPUSH);
-
-    //     push_opcode(cc, obj->id, code, OP_CALL1);
-    //     push_opcode(cc, obj->id, code, 0);
-    //     push_u64(code, rf_key);
-
-    //     // TODO!!!
-    //     if (!map)
-    //     {
-    //         push_opcode(cc, car->id, code, OP_LPOP);
-    //     }
-    // }
-
-    // // compile mappings (if specified)
-    // if (map)
-    // {
-    //     push_opcode(cc, car->id, code, OP_PUSH_CONST);
-    //     push_const(cc, cols);
-
-    //     if (groupby)
-    //         push_opcode(cc, car->id, code, OP_SWAP);
-
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         k = vector_get(&as_list(params)[0], i);
-    //         if (k.i64 != KW_FROM && k.i64 != KW_WHERE && k.i64 != KW_BY)
-    //         {
-    //             v = dict_get(params, &k);
-    //             res = cc_compile_expr(true, cc, &v);
-    //             drop(v);
-
-    //             if (res == CC_ERROR)
-    //                 return CC_ERROR;
-    //         }
-    //     }
-
-    //     push_opcode(cc, car->id, code, OP_CALLN);
-    //     push_opcode(cc, car->id, code, (u8_t)cols->len);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_list);
-
-    //     push_opcode(cc, car->id, code, OP_CALL2);
-    //     push_opcode(cc, car->id, code, 0);
-    //     push_u64(code, rf_table);
-    // }
-    // else
-    //     drop(cols);
-
-    // if (!has_consumer)
-    // push_opcode(cc, car->id, code, OP_POP);
-
-    return CC_OK;
-}
-
-cc_result_t cc_compile_eval(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-{
-    // cc_result_t res;
-    // obj_t car = &as_list(obj)[0];
-    // lambda_t *func = as_lambda(&cc->lambda);
-    // obj_t code = &func->code;
-
-    // if (arity != 1)
-    //     cerr(cc, car->id, ERR_LENGTH, "'eval' takes one argument");
-
-    // res = cc_compile_expr(true, cc, &as_list(obj)[1]);
-
-    // if (res == CC_ERROR)
-    //     return CC_ERROR;
-
-    // push_opcode(cc, car->id, code, OP_EVAL);
-
-    // if (!has_consumer)
-    //     push_opcode(cc, car->id, code, OP_POP);
-
-    return CC_OK;
-}
-
-cc_result_t cc_compile_load(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-{
-    // cc_result_t res;
-    // obj_t car = &as_list(obj)[0];
-    // lambda_t *func = as_lambda(&cc->lambda);
-    // obj_t code = &func->code;
-
-    // if (arity != 1)
-    //     cerr(cc, car->id, ERR_LENGTH, "'load' takes one argument");
-
-    // res = cc_compile_expr(true, cc, &as_list(obj)[1]);
-
-    // if (res == CC_ERROR)
-    //     return CC_ERROR;
-
-    // push_opcode(cc, car->id, code, OP_FLOAD);
-
-    // if (!has_consumer)
-    //     push_opcode(cc, car->id, code, OP_POP);
-
-    return CC_OK;
-}
+// nil_t find_used_symbols(obj_t lst, obj_t syms)
+// {
+// i64_t i, l;
+
+// switch (lst->type)
+// {
+// case -TYPE_SYMBOL:
+//     if (lst->i64 > 0)
+//         vector_push(syms, *lst);
+//     return;
+// case TYPE_LIST:
+//     l = lst->len;
+//     if (l == 0)
+//         return;
+//     for (i = 0; i < l; i++)
+//         find_used_symbols(as_list(lst)[i], syms);
+//     return;
+// default:
+//     return;
+// }
+// }
+
+// cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
+// {
+// cc_result_t res;
+// i64_t i, l;
+// obj_t car, *params, key, val, cols, syms, k, v;
+// lambda_t *func = as_lambda(&cc->lambda);
+// obj_t code = &func->code;
+// bool_t groupby = false, map = false;
+
+// car = as_list(obj)[0];
+
+// if (arity == 0)
+//     cerr(cc, car->id, ERR_LENGTH, "'select' takes at least two arguments");
+
+// params = as_list(obj)[1];
+
+// if (params->type != TYPE_DICT)
+//     cerr(cc, car->id, ERR_LENGTH, "'select' takes dict of params");
+
+// l = as_list(params)[0]->len;
+
+// // compile table
+// key = symboli64(KW_FROM);
+// val = dict_get(params, &key);
+// res = cc_compile_expr(true, cc, &val);
+// drop(val);
+
+// if (res == CC_ERROR)
+//     return CC_ERROR;
+
+// // determine which of columns are used in select and which names will be used for result columns
+// cols = vector_symbol(0);
+// syms = vector_symbol(0);
+
+// // first check by because it is special case in mapping
+// key = symboli64(KW_BY);
+// val = dict_get(params, &key);
+// if (!is_null(&val))
+// {
+//     groupby = true;
+//     if (val.type == -TYPE_SYMBOL)
+//         vector_push(&cols, val);
+//     else
+//         vector_push(&cols, symbol("x"));
+// }
+
+// for (i = 0; i < l; i++)
+// {
+//     k = vector_get(as_list(params)[0], i);
+//     if (k.i64 != KW_FROM && k.i64 != KW_WHERE)
+//     {
+//         v = dict_get(params, &k);
+//         find_used_symbols(&v, &syms);
+//         drop(v);
+
+//         if (k.i64 == KW_BY)
+//             continue;
+
+//         vector_push(&cols, k);
+//         map = true;
+//     }
+// }
+
+// k = rf_distinct(&syms);
+
+// if (k.type == TYPE_ERROR)
+// {
+//     drop(cols);
+//     drop(syms);
+//     return CC_ERROR;
+// }
+
+// drop(syms);
+
+// // compile filters
+// key = symboli64(KW_WHERE);
+// val = dict_get(params, &key);
+// if (!is_null(&val))
+// {
+//     push_opcode(cc, car->id, code, OP_LPUSH);
+
+//     res = cc_compile_expr(true, cc, &val);
+//     drop(val);
+
+//     if (res == CC_ERROR)
+//     {
+//         drop(cols);
+//         return CC_ERROR;
+//     }
+
+//     push_opcode(cc, obj->id, code, OP_CALL1);
+//     push_opcode(cc, obj->id, code, 0);
+//     push_u64(code, rf_where);
+
+//     push_opcode(cc, car->id, code, OP_LPOP);
+
+//     // reduce by used columns (if any)
+//     if (map)
+//     {
+
+//         push_opcode(cc, car->id, code, OP_DUP);
+//         push_opcode(cc, car->id, code, OP_CALL1);
+//         push_opcode(cc, car->id, code, 0);
+//         push_u64(code, rf_key);
+//         push_opcode(cc, car->id, code, OP_PUSH);
+//         push_const(cc, k);
+//         push_opcode(cc, car->id, code, OP_CALL2);
+//         push_opcode(cc, car->id, code, 0);
+//         push_u64(code, rf_sect);
+//         push_opcode(cc, car->id, code, OP_CALL2);
+//         push_opcode(cc, car->id, code, 0);
+//         push_u64(code, rf_take);
+//     }
+//     else
+//         drop(k);
+
+//     push_opcode(cc, car->id, code, OP_SWAP);
+
+//     // apply filters
+//     push_opcode(cc, car->id, code, OP_CALL2);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_take);
+// }
+// else
+// {
+//     // reduce by used columns (if any)
+//     if (map)
+//     {
+//         push_opcode(cc, car->id, code, OP_DUP);
+//         push_opcode(cc, car->id, code, OP_CALL1);
+//         push_opcode(cc, car->id, code, 0);
+//         push_u64(code, rf_key);
+//         push_opcode(cc, car->id, code, OP_PUSH);
+//         push_const(cc, k);
+//         push_opcode(cc, car->id, code, OP_CALL2);
+//         push_opcode(cc, car->id, code, 0);
+//         push_u64(code, rf_sect);
+//         push_opcode(cc, car->id, code, OP_CALL2);
+//         push_opcode(cc, car->id, code, 0);
+//         push_u64(code, rf_take);
+//     }
+//     else
+//         drop(k);
+// }
+
+// if (map || groupby)
+//     push_opcode(cc, car->id, code, OP_LPUSH);
+
+// // Group?
+// key = symboli64(KW_BY);
+// val = dict_get(params, &key);
+// if (!is_null(&val))
+// {
+//     res = cc_compile_expr(true, cc, &val);
+//     drop(val);
+
+//     if (res == CC_ERROR)
+//     {
+//         drop(cols);
+//         return CC_ERROR;
+//     }
+
+//     push_opcode(cc, obj->id, code, OP_CALL1);
+//     push_opcode(cc, obj->id, code, 0);
+//     push_u64(code, rf_group);
+
+//     push_opcode(cc, obj->id, code, OP_DUP);
+//     push_opcode(cc, obj->id, code, OP_CALL1);
+//     push_opcode(cc, obj->id, code, 0);
+//     push_u64(code, rf_value);
+
+//     push_opcode(cc, car->id, code, OP_LPOP);
+
+//     // remove column used for grouping from result
+//     push_opcode(cc, obj->id, code, OP_DUP);
+//     push_opcode(cc, car->id, code, OP_CALL1);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_key);
+//     push_opcode(cc, car->id, code, OP_PUSH);
+//     push_const(cc, vector_get(&cols, 0));
+//     push_opcode(cc, car->id, code, OP_CALL2);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_except);
+//     push_opcode(cc, car->id, code, OP_CALL2);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_take);
+
+//     push_opcode(cc, car->id, code, OP_SWAP);
+
+//     // apply grouping
+//     push_opcode(cc, car->id, code, OP_CALL2);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_group_Table);
+
+//     push_opcode(cc, car->id, code, OP_LPUSH);
+
+//     push_opcode(cc, obj->id, code, OP_CALL1);
+//     push_opcode(cc, obj->id, code, 0);
+//     push_u64(code, rf_key);
+
+//     // TODO!!!
+//     if (!map)
+//     {
+//         push_opcode(cc, car->id, code, OP_LPOP);
+//     }
+// }
+
+// // compile mappings (if specified)
+// if (map)
+// {
+//     push_opcode(cc, car->id, code, OP_PUSH);
+//     push_const(cc, cols);
+
+//     if (groupby)
+//         push_opcode(cc, car->id, code, OP_SWAP);
+
+//     for (i = 0; i < l; i++)
+//     {
+//         k = vector_get(as_list(params)[0], i);
+//         if (k.i64 != KW_FROM && k.i64 != KW_WHERE && k.i64 != KW_BY)
+//         {
+//             v = dict_get(params, &k);
+//             res = cc_compile_expr(true, cc, &v);
+//             drop(v);
+
+//             if (res == CC_ERROR)
+//                 return CC_ERROR;
+//         }
+//     }
+
+//     push_opcode(cc, car->id, code, OP_CALLN);
+//     push_opcode(cc, car->id, code, (u8_t)cols->len);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_list);
+
+//     push_opcode(cc, car->id, code, OP_CALL2);
+//     push_opcode(cc, car->id, code, 0);
+//     push_u64(code, rf_table);
+// }
+// else
+//     drop(cols);
+
+// if (!has_consumer)
+// push_opcode(cc, car->id, code, OP_POP);
+
+//     return CC_OK;
+// }
+
+// cc_result_t cc_compile_eval(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
+// {
+// cc_result_t res;
+// obj_t car = as_list(obj)[0];
+// lambda_t *func = as_lambda(&cc->lambda);
+// obj_t code = &func->code;
+
+// if (arity != 1)
+//     cerr(cc, car->id, ERR_LENGTH, "'eval' takes one argument");
+
+// res = cc_compile_expr(true, cc, as_list(obj)[1]);
+
+// if (res == CC_ERROR)
+//     return CC_ERROR;
+
+// push_opcode(cc, car->id, code, OP_EVAL);
+
+// if (!has_consumer)
+//     push_opcode(cc, car->id, code, OP_POP);
+
+// return CC_OK;
+// }
+
+// cc_result_t cc_compile_load(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
+//{
+//  cc_result_t res;
+//  obj_t car = as_list(obj)[0];
+//  lambda_t *func = as_lambda(&cc->lambda);
+//  obj_t code = &func->code;
+
+// if (arity != 1)
+//     cerr(cc, car->id, ERR_LENGTH, "'load' takes one argument");
+
+// res = cc_compile_expr(true, cc, as_list(obj)[1]);
+
+// if (res == CC_ERROR)
+//     return CC_ERROR;
+
+// push_opcode(cc, car->id, code, OP_FLOAD);
+
+// if (!has_consumer)
+//     push_opcode(cc, car->id, code, OP_POP);
+
+// return CC_OK;
+//}
 
 cc_result_t cc_compile_return(cc_t *cc, obj_t obj, u32_t arity)
 {
@@ -796,7 +724,7 @@ cc_result_t cc_compile_return(cc_t *cc, obj_t obj, u32_t arity)
     switch (arity)
     {
     case 0:
-        push_opcode(cc, car, code, OP_PUSH_CONST);
+        push_opcode(cc, car, code, OP_PUSH);
         push_const(cc, null(0));
         break;
     case 1:
@@ -829,18 +757,16 @@ cc_result_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, obj_t obj, u
         return cc_compile_fn(cc, obj, arity);
     case KW_IF:
         return cc_compile_cond(has_consumer, cc, obj, arity);
-    case KW_MAP:
-        return cc_compile_map(has_consumer, cc, obj, arity);
     case KW_TRY:
         return cc_compile_try(has_consumer, cc, obj, arity);
     case KW_THROW:
         return cc_compile_throw(cc, obj, arity);
-    case KW_SELECT:
-        return cc_compile_select(has_consumer, cc, obj, arity);
-    case KW_EVAL:
-        return cc_compile_eval(has_consumer, cc, obj, arity);
-    case KW_LOAD:
-        return cc_compile_load(has_consumer, cc, obj, arity);
+    // case KW_SELECT:
+    //     return cc_compile_select(has_consumer, cc, obj, arity);
+    // case KW_EVAL:
+    //     return cc_compile_eval(has_consumer, cc, obj, arity);
+    // case KW_LOAD:
+    //     return cc_compile_load(has_consumer, cc, obj, arity);
     case KW_RETURN:
         return cc_compile_return(cc, obj, arity);
     default:
@@ -862,7 +788,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
             return CC_NULL;
 
         // then in a local or global env
-        push_opcode(cc, obj, code, OP_PUSH_CONST);
+        push_opcode(cc, obj, code, OP_PUSH);
         push_const(cc, clone(obj));
         func->stack_size++;
 
@@ -878,7 +804,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
         // Symbol is quoted
         if (obj->attrs & ATTR_QUOTED)
         {
-            push_opcode(cc, obj, code, OP_PUSH_CONST);
+            push_opcode(cc, obj, code, OP_PUSH);
             push_const(cc, symboli64(obj->i64));
             func->stack_size++;
 
@@ -888,11 +814,11 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
         // internal function
         if (obj->i64 < 0)
         {
-            push_opcode(cc, obj, code, OP_PUSH_CONST);
+            push_opcode(cc, obj, code, OP_PUSH);
 
             id = find_obj(as_list(runtime_get()->env.functions)[0], obj);
 
-            if (id == as_list(runtime_get()->env.functions)[0]->len)
+            if (id == (i64_t)as_list(runtime_get()->env.functions)[0]->len)
                 cerr(cc, obj, ERR_LENGTH, "function not found");
 
             push_const(cc, clone(as_list(as_list(runtime_get()->env.functions)[1])[id]));
@@ -914,7 +840,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
         }
 
         // then in a local or global env
-        push_opcode(cc, obj, code, OP_PUSH_CONST);
+        push_opcode(cc, obj, code, OP_PUSH);
         push_const(cc, clone(obj));
         push_opcode(cc, obj, code, OP_LGET);
         func->stack_size++;
@@ -956,7 +882,7 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
         if (!has_consumer)
             return CC_NULL;
 
-        push_opcode(cc, obj, code, OP_PUSH_CONST);
+        push_opcode(cc, obj, code, OP_PUSH);
         push_const(cc, clone(obj));
         func->stack_size++;
 
@@ -968,7 +894,6 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
 
 obj_t cc_compile_lambda(str_t name, obj_t args, obj_t *body, u64_t len, nfo_t *nfo)
 {
-    obj_t err;
     nfo_t *pi, di;
     cc_result_t res;
     u64_t i = 0;
@@ -996,7 +921,7 @@ obj_t cc_compile_lambda(str_t name, obj_t args, obj_t *body, u64_t len, nfo_t *n
 
     if (len == 0)
     {
-        push_opcode(&cc, *body, code, OP_PUSH_CONST);
+        push_opcode(&cc, *body, code, OP_PUSH);
         push_const(&cc, null(0));
         goto epilogue;
     }
@@ -1038,11 +963,11 @@ obj_t cc_compile(obj_t body, nfo_t *nfo)
 
     if (body->type != TYPE_LIST)
     {
-        span = nfo_get(nfo, body);
+        span = nfo_get(nfo, (i64_t)body);
         msg = str_fmt(0, "compile '%s': expected list", "top-level");
         err = error(ERR_TYPE, msg);
         heap_free(msg);
-        *(span_t *)&as_list(err)[2] = span;
+        *(span_t *)as_list(err)[2] = span;
 
         return err;
     }
