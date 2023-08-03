@@ -42,7 +42,7 @@ static heap_t _HEAP = NULL;
 #define blockaddr(p)     ((nil_t *)((u64_t)(p) & BLOCK_ADDR_MASK))
 #define blocksize(i)     (1ull << (i))
 #define buddyof(p, b, i) ((nil_t *)(((u64_t)(p - b) ^ blocksize(i)) + b))
-#define orderof(s)       (64ull - __builtin_clzl(s - 1))
+#define orderof(s)       (64ull - __builtin_clzll(s - 1))
 #define is16block(b)     ((b) >= _HEAP->blocks16 && (b) < _HEAP->blocks16 + NUM_16_BLOCKS * 16)
 
 #ifdef SYS_MALLOC

@@ -58,7 +58,7 @@ u32_t next_power_of_two_u32(u32_t n)
     if ((n & (n - 1)) == 0)
         return n;
 
-    return 1 << (32 - __builtin_clz(n));
+    return 1 << (32 - __builtin_clzl(n));
 }
 
 u64_t next_power_of_two_u64(u64_t n)
@@ -69,7 +69,7 @@ u64_t next_power_of_two_u64(u64_t n)
     if ((n & (n - 1)) == 0)
         return n;
 
-    return 1UL << (64 - __builtin_clzl(n));
+    return 1UL << (64 - __builtin_clzll(n));
 }
 
 bool_t is_valid(obj_t obj)
