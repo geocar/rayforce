@@ -550,23 +550,23 @@ str_t obj_fmt(obj_t obj)
  * using format string as a template with
  * '%' placeholders.
  */
-str_t obj_fmt_n(obj_t x, u32_t n)
+str_t obj_fmt_n(obj_t *x, u64_t n)
 {
-    u32_t i;
+    u64_t i;
     i32_t l = 0, o = 0, sz = 0;
     str_t s = NULL, p, start = NULL, end = NULL;
-    obj_t b = x;
+    obj_t *b = x;
 
     if (n == 0)
         return NULL;
 
     if (n == 1)
-        return obj_fmt(b);
+        return obj_fmt(*b);
 
-    if (b->type != TYPE_CHAR)
+    if ((*b)->type != TYPE_CHAR)
         return NULL;
 
-    p = as_string(b);
+    p = as_string(*b);
     sz = strlen(p);
     start = p;
     n -= 1;
@@ -590,7 +590,7 @@ str_t obj_fmt_n(obj_t x, u32_t n)
         sz -= (end + 1 - start);
         start = end + 1;
 
-        obj_fmt_into(&s, &l, &o, 0, 0, b);
+        obj_fmt_into(&s, &l, &o, 0, 0, *b);
     }
 
     if (sz > 0 && memchr(start, '%', sz))

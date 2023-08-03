@@ -30,9 +30,9 @@
 #include "util.h"
 #include "runtime.h"
 
-obj_t rf_call_vary_atomic(vary_f f, obj_t *x, i64_t n)
+obj_t rf_call_vary_atomic(vary_f f, obj_t *x, u64_t n)
 {
-    i64_t i, lists = 0;
+    u64_t i, lists = 0;
 
     for (i = 0; i < n; i++)
         if (is_vector(x[i]))
@@ -44,7 +44,7 @@ obj_t rf_call_vary_atomic(vary_f f, obj_t *x, i64_t n)
         return f(x, n);
 }
 
-obj_t rf_call_vary(u8_t attrs, vary_f f, obj_t *x, i64_t n)
+obj_t rf_call_vary(u8_t attrs, vary_f f, obj_t *x, u64_t n)
 {
     switch (attrs)
     {
@@ -55,9 +55,9 @@ obj_t rf_call_vary(u8_t attrs, vary_f f, obj_t *x, i64_t n)
     }
 }
 
-obj_t rf_map_vary(obj_t *x, i64_t n)
+obj_t rf_map_vary(obj_t *x, u64_t n)
 {
-    i64_t i;
+    u64_t i;
     vm_t vm;
 
     switch ((*x)->type)
@@ -66,7 +66,7 @@ obj_t rf_map_vary(obj_t *x, i64_t n)
         vm = vm_new(runtime_get()->vm.stack);
         for (i = 0; i < n - 1; i++)
         {
-                }
+        }
         vm.sp = runtime_get()->vm.sp;
         return vm_exec(&vm, *x);
     default:
@@ -74,9 +74,9 @@ obj_t rf_map_vary(obj_t *x, i64_t n)
     }
 }
 
-obj_t rf_list(obj_t *x, i64_t n)
+obj_t rf_list(obj_t *x, u64_t n)
 {
-    i64_t i;
+    u64_t i;
     obj_t lst = list(n);
 
     for (i = 0; i < n; i++)
@@ -85,9 +85,12 @@ obj_t rf_list(obj_t *x, i64_t n)
     return lst;
 }
 
-obj_t rf_enlist(obj_t *x, i64_t n)
+obj_t rf_enlist(obj_t *x, u64_t n)
 {
-    i64_t i;
+    if (n == 0)
+        return list(0);
+
+    u64_t i;
     obj_t lst = list(n);
 
     for (i = 0; i < n; i++)
@@ -96,16 +99,16 @@ obj_t rf_enlist(obj_t *x, i64_t n)
     return lst;
 }
 
-obj_t rf_gc(obj_t *x, i64_t n)
+obj_t rf_gc(obj_t *x, u64_t n)
 {
     unused(x);
     unused(n);
     return i64(heap_gc());
 }
 
-obj_t rf_format(obj_t *x, i64_t n)
+obj_t rf_format(obj_t *x, u64_t n)
 {
-    str_t s = obj_fmt_n(*x, n);
+    str_t s = obj_fmt_n(x, n);
     obj_t ret;
 
     if (!s)
@@ -117,9 +120,9 @@ obj_t rf_format(obj_t *x, i64_t n)
     return ret;
 }
 
-obj_t rf_print(obj_t *x, i64_t n)
+obj_t rf_print(obj_t *x, u64_t n)
 {
-    str_t s = obj_fmt_n(*x, n);
+    str_t s = obj_fmt_n(x, n);
 
     if (!s)
         return error(ERR_TYPE, "malformed format string");
@@ -130,9 +133,9 @@ obj_t rf_print(obj_t *x, i64_t n)
     return null(0);
 }
 
-obj_t rf_println(obj_t *x, i64_t n)
+obj_t rf_println(obj_t *x, u64_t n)
 {
-    str_t s = obj_fmt_n(*x, n);
+    str_t s = obj_fmt_n(x, n);
 
     if (!s)
         return error(ERR_TYPE, "malformed format string");

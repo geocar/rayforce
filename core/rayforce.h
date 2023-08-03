@@ -80,7 +80,7 @@ typedef unsigned short u16_t;
 typedef int i32_t;
 typedef unsigned int u32_t;
 typedef long long i64_t;
-typedef long long any_t;
+typedef long long raw_t;
 typedef unsigned long long u64_t;
 typedef double f64_t;
 typedef void nil_t;
@@ -169,7 +169,7 @@ extern bool_t is_null(obj_t obj);
 #define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type < TYPE_TABLE)
 
 // Joins
-extern obj_t join_raw(obj_t *obj, any_t val); // join raw value into a list
+extern obj_t join_raw(obj_t *obj, raw_t val); // join raw value into a list
 extern obj_t join_obj(obj_t *obj, obj_t val); // join object to a list
 extern obj_t join_sym(obj_t *obj, str_t str); // join interned string to a symbol vector
 
@@ -177,7 +177,7 @@ extern obj_t join_sym(obj_t *obj, str_t str); // join interned string to a symbo
 extern obj_t pop_obj(obj_t *obj); // pop object from a list
 
 // Writes
-extern obj_t write_raw(obj_t *obj, u64_t idx, any_t val); // write raw value into a list
+extern obj_t write_raw(obj_t *obj, u64_t idx, raw_t val); // write raw value into a list
 extern obj_t write_obj(obj_t *obj, u64_t idx, obj_t val); // write object to a list
 extern obj_t write_sym(obj_t *obj, u64_t idx, str_t str); // write interned string to a symbol vector
 
@@ -193,9 +193,9 @@ extern obj_t set_obj(obj_t *obj, obj_t idx, obj_t val); // set obj indexed by ob
 extern obj_t resize(obj_t *obj, u64_t len);
 
 // Search
-extern i64_t find_raw(obj_t obj, any_t  val); // find raw value in a list, return index (obj->len if not found)
-extern i64_t find_obj(obj_t obj, obj_t  val); // find object in a list, return index (obj->len if not found)
-extern i64_t find_sym(obj_t obj, str_t  str); // find interned string in a symbol vector, return index (obj->len if not found)
+extern i64_t find_raw(obj_t obj, raw_t val); // find raw value in a list, return index (obj->len if not found)
+extern i64_t find_obj(obj_t obj, obj_t val); // find object in a list, return index (obj->len if not found)
+extern i64_t find_sym(obj_t obj, str_t str); // find interned string in a symbol vector, return index (obj->len if not found)
 
 // Cast
 extern obj_t cast(type_t type, obj_t obj);      // cast object x o a type

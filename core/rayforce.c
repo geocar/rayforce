@@ -220,7 +220,7 @@ obj_t resize(obj_t *obj, u64_t len)
     return *obj;
 }
 
-obj_t join_raw(obj_t *obj, any_t val)
+obj_t join_raw(obj_t *obj, raw_t val)
 {
     i64_t off, occup, req;
     i32_t size = size_of((*obj)->type);
@@ -294,7 +294,7 @@ obj_t join_sym(obj_t *obj, str_t str)
     return join_raw(obj, sym);
 }
 
-obj_t write_raw(obj_t *obj, u64_t idx, any_t val)
+obj_t write_raw(obj_t *obj, u64_t idx, raw_t val)
 {
     i32_t size = size_of((*obj)->type);
     memcpy((*obj)->arr + idx * size, &val, size);
@@ -579,7 +579,7 @@ bool_t equal(obj_t a, obj_t b)
     return false;
 }
 
-i64_t find_raw(obj_t obj, any_t val)
+i64_t find_raw(obj_t obj, raw_t val)
 {
     i64_t i, l;
 
