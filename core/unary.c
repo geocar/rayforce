@@ -573,8 +573,8 @@ obj_t rf_value(obj_t x)
 
 obj_t rf_fread(obj_t x)
 {
-    i64_t fd, size;
-    str_t fmsg;
+    i64_t fd, size, c = 0;
+    str_t fmsg, buf;
     obj_t res, err;
 
     switch (mtype(x->type))
@@ -588,25 +588,30 @@ obj_t rf_fread(obj_t x)
             fmsg = str_fmt(0, "file: '%s' does not exist", as_string(x));
             err = error(ERR_NOT_EXIST, fmsg);
             heap_free(fmsg);
-            // err->id = x->id;
             return err;
         }
 
         size = fs_fsize(fd);
-
         res = string(size);
+        buf = as_string(res);
 
-        if (read(fd, as_string(res), size) != size)
+        while ((c = read(fd, buf, size - c)) > 0) {
+            buf += c;
+        }
+
+        if (c == -1)
         {
             fmsg = str_fmt(0, "file: '%s' read error", as_string(x));
             err = error(ERR_IO, fmsg);
             heap_free(fmsg);
             close(fd);
-            // err->id = x->id;
+            drop(res);
             return err;
         }
 
         fs_fclose(fd);
+
+        *buf = '\0';
 
         return res;
     default:
