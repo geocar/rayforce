@@ -403,321 +403,281 @@ cc_result_t cc_compile_call(cc_t *cc, obj_t car, u8_t arity)
     }
 }
 
-// nil_t find_used_symbols(obj_t lst, obj_t syms)
-// {
-// i64_t i, l;
+nil_t find_used_symbols(obj_t lst, obj_t *syms)
+{
+    i64_t i, l;
 
-// switch (lst->type)
-// {
-// case -TYPE_SYMBOL:
-//     if (lst->i64 > 0)
-//         vector_push(syms, *lst);
-//     return;
-// case TYPE_LIST:
-//     l = lst->len;
-//     if (l == 0)
-//         return;
-//     for (i = 0; i < l; i++)
-//         find_used_symbols(as_list(lst)[i], syms);
-//     return;
-// default:
-//     return;
-// }
-// }
+    switch (lst->type)
+    {
+    case -TYPE_SYMBOL:
+        if (lst->i64 > 0)
+            join_obj(syms, lst);
+        return;
+    case TYPE_LIST:
+        l = lst->len;
+        if (l == 0)
+            return;
+        for (i = 0; i < l; i++)
+            find_used_symbols(as_list(lst)[i], syms);
+        return;
+    default:
+        return;
+    }
+}
 
-// cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-// {
-// cc_result_t res;
-// i64_t i, l;
-// obj_t car, *params, key, val, cols, syms, k, v;
-// lambda_t *func = as_lambda(&cc->lambda);
-// obj_t code = &func->code;
-// bool_t groupby = false, map = false;
+cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
+{
+    cc_result_t res;
+    i64_t i, l;
+    obj_t car, params, key, val, cols, syms, k, v;
+    lambda_t *func = as_lambda(cc->lambda);
+    obj_t *code = &func->code;
+    bool_t groupby = false, map = false;
 
-// car = as_list(obj)[0];
+    car = as_list(obj)[0];
 
-// if (arity == 0)
-//     cerr(cc, car->id, ERR_LENGTH, "'select' takes at least two arguments");
+    if (arity == 0)
+        cerr(cc, car, ERR_LENGTH, "'select' takes at least two arguments");
 
-// params = as_list(obj)[1];
+    params = as_list(obj)[1];
 
-// if (params->type != TYPE_DICT)
-//     cerr(cc, car->id, ERR_LENGTH, "'select' takes dict of params");
+    if (params->type != TYPE_DICT)
+        cerr(cc, car, ERR_LENGTH, "'select' takes dict of params");
 
-// l = as_list(params)[0]->len;
+    l = as_list(params)[0]->len;
 
-// // compile table
-// key = symboli64(KW_FROM);
-// val = dict_get(params, &key);
-// res = cc_compile_expr(true, cc, &val);
-// drop(val);
+    // compile table
+    key = symboli64(KW_FROM);
+    val = at_obj(params, key);
+    res = cc_compile_expr(true, cc, val);
+    drop(key);
+    drop(val);
 
-// if (res == CC_ERROR)
-//     return CC_ERROR;
+    if (res == CC_ERROR)
+        return CC_ERROR;
 
-// // determine which of columns are used in select and which names will be used for result columns
-// cols = vector_symbol(0);
-// syms = vector_symbol(0);
+    // determine which of columns are used in select and which names will be used for result columns
+    cols = vector_symbol(0);
+    syms = vector_symbol(0);
 
-// // first check by because it is special case in mapping
-// key = symboli64(KW_BY);
-// val = dict_get(params, &key);
-// if (!is_null(&val))
-// {
-//     groupby = true;
-//     if (val.type == -TYPE_SYMBOL)
-//         vector_push(&cols, val);
-//     else
-//         vector_push(&cols, symbol("x"));
-// }
+    // first check by because it is special case in mapping
+    key = symboli64(KW_BY);
+    val = at_obj(params, key);
+    if (!is_null(val))
+    {
+        groupby = true;
+        if (val->type == -TYPE_SYMBOL)
+            join_obj(&cols, val);
+        else
+            join_sym(&cols, "x");
+    }
 
-// for (i = 0; i < l; i++)
-// {
-//     k = vector_get(as_list(params)[0], i);
-//     if (k.i64 != KW_FROM && k.i64 != KW_WHERE)
-//     {
-//         v = dict_get(params, &k);
-//         find_used_symbols(&v, &syms);
-//         drop(v);
+    drop(key);
+    drop(val);
 
-//         if (k.i64 == KW_BY)
-//             continue;
+    for (i = 0; i < l; i++)
+    {
+        k = at_idx(as_list(params)[0], i);
+        if (k->i64 != KW_FROM && k->i64 != KW_WHERE)
+        {
+            v = at_obj(params, k);
+            find_used_symbols(v, &syms);
+            drop(v);
 
-//         vector_push(&cols, k);
-//         map = true;
-//     }
-// }
+            if (k->i64 == KW_BY)
+                continue;
 
-// k = rf_distinct(&syms);
+            join_obj(&cols, k);
+            map = true;
+        }
+    }
 
-// if (k.type == TYPE_ERROR)
-// {
-//     drop(cols);
-//     drop(syms);
-//     return CC_ERROR;
-// }
+    k = rf_distinct(syms);
 
-// drop(syms);
+    if (k->type == TYPE_ERROR)
+    {
+        drop(cols);
+        drop(syms);
+        return CC_ERROR;
+    }
 
-// // compile filters
-// key = symboli64(KW_WHERE);
-// val = dict_get(params, &key);
-// if (!is_null(&val))
-// {
-//     push_opcode(cc, car->id, code, OP_LPUSH);
+    drop(syms);
 
-//     res = cc_compile_expr(true, cc, &val);
-//     drop(val);
+    // compile filters
+    key = symboli64(KW_WHERE);
+    val = at_obj(params, key);
+    drop(key);
+    if (!is_null(val))
+    {
+        push_opcode(cc, car, code, OP_LPUSH);
 
-//     if (res == CC_ERROR)
-//     {
-//         drop(cols);
-//         return CC_ERROR;
-//     }
+        res = cc_compile_expr(true, cc, val);
+        drop(val);
 
-//     push_opcode(cc, obj->id, code, OP_CALL1);
-//     push_opcode(cc, obj->id, code, 0);
-//     push_u64(code, rf_where);
+        if (res == CC_ERROR)
+        {
+            drop(cols);
+            return CC_ERROR;
+        }
 
-//     push_opcode(cc, car->id, code, OP_LPOP);
+        push_opcode(cc, obj, code, OP_CALL1);
+        push_opcode(cc, obj, code, 0);
+        push_u64(code, rf_where);
 
-//     // reduce by used columns (if any)
-//     if (map)
-//     {
+        push_opcode(cc, car, code, OP_LPOP);
 
-//         push_opcode(cc, car->id, code, OP_DUP);
-//         push_opcode(cc, car->id, code, OP_CALL1);
-//         push_opcode(cc, car->id, code, 0);
-//         push_u64(code, rf_key);
-//         push_opcode(cc, car->id, code, OP_PUSH);
-//         push_const(cc, k);
-//         push_opcode(cc, car->id, code, OP_CALL2);
-//         push_opcode(cc, car->id, code, 0);
-//         push_u64(code, rf_sect);
-//         push_opcode(cc, car->id, code, OP_CALL2);
-//         push_opcode(cc, car->id, code, 0);
-//         push_u64(code, rf_take);
-//     }
-//     else
-//         drop(k);
+        // reduce by used columns (if any)
+        if (map)
+        {
+            push_opcode(cc, car, code, OP_DUP);
+            push_opcode(cc, car, code, OP_CALL1);
+            push_opcode(cc, car, code, 0);
+            push_u64(code, rf_key);
+            push_opcode(cc, car, code, OP_PUSH);
+            push_const(cc, k);
+            push_opcode(cc, car, code, OP_CALL2);
+            push_opcode(cc, car, code, 0);
+            push_u64(code, rf_sect);
+            push_opcode(cc, car, code, OP_CALL2);
+            push_opcode(cc, car, code, 0);
+            push_u64(code, rf_take);
+        }
+        else
+            drop(k);
 
-//     push_opcode(cc, car->id, code, OP_SWAP);
+        push_opcode(cc, car, code, OP_SWAP);
 
-//     // apply filters
-//     push_opcode(cc, car->id, code, OP_CALL2);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_take);
-// }
-// else
-// {
-//     // reduce by used columns (if any)
-//     if (map)
-//     {
-//         push_opcode(cc, car->id, code, OP_DUP);
-//         push_opcode(cc, car->id, code, OP_CALL1);
-//         push_opcode(cc, car->id, code, 0);
-//         push_u64(code, rf_key);
-//         push_opcode(cc, car->id, code, OP_PUSH);
-//         push_const(cc, k);
-//         push_opcode(cc, car->id, code, OP_CALL2);
-//         push_opcode(cc, car->id, code, 0);
-//         push_u64(code, rf_sect);
-//         push_opcode(cc, car->id, code, OP_CALL2);
-//         push_opcode(cc, car->id, code, 0);
-//         push_u64(code, rf_take);
-//     }
-//     else
-//         drop(k);
-// }
+        // apply filters
+        push_opcode(cc, car, code, OP_CALL2);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_take);
+    }
+    else
+    {
+        // reduce by used columns (if any)
+        if (map)
+        {
+            push_opcode(cc, car, code, OP_DUP);
+            push_opcode(cc, car, code, OP_CALL1);
+            push_opcode(cc, car, code, 0);
+            push_u64(code, rf_key);
+            push_opcode(cc, car, code, OP_PUSH);
+            push_const(cc, k);
+            push_opcode(cc, car, code, OP_CALL2);
+            push_opcode(cc, car, code, 0);
+            push_u64(code, rf_sect);
+            push_opcode(cc, car, code, OP_CALL2);
+            push_opcode(cc, car, code, 0);
+            push_u64(code, rf_take);
+        }
+        else
+            drop(k);
+    }
 
-// if (map || groupby)
-//     push_opcode(cc, car->id, code, OP_LPUSH);
+    if (map || groupby)
+        push_opcode(cc, car, code, OP_LPUSH);
 
-// // Group?
-// key = symboli64(KW_BY);
-// val = dict_get(params, &key);
-// if (!is_null(&val))
-// {
-//     res = cc_compile_expr(true, cc, &val);
-//     drop(val);
+    // Group?
+    key = symboli64(KW_BY);
+    val = at_obj(params, key);
+    drop(key);
+    if (!is_null(val))
+    {
+        res = cc_compile_expr(true, cc, val);
+        drop(val);
 
-//     if (res == CC_ERROR)
-//     {
-//         drop(cols);
-//         return CC_ERROR;
-//     }
+        if (res == CC_ERROR)
+        {
+            drop(cols);
+            return CC_ERROR;
+        }
 
-//     push_opcode(cc, obj->id, code, OP_CALL1);
-//     push_opcode(cc, obj->id, code, 0);
-//     push_u64(code, rf_group);
+        push_opcode(cc, obj, code, OP_CALL1);
+        push_opcode(cc, obj, code, 0);
+        push_u64(code, rf_group);
 
-//     push_opcode(cc, obj->id, code, OP_DUP);
-//     push_opcode(cc, obj->id, code, OP_CALL1);
-//     push_opcode(cc, obj->id, code, 0);
-//     push_u64(code, rf_value);
+        push_opcode(cc, obj, code, OP_DUP);
+        push_opcode(cc, obj, code, OP_CALL1);
+        push_opcode(cc, obj, code, 0);
+        push_u64(code, rf_value);
 
-//     push_opcode(cc, car->id, code, OP_LPOP);
+        push_opcode(cc, car, code, OP_LPOP);
 
-//     // remove column used for grouping from result
-//     push_opcode(cc, obj->id, code, OP_DUP);
-//     push_opcode(cc, car->id, code, OP_CALL1);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_key);
-//     push_opcode(cc, car->id, code, OP_PUSH);
-//     push_const(cc, vector_get(&cols, 0));
-//     push_opcode(cc, car->id, code, OP_CALL2);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_except);
-//     push_opcode(cc, car->id, code, OP_CALL2);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_take);
+        // remove column used for grouping from result
+        push_opcode(cc, obj, code, OP_DUP);
+        push_opcode(cc, car, code, OP_CALL1);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_key);
+        push_opcode(cc, car, code, OP_PUSH);
+        push_const(cc, at_idx(cols, 0));
+        push_opcode(cc, car, code, OP_CALL2);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_except);
+        push_opcode(cc, car, code, OP_CALL2);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_take);
 
-//     push_opcode(cc, car->id, code, OP_SWAP);
+        push_opcode(cc, car, code, OP_SWAP);
 
-//     // apply grouping
-//     push_opcode(cc, car->id, code, OP_CALL2);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_group_Table);
+        // apply grouping
+        push_opcode(cc, car, code, OP_CALL2);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_group_Table);
 
-//     push_opcode(cc, car->id, code, OP_LPUSH);
+        push_opcode(cc, car, code, OP_LPUSH);
 
-//     push_opcode(cc, obj->id, code, OP_CALL1);
-//     push_opcode(cc, obj->id, code, 0);
-//     push_u64(code, rf_key);
+        push_opcode(cc, obj, code, OP_CALL1);
+        push_opcode(cc, obj, code, 0);
+        push_u64(code, rf_key);
 
-//     // TODO!!!
-//     if (!map)
-//     {
-//         push_opcode(cc, car->id, code, OP_LPOP);
-//     }
-// }
+        // TODO!!!
+        if (!map)
+        {
+            push_opcode(cc, car, code, OP_LPOP);
+        }
+    }
 
-// // compile mappings (if specified)
-// if (map)
-// {
-//     push_opcode(cc, car->id, code, OP_PUSH);
-//     push_const(cc, cols);
+    // compile mappings (if specified)
+    if (map)
+    {
+        push_opcode(cc, car, code, OP_PUSH);
+        push_const(cc, cols);
 
-//     if (groupby)
-//         push_opcode(cc, car->id, code, OP_SWAP);
+        if (groupby)
+            push_opcode(cc, car, code, OP_SWAP);
 
-//     for (i = 0; i < l; i++)
-//     {
-//         k = vector_get(as_list(params)[0], i);
-//         if (k.i64 != KW_FROM && k.i64 != KW_WHERE && k.i64 != KW_BY)
-//         {
-//             v = dict_get(params, &k);
-//             res = cc_compile_expr(true, cc, &v);
-//             drop(v);
+        for (i = 0; i < l; i++)
+        {
+            k = at_idx(as_list(params)[0], i);
+            if (k->i64 != KW_FROM && k->i64 != KW_WHERE && k->i64 != KW_BY)
+            {
+                v = at_obj(params, k);
+                res = cc_compile_expr(true, cc, v);
+                drop(k);
+                drop(v);
 
-//             if (res == CC_ERROR)
-//                 return CC_ERROR;
-//         }
-//     }
+                if (res == CC_ERROR)
+                    return CC_ERROR;
+            }
+        }
 
-//     push_opcode(cc, car->id, code, OP_CALLN);
-//     push_opcode(cc, car->id, code, (u8_t)cols->len);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_list);
+        push_opcode(cc, car, code, OP_CALLN);
+        push_opcode(cc, car, code, (u8_t)cols->len);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_list);
 
-//     push_opcode(cc, car->id, code, OP_CALL2);
-//     push_opcode(cc, car->id, code, 0);
-//     push_u64(code, rf_table);
-// }
-// else
-//     drop(cols);
+        push_opcode(cc, car, code, OP_CALL2);
+        push_opcode(cc, car, code, 0);
+        push_u64(code, rf_table);
+    }
+    else
+        drop(cols);
 
-// if (!has_consumer)
-// push_opcode(cc, car->id, code, OP_POP);
+    if (!has_consumer)
+        push_opcode(cc, car, code, OP_POP);
 
-//     return CC_OK;
-// }
-
-// cc_result_t cc_compile_eval(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-// {
-// cc_result_t res;
-// obj_t car = as_list(obj)[0];
-// lambda_t *func = as_lambda(&cc->lambda);
-// obj_t code = &func->code;
-
-// if (arity != 1)
-//     cerr(cc, car->id, ERR_LENGTH, "'eval' takes one argument");
-
-// res = cc_compile_expr(true, cc, as_list(obj)[1]);
-
-// if (res == CC_ERROR)
-//     return CC_ERROR;
-
-// push_opcode(cc, car->id, code, OP_EVAL);
-
-// if (!has_consumer)
-//     push_opcode(cc, car->id, code, OP_POP);
-
-// return CC_OK;
-// }
-
-// cc_result_t cc_compile_load(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity)
-//{
-//  cc_result_t res;
-//  obj_t car = as_list(obj)[0];
-//  lambda_t *func = as_lambda(&cc->lambda);
-//  obj_t code = &func->code;
-
-// if (arity != 1)
-//     cerr(cc, car->id, ERR_LENGTH, "'load' takes one argument");
-
-// res = cc_compile_expr(true, cc, as_list(obj)[1]);
-
-// if (res == CC_ERROR)
-//     return CC_ERROR;
-
-// push_opcode(cc, car->id, code, OP_FLOAD);
-
-// if (!has_consumer)
-//     push_opcode(cc, car->id, code, OP_POP);
-
-// return CC_OK;
-//}
+    return CC_OK;
+}
 
 cc_result_t cc_compile_return(cc_t *cc, obj_t obj, u32_t arity)
 {
@@ -766,8 +726,8 @@ cc_result_t cc_compile_special_forms(bool_t has_consumer, cc_t *cc, obj_t obj, u
         return cc_compile_try(has_consumer, cc, obj, arity);
     case KW_THROW:
         return cc_compile_throw(cc, obj, arity);
-    // case KW_SELECT:
-    //     return cc_compile_select(has_consumer, cc, obj, arity);
+    case KW_SELECT:
+        return cc_compile_select(has_consumer, cc, obj, arity);
     // case KW_EVAL:
     //     return cc_compile_eval(has_consumer, cc, obj, arity);
     // case KW_LOAD:

@@ -419,7 +419,7 @@ obj_t at_obj(obj_t obj, obj_t idx)
     case mtype2(TYPE_LIST, -TYPE_I64):
         return at_idx(obj, idx->i64);
     default:
-        if (obj->type == TYPE_DICT)
+        if (obj->type == TYPE_DICT || obj->type == TYPE_TABLE)
         {
             i = find_obj(as_list(obj)[0], idx);
             if (i == as_list(obj)[0]->len)
