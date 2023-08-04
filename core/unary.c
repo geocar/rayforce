@@ -21,6 +21,7 @@
  *   SOFTWARE.
  */
 
+#include <errno.h>
 #include "unary.h"
 #include "runtime.h"
 #include "heap.h"
@@ -95,15 +96,37 @@ obj_t rf_call_unary(u8_t attrs, unary_f f, obj_t x)
 
 obj_t rf_get(obj_t x)
 {
-    if (!x || x->type != -TYPE_SYMBOL)
-        raise(ERR_TYPE, "get: expected symbol");
+    i32_t fd;
+    obj_t res;
+    u64_t size;
 
-    obj_t val = at_obj(runtime_get()->env.variables, x);
+    switch (x->type)
+    {
+    case -TYPE_SYMBOL:
+        res = at_obj(runtime_get()->env.variables, x);
 
-    if (is_null(val))
-        raise(ERR_NOT_EXIST, "variable '%s' does not exist", symbols_get(x->i64));
+        if (is_null(res))
+            raise(ERR_NOT_EXIST, "variable '%s' does not exist", symbols_get(x->i64));
 
-    return val;
+        return res;
+
+    case TYPE_CHAR:
+        fd = fs_fopen(as_string(x), O_RDWR);
+
+        if (fd == -1)
+            raise(ERR_IO, "get: file '%s': %s", as_string(x), strerror(errno));
+
+        size = fs_fsize(fd);
+        res = (obj_t)mmap_file(fd, size);
+
+        res->attrs |= ATTR_MMAP;
+        res->rc = 1;
+
+        return res;
+
+    default:
+        raise(ERR_TYPE, "get: unsupported type: %d", x->type);
+    }
 }
 
 obj_t rf_type(obj_t x)
@@ -147,7 +170,7 @@ obj_t rf_til(obj_t x)
     for (i = 0; i < l; i++)
         as_i64(vec)[i] = i;
 
-    vec->attrs = ATTR_ASC | ATTR_WITHOUT_NULLS | ATTR_DISTINCT;
+    vec->attrs = ATTR_ASC | ATTR_DISTINCT;
 
     return vec;
 }
@@ -259,22 +282,7 @@ obj_t rf_min(obj_t x)
 
         iv = as_i64(x);
         imin = iv[0];
-        // vectorized version when we exactly know that there are no nulls
-        if (x->attrs & ATTR_WITHOUT_NULLS)
-        {
-            if (x->attrs & ATTR_ASC)
-                return i64(iv[0]);
-            if (x->attrs & ATTR_DESC)
-                return i64(iv[l - 1]);
-            imin = iv[0];
-            for (i = 1; i < l; i++)
-                if (iv[i] < imin)
-                    imin = iv[i];
 
-            return i64(imin);
-        }
-
-        // atom version
         // find first nonnull value
         for (i = 0; i < l; i++)
             if (iv[i] ^ NULL_I64)
@@ -299,20 +307,6 @@ obj_t rf_min(obj_t x)
 
         fv = as_f64(x);
         fmin = fv[0];
-        // vectorized version when we exactly know that there are no nulls
-        if (x->attrs & ATTR_WITHOUT_NULLS)
-        {
-            if (x->attrs & ATTR_ASC)
-                return f64(fv[0]);
-            if (x->attrs & ATTR_DESC)
-                return f64(fv[l - 1]);
-            fmin = fv[0];
-            for (i = 1; i < l; i++)
-                if (fv[i] < fmin)
-                    fmin = fv[i];
-
-            return f64(fmin);
-        }
 
         for (i = 0; i < l; i++)
             fmin = fv[i] < fmin ? fv[i] : fmin;
@@ -339,22 +333,7 @@ obj_t rf_max(obj_t x)
 
         iv = as_i64(x);
         imax = iv[0];
-        // vectorized version when we exactly know that there are no nulls
-        if (x->attrs & ATTR_WITHOUT_NULLS)
-        {
-            if (x->attrs & ATTR_ASC)
-                return i64(iv[l - 1]);
-            if (x->attrs & ATTR_DESC)
-                return i64(iv[0]);
-            imax = iv[0];
-            for (i = 1; i < l; i++)
-                if (iv[i] > imax)
-                    imax = iv[i];
 
-            return i64(imax);
-        }
-
-        // atom version
         // find first nonnull value
         for (i = 0; i < l; i++)
             if (iv[i] ^ NULL_I64)
@@ -571,7 +550,7 @@ obj_t rf_value(obj_t x)
     }
 }
 
-obj_t rf_fread(obj_t x)
+obj_t rf_read(obj_t x)
 {
     i64_t fd, size, c = 0;
     str_t fmsg, buf;
@@ -585,8 +564,8 @@ obj_t rf_fread(obj_t x)
         // error handling if file does not exist
         if (fd == -1)
         {
-            fmsg = str_fmt(0, "file: '%s' does not exist", as_string(x));
-            err = error(ERR_NOT_EXIST, fmsg);
+            fmsg = str_fmt(0, "read: file '%s': %s", as_string(x), strerror(errno));
+            err = error(ERR_IO, fmsg);
             heap_free(fmsg);
             return err;
         }
@@ -595,28 +574,21 @@ obj_t rf_fread(obj_t x)
         res = string(size);
         buf = as_string(res);
 
-        while ((c = read(fd, buf, size - c)) > 0)
-        {
-            buf += c;
-        }
+        c = fs_fread(fd, buf, size);
+        fs_fclose(fd);
 
-        if (c == -1)
+        if (c != size)
         {
-            fmsg = str_fmt(0, "file: '%s' read error", as_string(x));
+            fmsg = str_fmt(0, "read: file '%s': %s", as_string(x), strerror(errno));
             err = error(ERR_IO, fmsg);
             heap_free(fmsg);
-            close(fd);
             drop(res);
             return err;
         }
 
-        fs_fclose(fd);
-
-        *buf = '\0';
-
         return res;
     default:
-        raise(ERR_TYPE, "fread: unsupported type: %d", x->type);
+        raise(ERR_TYPE, "read: unsupported type: %d", x->type);
     }
 }
 
@@ -645,7 +617,7 @@ obj_t rf_read_parse_compile(obj_t x)
     switch (x->type)
     {
     case TYPE_CHAR:
-        red = rf_fread(x);
+        red = rf_read(x);
         if (red->type == TYPE_ERROR)
             return red;
 

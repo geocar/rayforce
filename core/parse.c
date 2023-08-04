@@ -89,7 +89,7 @@ bool_t is_alphanum(char_t c)
 
 bool_t is_op(char_t c)
 {
-    return strchr("+-*/%&|^~<>!=", c) != NULL;
+    return strchr("+-*/%&|^~<>!=.", c) != NULL;
 }
 
 bool_t at_eof(char_t c)

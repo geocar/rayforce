@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdatomic.h>
 #include "rayforce.h"
+#include "mmap.h"
 #include "format.h"
 #include "heap.h"
 #include "string.h"
@@ -147,7 +148,7 @@ obj_t vector(type_t type, u64_t len)
     else
         t = TYPE_LIST;
 
-    obj_t vec = (obj_t)heap_malloc(sizeof(struct obj_t) + len * size_of(t));
+    obj_t vec = (obj_t)heap_malloc(sizeof(struct obj_t) + len * size_of_type(t));
 
     vec->type = t;
     vec->rc = 1;
@@ -221,7 +222,7 @@ obj_t resize(obj_t *obj, u64_t len)
         return *obj;
 
     // calculate size of vector with new length
-    i64_t new_size = sizeof(struct obj_t) + len * size_of((*obj)->type);
+    i64_t new_size = sizeof(struct obj_t) + len * size_of_type((*obj)->type);
 
     *obj = heap_realloc(*obj, new_size);
     (*obj)->len = len;
@@ -232,7 +233,7 @@ obj_t resize(obj_t *obj, u64_t len)
 obj_t join_raw(obj_t *obj, raw_t val)
 {
     i64_t off, occup, req;
-    i32_t size = size_of((*obj)->type);
+    i32_t size = size_of_type((*obj)->type);
 
     off = (*obj)->len * size;
     occup = sizeof(struct obj_t) + off;
@@ -303,7 +304,7 @@ obj_t join_sym(obj_t *obj, str_t str)
 
 obj_t write_raw(obj_t *obj, u64_t idx, raw_t val)
 {
-    i32_t size = size_of((*obj)->type);
+    i32_t size = size_of_type((*obj)->type);
     memcpy((*obj)->arr + idx * size, val, size);
     return *obj;
 }
@@ -805,7 +806,13 @@ nil_t __attribute__((hot)) drop(obj_t obj)
             l = obj->len;
             for (i = 0; i < l; i++)
                 drop(as_list(obj)[i]);
-            heap_free(obj);
+
+            if (obj->attrs & ATTR_MMAP)
+            {
+                mmap_free(obj, size_of(obj));
+            }
+            else
+                heap_free(obj);
         }
         return;
     case TYPE_TABLE:
@@ -838,7 +845,14 @@ nil_t __attribute__((hot)) drop(obj_t obj)
         return;
     default:
         if (rc == 0)
-            heap_free(obj);
+        {
+            if (obj->attrs & ATTR_MMAP)
+            {
+                mmap_free(obj, size_of(obj));
+            }
+            else
+                heap_free(obj);
+        }
     }
 }
 

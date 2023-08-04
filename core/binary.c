@@ -22,6 +22,7 @@
  */
 
 #include <time.h>
+#include <errno.h>
 #include "runtime.h"
 #include "unary.h"
 #include "binary.h"
@@ -29,6 +30,7 @@
 #include "util.h"
 #include "format.h"
 #include "hash.h"
+#include "fs.h"
 
 obj_t call_binary(binary_f f, obj_t x, obj_t y)
 {
@@ -297,16 +299,41 @@ obj_t rf_call_binary(u8_t attrs, binary_f f, obj_t x, obj_t y)
     }
 }
 
-obj_t rf_set(obj_t key, obj_t val)
+obj_t rf_set(obj_t x, obj_t y)
 {
     obj_t res;
+    i32_t fd;
+    i64_t size, c = 0;
 
-    res = set_obj(&runtime_get()->env.variables, key, clone(val));
+    switch (x->type)
+    {
+    case -TYPE_SYMBOL:
+        res = set_obj(&runtime_get()->env.variables, x, clone(y));
 
-    if (res->type == TYPE_ERROR)
-        return res;
+        if (res->type == TYPE_ERROR)
+            return res;
 
-    return clone(val);
+        return clone(y);
+
+    case TYPE_CHAR:
+        fd = fs_fopen(as_string(x), O_RDWR | O_CREAT | O_TRUNC);
+
+        if (fd == -1)
+            raise(ERR_IO, "set: failed to open file '%s': %s", as_string(x), strerror(errno));
+
+        size = size_of(y);
+
+        c = fs_fwrite(fd, (str_t)y, size);
+        fs_fclose(fd);
+
+        if (c == -1)
+            raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), strerror(errno));
+
+        return clone(y);
+
+    default:
+        raise(ERR_TYPE, "set: unsupported types: %d %d", x->type, y->type);
+    }
 }
 
 obj_t rf_cast(obj_t x, obj_t y)
@@ -1966,4 +1993,9 @@ obj_t rf_xdesc(obj_t x, obj_t y)
     // }
 
     return null(0);
+}
+
+obj_t rf_write(obj_t x, obj_t y)
+{
+    raise(ERR_NOT_IMPLEMENTED, "fs_write: not implemented");
 }

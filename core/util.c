@@ -27,7 +27,7 @@
 #include "heap.h"
 #include "env.h"
 
-i32_t size_of(type_t type)
+i32_t size_of_type(type_t type)
 {
     switch (type)
     {
@@ -48,6 +48,25 @@ i32_t size_of(type_t type)
     default:
         panic(str_fmt(0, "sizeof: unknown type: %d", type));
     }
+}
+
+u64_t size_of(obj_t obj)
+{
+    if (!obj)
+        return 0;
+
+    u64_t size = sizeof(struct obj_t);
+
+    if (is_atom(obj))
+        return size;
+
+    if (is_vector(obj))
+    {
+        size += obj->len * size_of_type(obj->type);
+        return size;
+    }
+
+    panic(str_fmt(0, "sizeof: unknown type: %d", obj->type));
 }
 
 u32_t next_power_of_two_u32(u32_t n)

@@ -79,16 +79,16 @@
 
 #define push_u64(c, x) push_un(c, x, u64_t)
 
-#define cerr(c, i, t, ...)                       \
-    {                                            \
-        str_t _m = str_fmt(0, __VA_ARGS__);      \
-        nfo_t *_d = (c)->nfo;                    \
-        span_t _u = nfo_get(_d, (i64_t)i);       \
-        drop((c)->lambda);                       \
-        (c)->lambda = error(t, _m);              \
-        heap_free(_m);                           \
-        *(span_t *)as_list((c)->lambda)[2] = _u; \
-        return CC_ERROR;                         \
+#define cerr(c, i, t, ...)                        \
+    {                                             \
+        str_t _m = str_fmt(0, __VA_ARGS__);       \
+        nfo_t *_d = (c)->nfo;                     \
+        span_t _u = nfo_get(_d, (i64_t)i);        \
+        drop((c)->lambda);                        \
+        (c)->lambda = error(t, _m);               \
+        heap_free(_m);                            \
+        *(span_t *)&as_list((c)->lambda)[2] = _u; \
+        return CC_ERROR;                          \
     }
 
 cc_result_t cc_compile_quote(bool_t has_consumer, cc_t *cc, obj_t obj)
@@ -136,9 +136,6 @@ cc_result_t cc_compile_set(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t arity
 
     if (arity != 2)
         cerr(cc, car, ERR_LENGTH, "'set' takes two arguments");
-
-    if (as_list(obj)[1]->type != -TYPE_SYMBOL)
-        cerr(cc, car, ERR_TYPE, "'set' first argument must be a symbol");
 
     push_opcode(cc, car, code, OP_PUSH);
     push_const(cc, clone(as_list(obj)[1]));

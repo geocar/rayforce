@@ -78,6 +78,7 @@ obj_t rf_memstat()
 nil_t init_functions(obj_t functions)
 {
     // Unary
+    regf(functions,  "get",       TYPE_UNARY,    FLAG_NONE,         rf_get);
     regf(functions,  "type",      TYPE_UNARY,    FLAG_NONE,         rf_type);
     regf(functions,  "til",       TYPE_UNARY,    FLAG_NONE,         rf_til);
     regf(functions,  "distinct",  TYPE_UNARY,    FLAG_ATOMIC,       rf_distinct);
@@ -97,7 +98,7 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "where",     TYPE_UNARY,    FLAG_ATOMIC,       rf_where);
     regf(functions,  "key",       TYPE_UNARY,    FLAG_NONE,         rf_key);
     regf(functions,  "value",     TYPE_UNARY,    FLAG_NONE,         rf_value);
-    regf(functions,  "fread",     TYPE_UNARY,    FLAG_NONE,         rf_fread);
+    regf(functions,  "read",      TYPE_UNARY,    FLAG_NONE,         rf_read);
     regf(functions,  "parse",     TYPE_UNARY,    FLAG_NONE,         rf_parse);
     
     // Binary           
@@ -119,7 +120,6 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "like",      TYPE_BINARY,   FLAG_ATOMIC,       rf_like);
     regf(functions,  "dict",      TYPE_BINARY,   FLAG_NONE,         rf_dict);
     regf(functions,  "table",     TYPE_BINARY,   FLAG_NONE,         rf_table);
-    // regf(functions,  "get",       TYPE_BINARY,   FLAG_NONE,         rf_get);
     regf(functions,  "find",      TYPE_BINARY,   FLAG_ATOMIC,       rf_find);
     regf(functions,  "concat",    TYPE_BINARY,   FLAG_NONE,         rf_concat);
     regf(functions,  "filter",    TYPE_BINARY,   FLAG_ATOMIC,       rf_filter);
@@ -131,6 +131,7 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "as",        TYPE_BINARY,   FLAG_NONE,         rf_cast);
     regf(functions,  "xasc",      TYPE_BINARY,   FLAG_NONE,         rf_xasc);
     regf(functions,  "xdesc",     TYPE_BINARY,   FLAG_NONE,         rf_xdesc);
+    regf(functions,  "write",     TYPE_BINARY,   FLAG_NONE,         rf_write);
     
     // Lambdas       
     // regf(function s, "env",        rf_env);

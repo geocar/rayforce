@@ -28,7 +28,7 @@
 #include "ops.h"
 
 obj_t rf_call_binary(u8_t attrs, binary_f f, obj_t x, obj_t y);
-obj_t rf_set(obj_t key, obj_t val);
+obj_t rf_set(obj_t x, obj_t y);
 obj_t rf_dict(obj_t x, obj_t y);
 obj_t rf_table(obj_t x, obj_t y);
 obj_t rf_rand(obj_t x, obj_t y);
@@ -60,5 +60,6 @@ obj_t rf_cast(obj_t x, obj_t y);
 obj_t rf_group_Table(obj_t x, obj_t y);
 obj_t rf_xasc(obj_t x, obj_t y);
 obj_t rf_xdesc(obj_t x, obj_t y);
+obj_t rf_write(obj_t x, obj_t y);
 
 #endif

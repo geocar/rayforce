@@ -98,7 +98,8 @@
 
 bool_t is_valid(obj_t obj);
 
-i32_t size_of(type_t type);
+i32_t size_of_type(type_t type);
+u64_t size_of(obj_t obj);
 u32_t next_power_of_two_u32(u32_t n);
 u64_t next_power_of_two_u64(u64_t n);
 

@@ -36,8 +36,8 @@
 #define ATTR_DISTINCT 1
 #define ATTR_ASC 2
 #define ATTR_DESC 4
-#define ATTR_WITHOUT_NULLS 8
-#define ATTR_QUOTED 16
+#define ATTR_QUOTED 8
+#define ATTR_MMAP 16
 
 #define align8(x) ((str_t)(((u64_t)x + 7) & ~7))
 

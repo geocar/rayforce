@@ -21,11 +21,12 @@
  *   SOFTWARE.
  */
 
+#include <unistd.h>
 #include "fs.h"
 
 i64_t fs_fopen(str_t path, i64_t attrs)
 {
-    return open(path, attrs);
+    return open(path, attrs, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 }
 
 i64_t fs_fsize(i64_t fd)
@@ -33,6 +34,34 @@ i64_t fs_fsize(i64_t fd)
     struct stat st;
     fstat(fd, &st);
     return st.st_size;
+}
+
+i64_t fs_fread(i64_t fd, str_t buf, i64_t size)
+{
+    i64_t c = 0;
+
+    while ((c = read(fd, buf, size - c)) > 0)
+        buf += c;
+
+    if (c == -1)
+        return c;
+
+    *buf = '\0';
+
+    return size;
+}
+
+i64_t fs_fwrite(i64_t fd, str_t buf, i64_t size)
+{
+    i64_t c = 0;
+
+    while ((c = write(fd, buf, size - c)) > 0)
+        buf += c;
+
+    if (c == -1)
+        return c;
+
+    return size;
 }
 
 i64_t fs_fclose(i64_t fd)
