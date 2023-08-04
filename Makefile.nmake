@@ -20,6 +20,12 @@ tests: $(TESTS_OBJECTS) $(CORE_OBJECTS)
 {}.obj: {}.c
 	$(CC) /c $** /Fo$@
 
+debug: CFLAGS = $(DEBUG_CFLAGS)
+debug: app
+
+release: CFLAGS = $(RELEASE_CFLAGS)
+release: app
+
 clean:
 	del *.obj core\*.obj app\*.obj
 	del $(TARGET)
