@@ -27,7 +27,7 @@
 
 obj_t lambda(obj_t args, obj_t code, nfo_t nfo)
 {
-    obj_t obj = heap_malloc(sizeof(struct obj_t) + sizeof(lambda_t));
+    obj_t obj = heap_alloc(sizeof(struct obj_t) + sizeof(lambda_t));
     lambda_t *f = (lambda_t *)obj->arr;
 
     f->args = args;

@@ -46,19 +46,19 @@ nil_t *mmap_malloc(u64_t size)
     return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 }
 
-nil_t *mmap_file(i32_t fd, u64_t size)
+nil_t *mmap_file(i64_t fd, u64_t size)
 {
     unused(attrs);
-    return MapViewOfFile(CreateFileMapping((HANDLE)(i64_t)fd, NULL, PAGE_READWRITE, 0, size, NULL), FILE_MAP_ALL_ACCESS, 0, 0, size);
+    return MapViewOfFile(CreateFileMapping((HANDLE)fd, NULL, PAGE_READWRITE, 0, size, NULL), FILE_MAP_ALL_ACCESS, 0, 0, size);
 }
 
-i32_t mmap_free(nil_t *addr, u64_t size)
+i64_t mmap_free(nil_t *addr, u64_t size)
 {
     unused(size);
     return VirtualFree(addr, 0, MEM_RELEASE);
 }
 
-i32_t mmap_sync(nil_t *addr, u64_t size)
+i64_t mmap_sync(nil_t *addr, u64_t size)
 {
     return FlushViewOfFile(addr, size);
 }
@@ -75,17 +75,17 @@ nil_t *mmap_malloc(u64_t size)
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 }
 
-nil_t *mmap_file(i32_t fd, u64_t size)
+nil_t *mmap_file(i64_t fd, u64_t size)
 {
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 }
 
-i32_t mmap_free(nil_t *addr, u64_t size)
+i64_t mmap_free(nil_t *addr, u64_t size)
 {
     return munmap(addr, size);
 }
 
-i32_t mmap_sync(nil_t *addr, u64_t size)
+i64_t mmap_sync(nil_t *addr, u64_t size)
 {
     return msync(addr, size, MS_SYNC);
 }
@@ -105,17 +105,17 @@ nil_t *mmap_malloc(u64_t size)
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 }
 
-nil_t *mmap_file(i32_t fd, u64_t size)
+nil_t *mmap_file(i64_t fd, u64_t size)
 {
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 }
 
-i32_t mmap_free(nil_t *addr, u64_t size)
+i64_t mmap_free(nil_t *addr, u64_t size)
 {
     return munmap(addr, size);
 }
 
-i32_t mmap_sync(nil_t *addr, u64_t size)
+i64_t mmap_sync(nil_t *addr, u64_t size)
 {
     return msync(addr, size, MS_SYNC);
 }

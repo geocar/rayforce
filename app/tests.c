@@ -185,7 +185,7 @@ nil_t test_vector()
 nil_t test_allocate_and_free()
 {
     u64_t size = 1024; // size of the memory block to allocate
-    nil_t *ptr = heap_malloc(size);
+    nil_t *ptr = heap_alloc(size);
     assert(ptr != NULL);
     heap_free(ptr);
     printf("test_allocate_and_free passed\n");
@@ -194,8 +194,8 @@ nil_t test_allocate_and_free()
 nil_t test_multiple_allocations()
 {
     u64_t size = 1024;
-    nil_t *ptr1 = heap_malloc(size);
-    nil_t *ptr2 = heap_malloc(size);
+    nil_t *ptr1 = heap_alloc(size);
+    nil_t *ptr2 = heap_alloc(size);
     assert(ptr1 != NULL);
     assert(ptr2 != NULL);
     assert(ptr1 != ptr2);
@@ -207,11 +207,11 @@ nil_t test_multiple_allocations()
 nil_t test_allocation_after_free()
 {
     u64_t size = 1024;
-    nil_t *ptr1 = heap_malloc(size);
+    nil_t *ptr1 = heap_alloc(size);
     assert(ptr1 != NULL);
     heap_free(ptr1);
 
-    nil_t *ptr2 = heap_malloc(size);
+    nil_t *ptr2 = heap_alloc(size);
     assert(ptr2 != NULL);
 
     // the second allocation should be able to use the block freed by the first allocation
@@ -224,7 +224,7 @@ nil_t test_allocation_after_free()
 nil_t test_out_of_memory()
 {
     u64_t size = 1ull << 38;
-    nil_t *ptr = heap_malloc(size);
+    nil_t *ptr = heap_alloc(size);
     assert(ptr == NULL);
     printf("test_out_of_memory passed\n");
 }
@@ -233,10 +233,10 @@ nil_t test_large_number_of_allocations()
 {
     i64_t i, num_allocs = 10000000; // Large number of allocations
     u64_t size = 1024;
-    nil_t **ptrs = heap_malloc(num_allocs * sizeof(nil_t *));
+    nil_t **ptrs = heap_alloc(num_allocs * sizeof(nil_t *));
     for (i = 0; i < num_allocs; i++)
     {
-        ptrs[i] = heap_malloc(size);
+        ptrs[i] = heap_alloc(size);
         assert(ptrs[i] != NULL);
     }
     // Free memory in reverse order
@@ -255,7 +255,7 @@ nil_t test_varying_sizes()
     nil_t *ptrs[num_allocs];
     for (u64_t i = 0; i < num_allocs; i++)
     {
-        ptrs[i] = heap_malloc(size << i); // double the size at each iteration
+        ptrs[i] = heap_alloc(size << i); // double the size at each iteration
         assert(ptrs[i] != NULL);
     }
     // Free memory in reverse order
@@ -268,9 +268,9 @@ nil_t test_varying_sizes()
 
 nil_t test_heap_free()
 {
-    nil_t *ptr1 = heap_malloc(8 * 10000000);
-    nil_t *ptr2 = heap_malloc(8 * 10000000);
-    nil_t *ptr3 = heap_malloc(8 * 100000);
+    nil_t *ptr1 = heap_alloc(8 * 10000000);
+    nil_t *ptr2 = heap_alloc(8 * 10000000);
+    nil_t *ptr3 = heap_alloc(8 * 100000);
 
     heap_free(ptr2);
     heap_free(ptr3);

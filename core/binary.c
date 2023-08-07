@@ -26,6 +26,7 @@
 #include "runtime.h"
 #include "unary.h"
 #include "binary.h"
+#include "vary.h"
 #include "util.h"
 #include "util.h"
 #include "format.h"
@@ -302,7 +303,7 @@ obj_t rf_call_binary(u8_t attrs, binary_f f, obj_t x, obj_t y)
 obj_t rf_set(obj_t x, obj_t y)
 {
     obj_t res;
-    i32_t fd;
+    i64_t fd;
     i64_t size, c = 0;
 
     switch (x->type)
@@ -316,20 +317,27 @@ obj_t rf_set(obj_t x, obj_t y)
         return clone(y);
 
     case TYPE_CHAR:
-        fd = fs_fopen(as_string(x), O_RDWR | O_CREAT | O_TRUNC);
 
-        if (fd == -1)
-            raise(ERR_IO, "set: failed to open file '%s': %s", as_string(x), strerror(errno));
+        switch (y->type)
+        {
+        case TYPE_TABLE:
 
-        size = size_of(y);
+        default:
+            fd = fs_fopen(as_string(x), O_RDWR | O_CREAT | O_TRUNC);
 
-        c = fs_fwrite(fd, (str_t)y, size);
-        fs_fclose(fd);
+            if (fd == -1)
+                raise(ERR_IO, "set: failed to open file '%s': %s", as_string(x), strerror(errno));
 
-        if (c == -1)
-            raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), strerror(errno));
+            size = size_of(y);
 
-        return clone(y);
+            c = fs_fwrite(fd, (str_t)y, size);
+            fs_fclose(fd);
+
+            if (c == -1)
+                raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), strerror(errno));
+
+            return clone(y);
+        }
 
     default:
         raise(ERR_TYPE, "set: unsupported types: %d %d", x->type, y->type);
@@ -1525,146 +1533,139 @@ obj_t rf_concat(obj_t x, obj_t y)
 
 obj_t rf_filter(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
-    // i32_t i, j = 0;
-    // i64_t l, p = NULL_I64;
-    // obj_t res, *vals, col;
+    u64_t i, j = 0, l;
+    obj_t res, vals, col;
 
-    // switch (mtype2(x->type, y->type))
-    // {
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(TYPE_BOOL, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_BOOL, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = vector_bool(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_bool(res)[j++] = as_bool(x)[i];
 
-    //     l = x->len;
-    //     res = vector_bool(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_bool(res)[j++] = as_bool(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_I64, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_I64, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = vector_i64(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_i64(res)[j++] = as_i64(x)[i];
 
-    //     l = x->len;
-    //     res = vector_i64(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_i64(res)[j++] = as_i64(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_SYMBOL, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_SYMBOL, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = vector_symbol(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_symbol(res)[j++] = as_symbol(x)[i];
 
-    //     l = x->len;
-    //     res = vector_symbol(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_symbol(res)[j++] = as_symbol(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_F64, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_F64, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = vector_f64(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_f64(res)[j++] = as_f64(x)[i];
 
-    //     l = x->len;
-    //     res = vector_f64(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_f64(res)[j++] = as_f64(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_TIMESTAMP, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_TIMESTAMP, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = vector_timestamp(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_timestamp(res)[j++] = as_timestamp(x)[i];
 
-    //     l = x->len;
-    //     res = vector_timestamp(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_timestamp(res)[j++] = as_timestamp(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_GUID, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_GUID, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = vector_guid(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_guid(res)[j++] = as_guid(x)[i];
 
-    //     l = x->len;
-    //     res = vector_guid(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_guid(res)[j++] = as_guid(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_CHAR, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_CHAR, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = string(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_string(res)[j++] = as_string(x)[i];
 
-    //     l = x->len;
-    //     res = string(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_string(res)[j++] = as_string(x)[i];
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_LIST, TYPE_BOOL):
+        if (x->len != y->len)
+            return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
 
-    // case mtype2(TYPE_LIST, TYPE_BOOL):
-    //     if (x->len != y->len)
-    //         return error(ERR_LENGTH, "filter: vector and filter vector must be of same length");
+        l = x->len;
+        res = list(l);
+        for (i = 0; i < l; i++)
+            if (as_bool(y)[i])
+                as_list(res)[j++] = clone(as_list(x)[i]);
 
-    //     l = x->len;
-    //     res = list(l);
-    //     for (i = 0; i < l; i++)
-    //         if (as_bool(y)[i])
-    //             as_list(res)[j++] = clone(as_list(x)[i]);
+        resize(&res, j);
 
-    //     resize(res, j);
+        return res;
 
-    //     return res;
+    case mtype2(TYPE_TABLE, TYPE_BOOL):
+        vals = as_list(x)[1];
+        l = vals->len;
+        res = list(l);
 
-    // case mtype2(TYPE_TABLE, TYPE_BOOL):
-    //     vals = as_list(x)[1];
-    //     l = vals->len;
-    //     res = list(l);
+        for (i = 0; i < l; i++)
+        {
+            col = rf_filter(as_list(vals)[i], y);
+            as_list(res)[i] = col;
+        }
 
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         col = vector_filter(as_list(vals)[i], as_bool(y), p);
-    //         p = col->len;
-    //         as_list(res)[i] = col;
-    //     }
+        return table(clone(as_list(x)[0]), res);
 
-    //     return table(clone(as_list(x)[0]), res);
-
-    // default:
-    //     return error_type2(x->type, y->type, "filter: unsupported types");
-    // }
-
-    return null(0);
+    default:
+        raise(ERR_TYPE, "filter: unsupported types: %d %d", x->type, y->type);
+    }
 }
 
 obj_t rf_take(obj_t x, obj_t y)
@@ -1722,7 +1723,7 @@ obj_t rf_take(obj_t x, obj_t y)
 
         return res;
 
-        // case mtype2(TYPE_TABLE, -TYPE_I64):
+    case mtype2(TYPE_TABLE, -TYPE_I64):
         // case mtype2(TYPE_TABLE, TYPE_I64):
         //     l = as_list(x)[0]->len;
         //     cols = list(l);
@@ -1733,18 +1734,17 @@ obj_t rf_take(obj_t x, obj_t y)
         //         if (is_atom(c))
         //             c = rf_enlist(c, 1);
 
-        //         if (c.type == TYPE_ERROR)
+        //         if (is_error(c))
         //         {
         //             res->len = i;
         //             drop(res);
         //             return c;
         //         }
 
-        //         vector_write(&cols, i, c);
+        //         write_obj(&cols, i, c);
         //     }
 
-        //     res = rf_table(as_list(x)[0], &cols);
-        //     drop(cols);
+        //     res = rf_table(as_list(x)[0], cols);
 
         //     return res;
 
@@ -1754,7 +1754,7 @@ obj_t rf_take(obj_t x, obj_t y)
         //     for (i = 0; i < l; i++)
         //     {
         //         sym = symboli64(as_symbol(y)[i]);
-        //         as_list(&cols)[i] = dict_get(x, &sym);
+        //         as_list(&cols)[i] = at_obj(x, sym);
         //     }
 
         //     res = rf_table(y, &cols);
@@ -1798,14 +1798,14 @@ obj_t rf_take(obj_t x, obj_t y)
 
         //     return res;
 
-        // case mtype2(TYPE_LIST, TYPE_I64):
-        //     l = y->len;
-        //     res = list(l);
+    case mtype2(TYPE_LIST, TYPE_I64):
+        l = y->len;
+        res = list(l);
 
-        //     for (i = 0; i < l; i++)
-        //         as_list(res)[i] = clone(as_list(x)[as_i64(y)[i]]);
+        for (i = 0; i < l; i++)
+            as_list(res)[i] = clone(as_list(x)[as_i64(y)[i]]);
 
-        //     return res;
+        return res;
 
     default:
         raise(ERR_TYPE, "take: unsupported types: %d %d", x->type, y->type);
@@ -1814,188 +1814,179 @@ obj_t rf_take(obj_t x, obj_t y)
 
 obj_t rf_in(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
+    i64_t i, xl, yl, p;
+    obj_t vec, set;
 
-    // i64_t i, xl, yl;
-    // obj_t vec, set;
+    switch
+        mtype2(x->type, y->type)
+        {
+        case mtype2(TYPE_I64, TYPE_I64):
+        case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
+            xl = x->len;
+            yl = y->len;
+            set = ht_tab(yl, -1);
 
-    // switch
-    //     mtype2(x->type, y->type)
-    //     {
-    //     case mtype2(TYPE_I64, TYPE_I64):
-    //     case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
-    //         xl = x->len;
-    //         yl = y->len;
-    //         set = set_new(yl, &rfi_i64_hash, &i64_cmp);
+            for (i = 0; i < yl; i++)
+            {
+                // p = ht_tab_next_with(&set, as_i64(y)[i], &rfi_i64_hash, &i64_cmp);
+                p = ht_tab_next(&set, as_i64(y)[i]);
+                if (as_i64(as_list(set)[0])[p] == NULL_I64)
+                    as_i64(as_list(set)[0])[p] = as_i64(y)[i];
+            }
 
-    //         for (i = 0; i < yl; i++)
-    //             set_insert(set, as_i64(y)[i]);
+            vec = vector_bool(xl);
 
-    //         vec = vector_bool(xl);
+            for (i = 0; i < xl; i++)
+            {
+                // p = ht_tab_next_with(&set, as_i64(x)[i], &rfi_i64_hash, &i64_cmp);
+                p = ht_tab_get(set, as_i64(x)[i]);
+                as_bool(vec)[i] = (p != NULL_I64);
+            }
 
-    //         for (i = 0; i < xl; i++)
-    //             as_bool(vec)[i] = set_contains(set, as_i64(x)[i]);
+            drop(set);
 
-    //         set_free(set);
+            return vec;
 
-    //         return vec;
-
-    //     default:
-    //         return error_type2(x->type, y->type, "in: unsupported types");
-    //     }
+        default:
+            raise(ERR_TYPE, "in: unsupported types: %d %d", x->type, y->type);
+        }
 
     return null(0);
 }
 
 obj_t rf_sect(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
+    obj_t mask, res;
 
-    // obj_t mask, res;
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(TYPE_I64, TYPE_I64):
+    case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
+        mask = rf_in(x, y);
+        res = rf_filter(x, mask);
+        drop(mask);
+        return res;
 
-    // switch (mtype2(x->type, y->type))
-    // {
-    // case mtype2(TYPE_I64, TYPE_I64):
-    // case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
-    //     mask = rf_in(x, y);
-    //     res = rf_filter(x, &mask);
-    //     drop(mask);
-    //     return res;
-    // default:
-    //     return error_type2(x->type, y->type, "sect: unsupported types");
-    // }
+    default:
+        raise(ERR_TYPE, "sect: unsupported types: %d %d", x->type, y->type);
+    }
 
     return null(0);
 }
 
 obj_t rf_except(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
-    // i64_t i, j = 0, l;
-    // obj_t mask, res;
+    i64_t i, j = 0, l;
+    obj_t mask, nmask, res;
 
-    // switch (mtype2(x->type, y->type))
-    // {
-    // case mtype2(TYPE_I64, -TYPE_I64):
-    // case mtype2(TYPE_SYMBOL, -TYPE_SYMBOL):
-    //     l = x->len;
-    //     res = vector(x->type, l);
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_SYMBOL, -TYPE_SYMBOL):
+        l = x->len;
+        res = vector(x->type, l);
 
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         if (as_i64(x)[i] != y->i64)
-    //             as_i64(res)[j++] = as_i64(x)[i];
-    //     }
+        for (i = 0; i < l; i++)
+        {
+            if (as_i64(x)[i] != y->i64)
+                as_i64(res)[j++] = as_i64(x)[i];
+        }
 
-    //     resize(res, j);
+        resize(&res, j);
 
-    //     return res;
-    // case mtype2(TYPE_I64, TYPE_I64):
-    // case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
-    //     mask = rf_in(x, y);
-    //     mask = rf_not(&mask);
-    //     res = rf_filter(x, &mask);
-    //     drop(mask);
-    //     return res;
-    // default:
-    //     return error_type2(x->type, y->type, "except: unsupported types");
-    // }
-
-    return null(0);
+        return res;
+    case mtype2(TYPE_I64, TYPE_I64):
+    case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
+        mask = rf_in(x, y);
+        nmask = rf_not(mask);
+        drop(mask);
+        res = rf_filter(x, nmask);
+        drop(nmask);
+        return res;
+    default:
+        raise(ERR_TYPE, "except: unsupported types: %d %d", x->type, y->type);
+    }
 }
 
 obj_t rf_group_Table(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
-    // i64_t i, l;
-    // obj_t res;
+    i64_t i, l;
+    obj_t res;
 
-    // switch (mtype2(x->type, y->type))
-    // {
-    // case mtype2(TYPE_TABLE, TYPE_LIST):
-    //     l = as_list(x)[1]->len;
-    //     res = list(l);
-    //     for (i = 0; i < l; i++)
-    //         as_list(res)[i] = rf_call_binary_right_atomic(rf_take, as_list(as_list(x)[1])[i], y);
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(TYPE_TABLE, TYPE_LIST):
+        l = as_list(x)[1]->len;
+        res = list(l);
+        for (i = 0; i < l; i++)
+            as_list(res)[i] = rf_call_binary_right_atomic(rf_take, as_list(as_list(x)[1])[i], y);
 
-    //     return table(clone(as_list(x)[0]), res);
+        return table(clone(as_list(x)[0]), res);
 
-    // default:
-    //     return error_type2(x->type, y->type, "group: unsupported types");
-    // }
-
-    return null(0);
+    default:
+        raise(ERR_TYPE, "group: unsupported types: %d %d", x->type, y->type);
+    }
 }
 
 obj_t rf_xasc(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
-    // obj_t idx, col, res;
+    obj_t idx, col, res;
 
-    // switch (mtype2(x->type, y->type))
-    // {
-    // case mtype2(TYPE_TABLE, -TYPE_SYMBOL):
-    //     col = dict_get(x, y);
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(TYPE_TABLE, -TYPE_SYMBOL):
+        col = at_obj(x, y);
 
-    //     if (col.type == TYPE_ERROR)
-    //         return col;
+        if (is_error(col))
+            return col;
 
-    //     idx = rf_iasc(&col);
-    //     drop(col);
+        idx = rf_iasc(col);
+        drop(col);
 
-    //     if (idx.type == TYPE_ERROR)
-    //         return idx;
+        if (is_error(idx))
+            return idx;
 
-    //     res = rf_take(x, &idx);
+        res = rf_take(x, idx);
 
-    //     drop(idx);
+        drop(idx);
 
-    //     return res;
-    // default:
-    //     return error_type2(x->type, y->type, "xasc: unsupported types");
-    // }
-
-    return null(0);
+        return res;
+    default:
+        raise(ERR_TYPE, "xasc: unsupported types: %d %d", x->type, y->type);
+    }
 }
 
 obj_t rf_xdesc(obj_t x, obj_t y)
 {
-    unused(x);
-    unused(y);
-    // obj_t idx, col, res;
+    obj_t idx, col, res;
 
-    // switch (mtype2(x->type, y->type))
-    // {
-    // case mtype2(TYPE_TABLE, -TYPE_SYMBOL):
-    //     col = dict_get(x, y);
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(TYPE_TABLE, -TYPE_SYMBOL):
+        col = at_obj(x, y);
 
-    //     if (col.type == TYPE_ERROR)
-    //         return col;
+        if (is_error(col))
+            return col;
 
-    //     idx = rf_idesc(&col);
-    //     drop(col);
+        idx = rf_idesc(col);
+        drop(col);
 
-    //     if (idx.type == TYPE_ERROR)
-    //         return idx;
+        if (is_error(idx))
+            return idx;
 
-    //     res = rf_take(x, &idx);
+        res = rf_take(x, idx);
 
-    //     drop(idx);
+        drop(idx);
 
-    //     return res;
-    // default:
-    //     return error_type2(x->type, y->type, "xdesc: unsupported types");
-    // }
-
-    return null(0);
+        return res;
+    default:
+        raise(ERR_TYPE, "xdesc: unsupported types: %d %d", x->type, y->type);
+    }
 }
 
 obj_t rf_write(obj_t x, obj_t y)
 {
+    unused(x);
+    unused(y);
     raise(ERR_NOT_IMPLEMENTED, "fs_write: not implemented");
 }

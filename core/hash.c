@@ -92,7 +92,7 @@ nil_t rehash(obj_t *obj, hash_f hash)
     *obj = new_obj;
 }
 
-i64_t ht_tab_get(obj_t *obj, i64_t key)
+i64_t ht_tab_next(obj_t *obj, i64_t key)
 {
     u64_t i, size;
 
@@ -108,7 +108,7 @@ i64_t ht_tab_get(obj_t *obj, i64_t key)
     }
 }
 
-i64_t ht_tab_get_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp)
+i64_t ht_tab_next_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp)
 {
     u64_t i, size;
 
@@ -122,4 +122,36 @@ i64_t ht_tab_get_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp)
 
         rehash(obj, hash);
     }
+}
+
+i64_t ht_tab_get(obj_t obj, i64_t key)
+{
+    u64_t i, size = as_list(obj)[0]->len;
+
+    for (i = (u64_t)key & (size - 1); i < size; i++)
+    {
+        if (as_i64(as_list(obj)[0])[i] == NULL_I64)
+            return NULL_I64;
+
+        if (as_i64(as_list(obj)[0])[i] == key)
+            return i;
+    }
+
+    return NULL_I64;
+}
+
+i64_t ht_tab_get_with(obj_t obj, i64_t key, hash_f hash, cmp_f cmp)
+{
+    u64_t i, size = as_list(obj)[0]->len;
+
+    for (i = hash(key) & (size - 1); i < size; i++)
+    {
+        if (as_i64(as_list(obj)[0])[i] == NULL_I64)
+            return NULL_I64;
+
+        if (cmp(as_i64(as_list(obj)[0])[i], key) == 0)
+            return i;
+    }
+
+    return NULL_I64;
 }

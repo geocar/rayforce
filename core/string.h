@@ -29,5 +29,6 @@
 
 bool_t string_match(str_t str, str_t pat);
 obj_t string_from_str(str_t str, i32_t len);
+str_t str_dup(str_t str);
 
 #endif

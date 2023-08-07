@@ -47,7 +47,7 @@ static heap_t _HEAP = NULL;
 
 #ifdef SYS_MALLOC
 
-nil_t  *heap_malloc(u64_t size)                  { return malloc(size);           }
+nil_t  *heap_alloc(u64_t size)                  { return malloc(size);           }
 nil_t   heap_free(nil_t *block)                  { free(block);                   }
 nil_t  *heap_realloc(nil_t *ptr, u64_t new_size) { return realloc(ptr, new_size); }
 i64_t   heap_gc()                                { return 0;                      }
@@ -177,7 +177,7 @@ memstat_t heap_memstat()
     return stat;
 }
 
-nil_t __attribute__((hot)) * heap_malloc(u64_t size)
+nil_t __attribute__((hot)) * heap_alloc(u64_t size)
 {
     u32_t i, order;
     nil_t *block, *base;
@@ -317,7 +317,7 @@ nil_t *heap_realloc(nil_t *block, u64_t new_size)
     nil_t *new_block, *base;
 
     if (block == NULL)
-        return heap_malloc(new_size);
+        return heap_alloc(new_size);
 
     if (new_size == 0)
     {
@@ -331,7 +331,7 @@ nil_t *heap_realloc(nil_t *block, u64_t new_size)
         if (new_size <= 16)
             return block;
 
-        new_block = heap_malloc(new_size);
+        new_block = heap_alloc(new_size);
         if (new_block)
             memcpy(new_block, block, 16);
 
@@ -351,7 +351,7 @@ nil_t *heap_realloc(nil_t *block, u64_t new_size)
     // grow
     if (new_size > size)
     {
-        new_block = heap_malloc(new_size);
+        new_block = heap_alloc(new_size);
 
         if (new_block)
             memcpy(new_block, block, size);

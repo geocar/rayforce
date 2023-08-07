@@ -40,14 +40,14 @@ nfo_t nfo_new(str_t filename, str_t lambda)
 
 nil_t nfo_insert(nfo_t *nfo, i64_t index, span_t span)
 {
-    i64_t i = ht_tab_get(&nfo->spans, index);
+    i64_t i = ht_tab_next(&nfo->spans, index);
     as_i64(as_list(nfo->spans)[0])[i] = index;
     memcpy(&as_i64(as_list(nfo->spans)[1])[i], &span, sizeof(span_t));
 }
 
 span_t nfo_get(nfo_t *nfo, i64_t index)
 {
-    i64_t i = ht_tab_get(&nfo->spans, index);
+    i64_t i = ht_tab_next(&nfo->spans, index);
 
     if (as_i64(as_list(nfo->spans)[0])[i] == NULL_I64)
         return (span_t){0};

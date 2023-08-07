@@ -491,7 +491,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t ar
 
     k = rf_distinct(syms);
 
-    if (k->type == TYPE_ERROR)
+    if (is_error(k))
     {
         drop(cols);
         drop(syms);

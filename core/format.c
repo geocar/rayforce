@@ -123,7 +123,7 @@ i32_t str_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, str_t fmt
 str_t str_fmt(i32_t limit, str_t fmt, ...)
 {
     i32_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
-    str_t p = heap_malloc(size), s;
+    str_t p = heap_alloc(size), s;
 
     while (1)
     {

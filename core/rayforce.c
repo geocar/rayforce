@@ -37,7 +37,7 @@ CASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
 obj_t atom(type_t type)
 {
-    obj_t a = (obj_t)heap_malloc(sizeof(struct obj_t));
+    obj_t a = (obj_t)heap_alloc(sizeof(struct obj_t));
 
     a->type = -type;
     a->rc = 1;
@@ -113,7 +113,7 @@ obj_t guid(u8_t data[])
     // if (data == NULL)
     //     return guid;
 
-    // guid_t *g = (guid_t *)heap_malloc(sizeof(struct guid_t));
+    // guid_t *g = (guid_t *)heap_alloc(sizeof(struct guid_t));
     // memcpy(g->data, data, sizeof(guid_t));
 
     // guid.guid = g;
@@ -148,7 +148,7 @@ obj_t vector(type_t type, u64_t len)
     else
         t = TYPE_LIST;
 
-    obj_t vec = (obj_t)heap_malloc(sizeof(struct obj_t) + len * size_of_type(t));
+    obj_t vec = (obj_t)heap_alloc(sizeof(struct obj_t) + len * size_of_type(t));
 
     vec->type = t;
     vec->rc = 1;
@@ -170,7 +170,7 @@ obj_t string(u64_t len)
 obj_t list(u64_t len, ...)
 {
     u64_t i;
-    obj_t l = (obj_t)heap_malloc(sizeof(struct obj_t) + sizeof(obj_t) * len);
+    obj_t l = (obj_t)heap_alloc(sizeof(struct obj_t) + sizeof(obj_t) * len);
     va_list args;
 
     l->type = TYPE_LIST;
@@ -719,7 +719,7 @@ obj_t cast(type_t type, obj_t obj)
         //     if (strlen(as_string(obj)) != 36)
         //         break;
 
-        //     res->guid = heap_malloc(sizeof(guid_t));
+        //     res->guid = heap_alloc(sizeof(guid_t));
 
         //     i = sscanf(as_string(y),
         //                "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",

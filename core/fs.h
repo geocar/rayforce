@@ -24,15 +24,17 @@
 #ifndef FS_H
 #define FS_H
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <sys/stat.h>
 #include "rayforce.h"
+#include <fcntl.h>
 
 i64_t fs_fopen(str_t path, i64_t attrs);
 i64_t fs_fsize(i64_t fd);
 i64_t fs_fread(i64_t fd, str_t buf, i64_t size);
 i64_t fs_fwrite(i64_t fd, str_t buf, i64_t size);
 i64_t fs_fclose(i64_t fd);
+i64_t fs_dcreate(str_t path);
+i64_t fs_dopen(str_t path);
+i64_t fs_dclose(i64_t fd);
+str_t fs_dname(str_t path);
 
 #endif // FS_H

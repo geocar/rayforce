@@ -263,7 +263,7 @@ obj_t distinct(obj_t x)
 
     for (i = 0, j = 0; i < l; i++)
     {
-        p = ht_tab_get(&set, as_i64(x)[i] - min);
+        p = ht_tab_next(&set, as_i64(x)[i] - min);
         if (as_i64(as_list(set)[0])[p] == NULL_I64)
         {
             as_i64(as_list(set)[0])[p] = as_i64(x)[i] - min;
@@ -304,7 +304,7 @@ obj_t group(obj_t x)
     // calculate counts for each key
     for (i = 0; i < xl; i++)
     {
-        idx = ht_tab_get(&ht, as_i64(x)[i] - min);
+        idx = ht_tab_next(&ht, as_i64(x)[i] - min);
         if (as_i64(as_list(ht)[0])[idx] == NULL_I64)
         {
             as_i64(as_list(ht)[0])[idx] = as_i64(x)[i] - min;
@@ -321,7 +321,7 @@ obj_t group(obj_t x)
     // finally, fill vectors with positions
     for (i = 0, j = 0; i < xl; i++)
     {
-        idx = ht_tab_get(&ht, as_i64(x)[i] - min);
+        idx = ht_tab_next(&ht, as_i64(x)[i] - min);
         if (as_i64(as_list(ht)[1])[idx] & (1ll << 62))
         {
             v = (obj_t)(as_i64(as_list(ht)[1])[idx] & ~(1ll << 62));

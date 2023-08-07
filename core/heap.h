@@ -61,7 +61,7 @@ typedef struct heap_t
     u64_t   avail;                        // mask of available blocks by order
 } __attribute__((aligned(PAGE_SIZE))) *heap_t;
 
-extern nil_t    *heap_malloc(u64_t size);
+extern nil_t    *heap_alloc(u64_t size);
 extern nil_t    *heap_realloc(nil_t *block, u64_t size);
 extern nil_t     heap_free(nil_t *block);
 extern heap_t    heap_init();

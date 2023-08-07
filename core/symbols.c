@@ -150,7 +150,7 @@ i64_t intern_symbol(str_t s, i64_t len)
     str_t p;
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t idx = ht_tab_get_with(&symbols->str_to_id, (i64_t)&str_slice,
+    i64_t idx = ht_tab_next_with(&symbols->str_to_id, (i64_t)&str_slice,
                                 &string_hash, &string_str_cmp);
 
     // insert new symbol
@@ -161,7 +161,7 @@ i64_t intern_symbol(str_t s, i64_t len)
         as_i64(as_list(symbols->str_to_id)[1])[idx] = symbols->next_sym_id;
 
         // insert id into id_to_str
-        idx = ht_tab_get(&symbols->id_to_str, symbols->next_sym_id);
+        idx = ht_tab_next(&symbols->id_to_str, symbols->next_sym_id);
         as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_sym_id;
         as_i64(as_list(symbols->id_to_str)[1])[idx] = (i64_t)p;
 
@@ -177,7 +177,7 @@ i64_t intern_keyword(str_t s, i64_t len)
     str_t p;
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t idx = ht_tab_get_with(&symbols->str_to_id, (i64_t)&str_slice,
+    i64_t idx = ht_tab_next_with(&symbols->str_to_id, (i64_t)&str_slice,
                                 &string_hash, &string_str_cmp);
 
     // insert new symbol
@@ -188,7 +188,7 @@ i64_t intern_keyword(str_t s, i64_t len)
         as_i64(as_list(symbols->str_to_id)[1])[idx] = symbols->next_kw_id;
 
         // insert id into id_to_str
-        idx = ht_tab_get(&symbols->id_to_str, symbols->next_kw_id);
+        idx = ht_tab_next(&symbols->id_to_str, symbols->next_kw_id);
         as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_kw_id;
         as_i64(as_list(symbols->id_to_str)[1])[idx] = (i64_t)p;
 
@@ -202,7 +202,7 @@ i64_t intern_keyword(str_t s, i64_t len)
 str_t symbols_get(i64_t key)
 {
     symbols_t *symbols = runtime_get()->symbols;
-    i64_t idx = ht_tab_get(&symbols->id_to_str, key);
+    i64_t idx = ht_tab_next(&symbols->id_to_str, key);
     if (as_i64(as_list(symbols->id_to_str)[0])[idx] == NULL_I64)
         return "";
 

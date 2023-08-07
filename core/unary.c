@@ -96,7 +96,7 @@ obj_t rf_call_unary(u8_t attrs, unary_f f, obj_t x)
 
 obj_t rf_get(obj_t x)
 {
-    i32_t fd;
+    i64_t fd;
     obj_t res;
     u64_t size;
 
