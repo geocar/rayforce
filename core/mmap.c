@@ -82,7 +82,7 @@ nil_t *mmap_malloc(u64_t size)
 nil_t *mmap_file(i64_t fd, u64_t size)
 {
     nil_t *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    madvise(ptr, size, MADV_HUGEPAGE);
+    madvise(ptr, size, MADV_HUGEPAGE | MADV_SEQUENTIAL);
 
     return ptr;
 }

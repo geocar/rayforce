@@ -353,6 +353,7 @@ obj_t group(obj_t x)
 
 str_t get_os_error()
 {
+    // TODO!!!! free lpMsgBuf
     DWORD dw = GetLastError();
     LPVOID lpMsgBuf;
     DWORD bufLen = FormatMessageA(
