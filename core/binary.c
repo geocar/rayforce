@@ -500,8 +500,15 @@ obj_t rf_table(obj_t x, obj_t y)
 
             cl = j;
             break;
+        case TYPE_ENUM:
+            j = as_list(as_list(y)[i])[1]->len;
+            if (cl != 0 && j != cl)
+                return error(ERR_LENGTH, "Values must be of the same length");
+
+            cl = j;
+            break;
         default:
-            return error(ERR_TYPE, "unsupported type in a Values list");
+            return error(ERR_TYPE, "Unsupported type in a Values list");
         }
     }
 
@@ -1445,8 +1452,8 @@ obj_t rf_concat(obj_t x, obj_t y)
 
     case mtype2(-TYPE_CHAR, -TYPE_CHAR):
         vec = string(2);
-        as_string(vec)[0] = x->schar;
-        as_string(vec)[1] = y->schar;
+        as_string(vec)[0] = x->achar;
+        as_string(vec)[1] = y->achar;
         return vec;
 
     case mtype2(TYPE_BOOL, -TYPE_BOOL):
@@ -2049,5 +2056,16 @@ obj_t rf_xdesc(obj_t x, obj_t y)
         return res;
     default:
         raise(ERR_TYPE, "xdesc: unsupported types: %d %d", x->type, y->type);
+    }
+}
+
+obj_t rf_enum(obj_t x, obj_t y)
+{
+    switch (mtype2(x->type, y->type))
+    {
+    case mtype2(-TYPE_SYMBOL, TYPE_I64):
+        return aenum(clone(x), clone(y));
+    default:
+        raise(ERR_TYPE, "enum: unsupported types: %d %d", x->type, y->type);
     }
 }

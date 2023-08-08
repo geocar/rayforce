@@ -28,12 +28,12 @@
 #include "rayforce.h"
 #include "heap.h"
 #include "util.h"
-
 #include "nfo.h"
 #include "runtime.h"
 #include "ops.h"
 #include "lambda.h"
 #include "timestamp.h"
+#include "unary.h"
 
 #define MAX_ROW_WIDTH 80
 #define FORMAT_TRAILER_SIZE 4
@@ -235,6 +235,9 @@ i32_t guid_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, guid_t *
 
 i32_t raw_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj, i32_t i)
 {
+    obj_t s;
+    i32_t n;
+
     switch (obj->type)
     {
     case TYPE_BOOL:
@@ -251,10 +254,18 @@ i32_t raw_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
         return ts_fmt_into(dst, len, offset, limit, as_timestamp(obj)[i]);
     // case TYPE_GUID:
     //     return guid_fmt_into(dst, len, offset, limit, as_guid(obj)[i]);
-    // case TYPE_CHAR:
-    //     return str_fmt_into(dst, len, offset, limit, "%c", as_string(obj)[i]);
+    case TYPE_CHAR:
+        return str_fmt_into(dst, len, offset, limit, "%c", as_string(obj)[i]);
     case TYPE_LIST:
         return obj_fmt_into(dst, len, offset, indent, limit, as_list(obj)[i]);
+    case TYPE_ENUM:
+        s = rf_get(as_list(obj)[0]);
+        if (!s || s->type != TYPE_SYMBOL || as_i64(as_list(obj)[1])[i] >= (i64_t)s->len)
+            n = i64_fmt_into(dst, len, offset, limit, as_i64(as_list(obj)[1])[i]);
+        else
+            n = symbol_fmt_into(dst, len, offset, limit, as_symbol(s)[as_i64(as_list(obj)[1])[i]]);
+        drop(s);
+        return n;
     default:
         return str_fmt_into(dst, len, offset, limit, "null");
     }
@@ -329,6 +340,14 @@ i32_t string_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t 
 
     if (n > limit)
         n += str_fmt_into(dst, len, offset, 3, "..");
+
+    return n;
+}
+
+i32_t enum_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
+{
+    i32_t n = str_fmt_into(dst, len, offset, limit, "'%s#", symtostr(as_list(obj)[0]->i64));
+    n += obj_fmt_into(dst, len, offset, indent, limit, as_list(obj)[1]);
 
     return n;
 }
@@ -503,7 +522,7 @@ i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
     // case -TYPE_GUID:
     //     return guid_fmt_into(dst, len, offset, limit, obj->guid);
     case -TYPE_CHAR:
-        return str_fmt_into(dst, len, offset, limit, "'%c'", obj->schar ? obj->schar : 1);
+        return str_fmt_into(dst, len, offset, limit, "'%c'", obj->achar ? obj->achar : 1);
     case TYPE_BOOL:
         return vector_fmt_into(dst, len, offset, limit, obj);
     case TYPE_BYTE:
@@ -522,6 +541,8 @@ i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
         return string_fmt_into(dst, len, offset, limit, obj);
     case TYPE_LIST:
         return list_fmt_into(dst, len, offset, indent, limit, obj);
+    case TYPE_ENUM:
+        return enum_fmt_into(dst, len, offset, indent, limit, obj);
     case TYPE_DICT:
         return dict_fmt_into(dst, len, offset, indent, limit, obj);
     case TYPE_TABLE:

@@ -40,6 +40,7 @@ extern "C"
 #define TYPE_TIMESTAMP 6
 #define TYPE_GUID 7
 #define TYPE_CHAR 8
+#define TYPE_ENUM 20
 #define TYPE_TABLE 98
 #define TYPE_DICT 99
 #define TYPE_LAMBDA 100
@@ -110,7 +111,7 @@ typedef struct obj_t
     {
         bool_t bool;
         byte_t byte;
-        char_t schar;
+        char_t achar;
         i64_t i64;
         f64_t f64;
         struct {
@@ -129,15 +130,16 @@ extern obj_t atom(type_t type);                             // create atom of ty
 extern obj_t list(u64_t len, ...);                          // create list
 extern obj_t vector(type_t type, u64_t len);                // create vector of type
 extern obj_t bool(bool_t val);                              // bool atom
-extern obj_t sbyte(byte_t val);                             // byte atom
+extern obj_t abyte(byte_t val);                             // byte atom
 extern obj_t i64(i64_t val);                                // i64 atom
 extern obj_t f64(f64_t val);                                // f64 atom
 extern obj_t symbol(str_t ptr);                             // symbol
 extern obj_t symboli64(i64_t id);                           // symbol from i64
 extern obj_t timestamp(i64_t val);                          // timestamp
 extern obj_t guid(u8_t data[]);                             // GUID
-extern obj_t schar(char_t c);                               // char
+extern obj_t achar(char_t c);                               // char
 extern obj_t string(u64_t len);                             // string 
+extern obj_t aenum(obj_t sym, obj_t vec);                   // enum
 
 #define vector_bool(len)      (vector(TYPE_BOOL,      len)) // bool vector
 #define vector_byte(len)      (vector(TYPE_BYTE,      len)) // byte vector
@@ -176,7 +178,7 @@ extern nil_t drop(obj_t obj);
 extern bool_t is_null(obj_t obj);
 #define is_error(obj)  (obj && (obj)->type == TYPE_ERROR)
 #define is_atom(obj)   (obj && (obj)->type < 0)
-#define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type < TYPE_TABLE)
+#define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type <= TYPE_CHAR)
 
 // Joins
 extern obj_t join_raw(obj_t *obj, raw_t val); // join raw value into a list
