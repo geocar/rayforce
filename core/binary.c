@@ -338,8 +338,8 @@ obj_t rf_call_binary(u8_t attrs, binary_f f, obj_t x, obj_t y)
 
 obj_t distinct_syms(obj_t *x, u64_t n)
 {
-    i64_t r, p, min, max, k, w, b;
-    u64_t i, j, h, l, range;
+    i64_t p;
+    u64_t i, j, h, l;
     obj_t vec, set, a;
 
     l = (*x)->len;
@@ -381,7 +381,7 @@ obj_t distinct_syms(obj_t *x, u64_t n)
 
 obj_t rf_set(obj_t x, obj_t y)
 {
-    obj_t res, v, col, s, *syms, sym, p;
+    obj_t res, v, col, s, p;
     i64_t fd, c = 0;
     u64_t i, l, size;
 
@@ -487,7 +487,7 @@ obj_t rf_set(obj_t x, obj_t y)
             p->type = TYPE_ENUM;
             p->len = as_list(y)[1]->len;
 
-            c = fs_fwrite(fd, p, sizeof(struct obj_t));
+            c = fs_fwrite(fd, (str_t)p, sizeof(struct obj_t));
             if (c == -1)
             {
                 heap_free(p);
@@ -1484,6 +1484,51 @@ obj_t rf_at(obj_t x, obj_t y)
 
         return res;
 
+    case mtype2(TYPE_ENUM, TYPE_I64):
+        k = rf_key(x);
+        s = rf_get(k);
+        drop(k);
+
+        if (is_error(s))
+            return s;
+
+        if (x->mmod & MMOD_EXTERNAL_COMPOUND)
+            v = x;
+        else
+            v = as_list(x)[1];
+
+        yl = y->len;
+
+        if (!s || s->type != TYPE_SYMBOL)
+        {
+            res = vector_i64(yl);
+
+            for (i = 0; i < yl; i++)
+                as_i64(res)[i] = as_i64(v)[y->i64];
+
+            drop(s);
+
+            return res;
+        }
+
+        res = vector_symbol(yl);
+
+        for (i = 0; i < yl; i++)
+        {
+            if (as_i64(v)[y->i64] >= (i64_t)s->len)
+            {
+                drop(s);
+                drop(res);
+                raise(ERR_INDEX, "at: index out of range");
+            }
+
+            as_symbol(res)[i] = as_i64(s)[as_i64(v)[y->i64]];
+        }
+
+        drop(s);
+
+        return res;
+
     default:
         raise(ERR_TYPE, "at: unsupported types: %d %d", x->type, y->type);
     }
@@ -2244,7 +2289,7 @@ obj_t rf_xdesc(obj_t x, obj_t y)
 
 obj_t rf_enum(obj_t x, obj_t y)
 {
-    obj_t k, s, v;
+    obj_t s, v;
 
     switch (mtype2(x->type, y->type))
     {
