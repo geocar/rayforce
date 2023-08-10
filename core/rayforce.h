@@ -102,11 +102,11 @@ typedef struct guid_t
 */ 
 typedef struct obj_t
 {
-    u8_t arch;
-    u8_t mul;
-    type_t type;
-    u8_t attrs;
-    u32_t rc;
+    u8_t mmod;       // memory model (0 - internal, 1 - memmapped)
+    u8_t refc;       // is reference counted
+    type_t type;     // type
+    u8_t attrs;      // attributes
+    u32_t rc;        // reference count
     union
     {
         bool_t bool;
@@ -139,7 +139,7 @@ extern obj_t timestamp(i64_t val);                          // timestamp
 extern obj_t guid(u8_t data[]);                             // GUID
 extern obj_t vchar(char_t c);                               // char
 extern obj_t string(u64_t len);                             // string 
-extern obj_t venum(str_t sym, obj_t vec);                   // enum
+extern obj_t venum(obj_t sym, obj_t vec);                   // enum
 
 #define vector_bool(len)      (vector(TYPE_BOOL,      len)) // bool vector
 #define vector_byte(len)      (vector(TYPE_BYTE,      len)) // byte vector

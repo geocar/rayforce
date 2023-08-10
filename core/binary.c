@@ -33,6 +33,7 @@
 #include "hash.h"
 #include "fs.h"
 #include "serde.h"
+#include "ops.h"
 
 obj_t call_binary(binary_f f, obj_t x, obj_t y)
 {
@@ -491,7 +492,64 @@ obj_t rf_set(obj_t x, obj_t y)
                 drop(res);
             }
 
-            return clone(y);
+            return clone(x);
+
+        case TYPE_ENUM:
+            fd = fs_fopen(as_string(x), ATTR_WRONLY | ATTR_CREAT | ATTR_TRUNC);
+
+            if (fd == -1)
+                raise(ERR_IO, "set: failed to open file '%s': %s", as_string(x), get_os_error());
+
+            if (y->mmod & MMOD_EXTERNAL_COMPOUND)
+            {
+                size = PAGE_SIZE + sizeof(struct obj_t) + y->len * sizeof(i64_t);
+
+                c = fs_fwrite(fd, (str_t)y - PAGE_SIZE, size);
+                fs_fclose(fd);
+
+                if (c == -1)
+                    raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), get_os_error());
+
+                return clone(x);
+            }
+
+            p = (obj_t)heap_alloc(PAGE_SIZE);
+
+            memset((str_t)p, 0, PAGE_SIZE);
+
+            strcpy(as_string(p), symtostr(as_list(y)[0]->i64));
+
+            p->mmod = MMOD_EXTERNAL_COMPOUND;
+
+            c = fs_fwrite(fd, (str_t)p, PAGE_SIZE);
+            if (c == -1)
+            {
+                fs_fclose(fd);
+                heap_free(p);
+                raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), get_os_error());
+            }
+
+            p->type = TYPE_ENUM;
+            p->len = as_list(y)[1]->len;
+
+            c = fs_fwrite(fd, (str_t)p, sizeof(struct obj_t));
+            if (c == -1)
+            {
+                fs_fclose(fd);
+                heap_free(p);
+                raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), get_os_error());
+            }
+
+            size = as_list(y)[1]->len * sizeof(i64_t);
+
+            c = fs_fwrite(fd, as_string(as_list(y)[1]), size);
+            fs_fclose(fd);
+            heap_free(p);
+
+            if (c == -1)
+                raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), get_os_error());
+
+            return clone(x);
 
         default:
             fd = fs_fopen(as_string(x), ATTR_WRONLY | ATTR_CREAT | ATTR_TRUNC);
@@ -507,7 +565,7 @@ obj_t rf_set(obj_t x, obj_t y)
             if (c == -1)
                 raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), get_os_error());
 
-            return clone(y);
+            return clone(x);
         }
 
     default:
@@ -2193,7 +2251,7 @@ obj_t rf_xdesc(obj_t x, obj_t y)
 
 obj_t rf_enum(obj_t x, obj_t y)
 {
-    obj_t k, s, v, res;
+    obj_t k, s, v;
 
     switch (mtype2(x->type, y->type))
     {
@@ -2212,10 +2270,7 @@ obj_t rf_enum(obj_t x, obj_t y)
         v = rf_find(s, y);
         drop(s);
 
-        res = venum(symtostr(x->i64), v);
-        drop(v);
-
-        return res;
+        return venum(clone(x), v);
     default:
         raise(ERR_TYPE, "enum: unsupported types: %d %d", x->type, y->type);
     }

@@ -168,10 +168,19 @@ obj_t rf_get(obj_t x)
                 raise(ERR_IO, "get: file '%s': %s", as_string(x), get_os_error());
 
             size = fs_fsize(fd);
+
+            if (size < sizeof(struct obj_t))
+            {
+                fs_fclose(fd);
+                raise(ERR_LENGTH, "get: file '%s': invalid size: %d", as_string(x), size);
+            }
+
             res = (obj_t)mmap_file(fd, size);
             fs_fclose(fd);
 
-            res->attrs |= ATTR_MMAP;
+            if (res->mmod & MMOD_EXTERNAL_COMPOUND)
+                res = (obj_t)((str_t)res + PAGE_SIZE);
+
             res->rc = 1;
 
             return res;
@@ -666,7 +675,9 @@ obj_t rf_key(obj_t x)
     case TYPE_DICT:
         return clone(as_list(x)[0]);
     case TYPE_ENUM:
-        return symbol(as_string(x));
+        if (x->mmod == MMOD_INTERNAL)
+            return clone(as_list(x)[0]);
+        return symbol(as_string((obj_t)((str_t)x - PAGE_SIZE)));
     default:
         return clone(x);
     }
@@ -674,8 +685,8 @@ obj_t rf_key(obj_t x)
 
 obj_t rf_value(obj_t x)
 {
-    obj_t sym, k, res;
-    i64_t i, sl, xl, *e;
+    obj_t sym, k, res, e;
+    i64_t i, sl, xl;
 
     switch (x->type)
     {
@@ -684,15 +695,19 @@ obj_t rf_value(obj_t x)
         sym = at_obj(runtime_get()->env.variables, k);
         drop(k);
 
-        e = (i64_t *)((str_t)x + PAGE_SIZE);
+        if (x->mmod == MMOD_INTERNAL)
+            e = as_list(x)[1];
+        else
+            e = x;
+
+        xl = e->len;
 
         if (is_null(sym) || sym->type != TYPE_SYMBOL)
         {
-            xl = x->len;
             res = vector_i64(xl);
 
             for (i = 0; i < xl; i++)
-                as_i64(res)[i] = e[i];
+                as_i64(res)[i] = as_i64(e)[i];
 
             drop(sym);
 
@@ -700,14 +715,13 @@ obj_t rf_value(obj_t x)
         }
 
         sl = sym->len;
-        xl = x->len;
 
         res = vector_symbol(xl);
 
         for (i = 0; i < xl; i++)
         {
-            if (e[i] < sl)
-                as_symbol(res)[i] = as_symbol(sym)[e[i]];
+            if (as_i64(e)[i] < sl)
+                as_symbol(res)[i] = as_symbol(sym)[as_i64(e)[i]];
             else
                 as_symbol(res)[i] = NULL_I64;
         }

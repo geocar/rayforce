@@ -37,7 +37,12 @@
 #define ATTR_ASC 2
 #define ATTR_DESC 4
 #define ATTR_QUOTED 8
-#define ATTR_MMAP 16
+
+// Memory modes
+#define MMOD_INTERNAL 0x00
+#define MMOD_EXTERNAL_SIMPLE 0xfe
+#define MMOD_EXTERNAL_COMPOUND 0xfd
+#define MMOD_EXTERNAL_SERIALIZED 0xff
 
 #define align8(x) ((str_t)(((u64_t)x + 7) & ~7))
 
