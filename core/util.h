@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "rayforce.h"
+#include "format.h"
 
 #define RAYFORCE_MAJOR_VERSION 0
 #define RAYFORCE_MINOR_VERSION 1

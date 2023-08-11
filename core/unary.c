@@ -159,6 +159,21 @@ obj_t rf_get(obj_t x)
                 as_list(vals)[i] = val;
             }
 
+            // read symbol data (if any)
+            s = string_from_str("sym", 3);
+            col = rf_concat(x, s);
+            v = rf_load(col);
+            drop(s);
+            drop(col);
+            if (!is_error(v))
+            {
+                s = symbol("sym");
+                drop(rf_set(s, v));
+                drop(s);
+            }
+
+            drop(v);
+
             return table(keys, vals);
         }
         // get other obj

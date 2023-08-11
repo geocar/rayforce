@@ -342,10 +342,10 @@ obj_t distinct_syms(obj_t *x, u64_t n)
     u64_t i, j, h, l;
     obj_t vec, set, a;
 
-    l = (*x)->len;
-
-    if (l == 0)
+    if (n == 0 || (*x)->len == 0)
         return vector_symbol(0);
+
+    l = (*x)->len;
 
     set = ht_tab(l, -1);
 
@@ -381,7 +381,7 @@ obj_t distinct_syms(obj_t *x, u64_t n)
 
 obj_t rf_set(obj_t x, obj_t y)
 {
-    obj_t res, v, col, s, p;
+    obj_t res, col, s, p, v, e, cols, sym;
     i64_t fd, c = 0;
     u64_t i, l, size;
 
@@ -420,23 +420,72 @@ obj_t rf_set(obj_t x, obj_t y)
 
             l = as_list(y)[0]->len;
 
+            cols = list(0);
+
             // find symbol columns
             for (i = 0, c = 0; i < l; i++)
             {
                 if (as_list(as_list(y)[1])[i]->type == TYPE_SYMBOL)
-                    raise(ERR_TYPE, "set: table with symbol columns must be enumerated before saving\ntry to call enum on it");
+                    join_obj(&cols, clone(as_list(as_list(y)[1])[i]));
             }
+
+            sym = distinct_syms(as_list(cols), cols->len);
+
+            if (sym->len > 0)
+            {
+                s = string_from_str("sym", 3);
+                col = rf_concat(x, s);
+                res = rf_save(col, sym);
+
+                drop(s);
+                drop(col);
+
+                if (is_error(res))
+                    return res;
+
+                drop(res);
+
+                s = symbol("sym");
+                res = rf_set(s, sym);
+
+                drop(s);
+
+                if (is_error(res))
+                    return res;
+
+                drop(res);
+            }
+
+            drop(cols);
+            drop(sym);
+            // --
 
             // save columns data
             for (i = 0; i < l; i++)
             {
-                v = at_idx(as_list(y)[0], i);
-                s = cast(TYPE_CHAR, v);
-                col = rf_concat(x, s);
-                drop(v);
                 v = at_idx(as_list(y)[1], i);
+
+                // symbol column need to be converted to enum
+                if (v->type == TYPE_SYMBOL)
+                {
+                    s = symbol("sym");
+                    e = rf_enum(s, v);
+
+                    drop(s);
+                    drop(v);
+
+                    if (is_error(e))
+                        return e;
+
+                    v = e;
+                }
+
+                p = at_idx(as_list(y)[0], i);
+                s = cast(TYPE_CHAR, p);
+                col = rf_concat(x, s);
                 res = rf_set(col, v);
 
+                drop(p);
                 drop(v);
                 drop(s);
                 drop(col);
@@ -1539,11 +1588,17 @@ obj_t rf_at(obj_t x, obj_t y)
     return null(0);
 }
 
-obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y)
+obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y, bool_t allow_null)
 {
-    u64_t i, n, range, xl = x->len, yl = y->len;
+    u64_t i, range, xl = x->len, yl = y->len;
+    i64_t n;
     i64_t max = 0, min = 0, p;
     obj_t vec, found, ht;
+
+    if (xl == 0)
+        return vector_i64(0);
+
+    max = min = as_i64(x)[0];
 
     for (i = 0; i < xl; i++)
     {
@@ -1561,7 +1616,7 @@ obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y)
     {
         found = vector_i64(range);
 
-        for (i = 0; i < xl; i++)
+        for (i = 0; i < range; i++)
             as_i64(found)[i] = NULL_I64;
 
         for (i = 0; i < xl; i++)
@@ -1575,7 +1630,12 @@ obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y)
         {
             n = as_i64(y)[i] - min;
             if (as_i64(y)[i] < min || as_i64(y)[i] > max)
-                as_i64(vec)[i] = NULL_I64;
+            {
+                if (allow_null)
+                    as_i64(vec)[i] = NULL_I64;
+                else
+                    raise(ERR_INDEX, "find: index out of range");
+            }
             else
                 as_i64(vec)[i] = as_i64(found)[n];
         }
@@ -1602,9 +1662,14 @@ obj_t rf_find_vector_i64_vector_i64(obj_t x, obj_t y)
     {
         p = ht_tab_next(&ht, as_i64(y)[i] - min);
         if (as_i64(as_list(ht)[0])[p] == NULL_I64)
-            as_i64(vec)[i] = NULL_I64;
+        {
+            if (allow_null)
+                as_i64(vec)[i] = NULL_I64;
+            else
+                raise(ERR_INDEX, "find: index out of range");
+        }
         else
-            as_i64(vec)[i] = as_i64(as_list(ht)[1])[p] + min;
+            as_i64(vec)[i] = as_i64(as_list(ht)[1])[p];
     }
 
     drop(ht);
@@ -1634,7 +1699,7 @@ obj_t rf_find(obj_t x, obj_t y)
 
     case mtype2(TYPE_I64, TYPE_I64):
     case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
-        return rf_find_vector_i64_vector_i64(x, y);
+        return rf_find_vector_i64_vector_i64(x, y, true);
 
     default:
         raise(ERR_TYPE, "find: unsupported types: %d %d", x->type, y->type);
@@ -2308,8 +2373,14 @@ obj_t rf_enum(obj_t x, obj_t y)
             raise(ERR_TYPE, "enum: expected vector symbol");
         }
 
-        v = rf_find(s, y);
+        v = rf_find_vector_i64_vector_i64(s, y, false);
         drop(s);
+
+        if (is_error(v))
+        {
+            drop(v);
+            raise(ERR_TYPE, "enum: can not be fully indexed");
+        }
 
         return venum(clone(x), v);
     default:

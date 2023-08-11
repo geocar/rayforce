@@ -282,7 +282,7 @@ obj_t join_obj(obj_t *obj, obj_t val)
     type_t t = val ? val->type : TYPE_LIST;
 
     // change vector type to a list
-    if ((*obj)->type && (*obj)->type != -val->type)
+    if ((*obj)->type != -val->type && (*obj)->type != TYPE_LIST)
     {
         l = (*obj)->len;
         lst = list(l + 1);

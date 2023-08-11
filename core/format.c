@@ -582,12 +582,14 @@ i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
  */
 str_t obj_fmt(obj_t obj)
 {
-    if (obj == NULL)
-        return str_fmt(0, "null");
-
-    i32_t len = 0, offset = 0, limit = MAX_ROW_WIDTH;
     str_t dst = NULL;
-    obj_fmt_into(&dst, &len, &offset, 0, limit, obj);
+    i32_t len = 0, offset = 0, limit = MAX_ROW_WIDTH;
+
+    if (obj == NULL)
+        str_fmt_into(&dst, &len, &offset, limit, "null");
+    else
+        obj_fmt_into(&dst, &len, &offset, 0, limit, obj);
+
     if (dst == NULL)
         panic("format: returns null");
 
