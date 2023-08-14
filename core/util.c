@@ -73,6 +73,9 @@ u64_t size_of(obj_t obj)
     case TYPE_ENUM:
         size += obj->len * sizeof(i64_t);
         return size;
+    case TYPE_ANYMAP:
+        size += obj->len * sizeof(i64_t);
+        return size;
     default:
         panic(str_fmt(0, "sizeof: unknown type: %d", obj->type));
     }
@@ -108,6 +111,7 @@ bool_t is_valid(obj_t obj)
            || obj->type == TYPE_TABLE       || obj->type == TYPE_DICT   
            || obj->type == TYPE_LAMBDA      || obj->type == TYPE_UNARY 
            || obj->type == TYPE_BINARY      || obj->type == TYPE_VARY   
-           || obj->type == TYPE_ENUM        || obj->type == TYPE_ERROR;
+           || obj->type == TYPE_ENUM        || obj->type == TYPE_ANYMAP       
+           || obj->type == TYPE_ERROR;
     // clang-format on
 }

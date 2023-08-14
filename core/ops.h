@@ -39,15 +39,15 @@
 #define ATTR_QUOTED 8
 
 // Memory modes
-#define MMOD_INTERNAL 0x00
+#define MMOD_INTERNAL 0xff
 #define MMOD_EXTERNAL_SIMPLE 0xfd
 #define MMOD_EXTERNAL_COMPOUND 0xfe
 #define MMOD_EXTERNAL_SERIALIZED 0xfa
 
-#define is_internal(x) (((x->mmod) & MMOD_INTERNAL) == MMOD_INTERNAL)
-#define is_external_simple(x) (((x->mmod) & MMOD_EXTERNAL_SIMPLE) == MMOD_EXTERNAL_SIMPLE)
-#define is_external_compound(x) (((x->mmod) & MMOD_EXTERNAL_COMPOUND) == MMOD_EXTERNAL_COMPOUND)
-#define is_external_serialized(x) (((x->mmod) & MMOD_EXTERNAL_SERIALIZED) == MMOD_EXTERNAL_SERIALIZED)
+#define is_internal(x) (((x->mmod) & MMOD_INTERNAL) == (x)->mmod)
+#define is_external_simple(x) (((x->mmod) & MMOD_EXTERNAL_SIMPLE) == (x)->mmod)
+#define is_external_compound(x) (((x->mmod) & MMOD_EXTERNAL_COMPOUND) == (x)->mmod)
+#define is_external_serialized(x) (((x->mmod) & MMOD_EXTERNAL_SERIALIZED) == (x)->mmod)
 
 #define align8(x) ((str_t)(((u64_t)x + 7) & ~7))
 

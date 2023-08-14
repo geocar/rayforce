@@ -384,6 +384,7 @@ i32_t enum_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
 
 i32_t anymap_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
 {
+    return str_fmt_into(dst, len, offset, limit, "anymap");
     i32_t n;
     obj_t s, a, idx;
 

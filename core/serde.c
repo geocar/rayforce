@@ -69,7 +69,7 @@ u64_t size_obj(obj_t obj)
         return size;
     case TYPE_LIST:
         l = obj->len;
-        size = sizeof(type_t);
+        size = sizeof(type_t) + sizeof(u64_t);
         for (i = 0; i < l; i++)
             size += size_obj(as_list(obj)[i]);
         return size;
@@ -83,7 +83,7 @@ u64_t save_obj(byte_t *buf, u64_t len, obj_t obj)
     u64_t i, l;
     str_t s;
 
-    *buf = obj->type;
+    buf[0] = obj->type;
     buf++;
 
     switch (obj->type)
@@ -276,17 +276,21 @@ obj_t load_obj(byte_t **buf, u64_t len)
     }
 }
 
-obj_t de(obj_t buf)
+obj_t de_raw(byte_t *buf, u64_t len)
 {
-    header_t *header = (header_t *)as_byte(buf);
-    byte_t *b;
+    header_t *header = (header_t *)buf;
 
     if (header->version > RAYFORCE_VERSION)
         return error(ERR_NOT_SUPPORTED, "de: version is higher than supported");
 
-    if (header->size != buf->len - sizeof(struct header_t))
+    if (header->size != len - sizeof(struct header_t))
         return error(ERR_IO, "de: corrupted data in a buffer");
 
-    b = as_byte(buf) + sizeof(struct header_t);
-    return load_obj(&b, header->size);
+    buf += sizeof(struct header_t);
+    return load_obj(&buf, header->size);
+}
+
+obj_t de(obj_t buf)
+{
+    return de_raw(as_byte(buf), buf->len);
 }

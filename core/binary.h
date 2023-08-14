@@ -29,7 +29,6 @@
 
 obj_t rf_call_binary(u8_t attrs, binary_f f, obj_t x, obj_t y);
 obj_t rf_set(obj_t x, obj_t y);
-obj_t rf_save(obj_t x, obj_t y);
 obj_t rf_write(obj_t x, obj_t y);
 obj_t rf_dict(obj_t x, obj_t y);
 obj_t rf_table(obj_t x, obj_t y);

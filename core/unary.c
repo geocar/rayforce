@@ -122,7 +122,7 @@ obj_t rf_get(obj_t x)
             // first try to read columns schema
             s = string_from_str(".d", 2);
             col = rf_concat(x, s);
-            keys = rf_load(col);
+            keys = rf_get(col);
             drop(s);
             drop(col);
 
@@ -162,7 +162,7 @@ obj_t rf_get(obj_t x)
             // read symbol data (if any)
             s = string_from_str("sym", 3);
             col = rf_concat(x, s);
-            v = rf_load(col);
+            v = rf_get(col);
             drop(s);
             drop(col);
             if (!is_error(v))
@@ -195,6 +195,13 @@ obj_t rf_get(obj_t x)
             res = (obj_t)mmap_file(fd, size);
             fs_fclose(fd);
 
+            if (is_external_serialized(res))
+            {
+                v = de_raw((str_t)res, size);
+                mmap_free(res, size);
+                return v;
+            }
+
             if (is_external_compound(res))
                 res = (obj_t)((str_t)res + PAGE_SIZE);
 
@@ -205,43 +212,6 @@ obj_t rf_get(obj_t x)
 
     default:
         raise(ERR_TYPE, "get: unsupported type: %d", x->type);
-    }
-}
-
-obj_t rf_load(obj_t x)
-{
-    i64_t fd;
-    obj_t res;
-    u64_t size;
-    header_t *header;
-    byte_t *buf;
-
-    switch (x->type)
-    {
-    case TYPE_CHAR:
-        fd = fs_fopen(as_string(x), ATTR_RDWR);
-
-        if (fd == -1)
-            raise(ERR_IO, "load: file '%s': %s", as_string(x), get_os_error());
-
-        size = fs_fsize(fd);
-
-        if (size < sizeof(struct header_t))
-        {
-            fs_fclose(fd);
-            raise(ERR_IO, "load: file '%s': corrupted data", as_string(x));
-        }
-
-        header = (header_t *)mmap_file(fd, size);
-        buf = (byte_t *)(header + 1);
-        res = load_obj(&buf, header->size);
-        fs_fclose(fd);
-        mmap_free(header, size);
-
-        return res;
-
-    default:
-        raise(ERR_TYPE, "load: unsupported type: %d", x->type);
     }
 }
 

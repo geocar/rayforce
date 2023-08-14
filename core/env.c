@@ -80,7 +80,6 @@ nil_t init_functions(obj_t functions)
 {
     // Unary
     regf(functions,  "get",       TYPE_UNARY,    FLAG_NONE,         rf_get);
-    regf(functions,  "load",      TYPE_UNARY,    FLAG_NONE,         rf_load);
     regf(functions,  "read",      TYPE_UNARY,    FLAG_NONE,         rf_read);
     regf(functions,  "type",      TYPE_UNARY,    FLAG_NONE,         rf_type);
     regf(functions,  "til",       TYPE_UNARY,    FLAG_NONE,         rf_til);
@@ -107,7 +106,6 @@ nil_t init_functions(obj_t functions)
     
     // Binary           
     regf(functions,  "set",       TYPE_BINARY,   FLAG_NONE,         rf_set);
-    regf(functions,  "save",      TYPE_BINARY,   FLAG_NONE,         rf_save);
     regf(functions,  "write",     TYPE_BINARY,   FLAG_NONE,         rf_write);
     regf(functions,  "at",        TYPE_BINARY,   FLAG_NONE,         rf_at);
     regf(functions,  "==",        TYPE_BINARY,   FLAG_ATOMIC,       rf_eq);

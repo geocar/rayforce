@@ -32,6 +32,7 @@
 #include "string.h"
 #include "runtime.h"
 #include "ops.h"
+#include "fs.h"
 
 CASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
@@ -861,6 +862,19 @@ nil_t __attribute__((hot)) drop(obj_t obj)
             {
                 drop(as_list(obj)[0]);
                 drop(as_list(obj)[1]);
+                heap_free(obj);
+            }
+        }
+        return;
+    case TYPE_ANYMAP:
+        if (rc == 0)
+        {
+            if (is_external_compound(obj))
+                mmap_free((str_t)obj - PAGE_SIZE, size_of(obj) + PAGE_SIZE);
+            else
+            {
+                // drop(as_list(obj)[0]);
+                // drop(as_list(obj)[1]);
                 heap_free(obj);
             }
         }

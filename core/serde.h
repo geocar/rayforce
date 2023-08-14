@@ -40,6 +40,7 @@ typedef struct header_t
 
 CASSERT(sizeof(header_t) == 16, header_t);
 
+obj_t de_raw(byte_t *buf, u64_t len);
 u64_t size_obj(obj_t obj);
 u64_t save_obj(byte_t *buf, u64_t len, obj_t obj);
 obj_t load_obj(byte_t **buf, u64_t len);
