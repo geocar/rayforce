@@ -144,6 +144,7 @@ obj_t rf_get(obj_t x)
                 s = cast(TYPE_CHAR, v);
                 col = rf_concat(x, s);
                 val = rf_get(col);
+
                 drop(v);
                 drop(s);
                 drop(col);
@@ -153,6 +154,7 @@ obj_t rf_get(obj_t x)
                     vals->len = i;
                     drop(vals);
                     drop(keys);
+
                     return val;
                 }
 
@@ -163,8 +165,10 @@ obj_t rf_get(obj_t x)
             s = string_from_str("sym", 3);
             col = rf_concat(x, s);
             v = rf_get(col);
+
             drop(s);
             drop(col);
+
             if (!is_error(v))
             {
                 s = symbol("sym");
@@ -204,6 +208,25 @@ obj_t rf_get(obj_t x)
 
             if (is_external_compound(res))
                 res = (obj_t)((str_t)res + PAGE_SIZE);
+
+            // anymap needs additional nested mapping of dependencies
+            if (res->type == TYPE_ANYMAP)
+            {
+                s = string_from_str("#", 1);
+                col = rf_concat(x, s);
+                keys = rf_get(col);
+                drop(s);
+                drop(col);
+
+                if (keys->type != TYPE_BYTE)
+                {
+                    drop(keys);
+                    mmap_free(res, size);
+                    raise(ERR_TYPE, "get: expected anymap schema as a byte vector, got: %d", keys->type);
+                }
+
+                memcpy((str_t)res - PAGE_SIZE, &keys, sizeof(obj_t));
+            }
 
             res->rc = 1;
 
@@ -662,8 +685,9 @@ obj_t rf_key(obj_t x)
     case TYPE_DICT:
         return clone(as_list(x)[0]);
     case TYPE_ENUM:
+        return symbol(enum_key(x));
     case TYPE_ANYMAP:
-        return symbol(compound_key(x));
+        return clone(anymap_key(x));
     default:
         return clone(x);
     }
@@ -671,7 +695,7 @@ obj_t rf_key(obj_t x)
 
 obj_t rf_value(obj_t x)
 {
-    obj_t sym, k, res, e;
+    obj_t sym, k, v, res, e;
     i64_t i, sl, xl;
     byte_t *buf;
 
@@ -682,7 +706,7 @@ obj_t rf_value(obj_t x)
         sym = at_obj(runtime_get()->env.variables, k);
         drop(k);
 
-        e = compound_val(x);
+        e = enum_val(x);
         xl = e->len;
 
         if (is_null(sym) || sym->type != TYPE_SYMBOL)
@@ -714,26 +738,11 @@ obj_t rf_value(obj_t x)
         return res;
 
     case TYPE_ANYMAP:
-        k = rf_key(x);
-        sym = at_obj(runtime_get()->env.variables, k);
-        drop(k);
+        k = anymap_key(x);
+        e = anymap_val(x);
 
-        e = compound_val(x);
         xl = e->len;
-
-        if (is_null(sym) || sym->type != TYPE_BYTE)
-        {
-            res = vector_i64(xl);
-
-            for (i = 0; i < xl; i++)
-                as_i64(res)[i] = as_i64(e)[i];
-
-            drop(sym);
-
-            return res;
-        }
-
-        sl = sym->len;
+        sl = k->len;
 
         res = vector(TYPE_LIST, xl);
 
@@ -741,24 +750,25 @@ obj_t rf_value(obj_t x)
         {
             if (as_i64(e)[i] < sl)
             {
-                buf = as_byte(sym) + as_i64(e)[i];
-                k = load_obj(&buf, sl);
+                buf = as_byte(k) + as_i64(e)[i];
+                v = load_obj(&buf, sl);
 
-                if (is_error(k))
+                if (is_error(v))
                 {
                     res->len = i;
                     drop(res);
-                    drop(sym);
-                    return k;
+                    return v;
                 }
 
-                as_list(res)[i] = k;
+                as_list(res)[i] = v;
             }
             else
-                as_list(res)[i] = null(0);
+            {
+                res->len = i;
+                drop(res);
+                raise(ERR_INDEX, "anymap value: index out of range: %d", as_i64(e)[i]);
+            }
         }
-
-        drop(sym);
 
         return res;
 

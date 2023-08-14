@@ -17,4 +17,4 @@
 
 ;; (set t (table [a b] (list (take 10000000 (til 63)) (as `vector_f64 (take 10000000 (til 1000000))))))
 
-(set t (table [a b c] (list [1 2 3] [AAPL MSFT IBM] [GOOG MSFT AAPL])))
+(set t (table [a b c] (list [1 2 3] [AAPL MSFT IBM] (list "aa" "bb" "cc"))))

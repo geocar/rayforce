@@ -381,11 +381,9 @@ obj_t distinct_syms(obj_t *x, u64_t n)
 
 obj_t rf_set(obj_t x, obj_t y)
 {
-    obj_t res, col, s, p, v, e, cols, sym, buf;
+    obj_t res, col, s, p, k, v, e, cols, sym, buf;
     i64_t fd, c = 0;
     u64_t i, l, sz, size;
-    str_t name;
-    header_t *header;
     byte_t *b;
 
     switch (x->type)
@@ -586,11 +584,10 @@ obj_t rf_set(obj_t x, obj_t y)
             size = size_obj(y) - sizeof(type_t) - sizeof(u64_t);
             buf = vector_byte(size);
             b = as_byte(buf);
-            p = vector_i64(l);
+            k = vector_i64(l);
 
             for (i = 0, size = 0; i < l; i++)
             {
-                as_i64(p)[i] = size;
                 v = as_list(y)[i];
                 sz = save_obj(b, l, v);
 
@@ -598,13 +595,15 @@ obj_t rf_set(obj_t x, obj_t y)
                 {
                     drop(col);
                     drop(buf);
-                    drop(p);
+                    drop(k);
+
                     raise(ERR_NOT_SUPPORTED, "set: unsupported type: %d", y->type);
                 }
 
-                size += sz;
+                as_i64(k)[i] = size;
 
-                b += size;
+                size += sz;
+                b += sz;
             }
 
             res = rf_set(col, buf);
@@ -638,7 +637,7 @@ obj_t rf_set(obj_t x, obj_t y)
             }
 
             p->type = TYPE_ANYMAP;
-            p->len = as_list(y)[1]->len;
+            p->len = y->len;
 
             c = fs_fwrite(fd, (str_t)p, sizeof(struct obj_t));
             if (c == -1)
@@ -648,10 +647,11 @@ obj_t rf_set(obj_t x, obj_t y)
                 raise(ERR_IO, "set: failed to write to file '%s': %s", as_string(x), get_os_error());
             }
 
-            size = v->len * sizeof(i64_t);
+            size = k->len * sizeof(i64_t);
 
-            c = fs_fwrite(fd, as_string(v), size);
+            c = fs_fwrite(fd, as_string(k), size);
             heap_free(p);
+            heap_free(k);
             fs_fclose(fd);
 
             if (c == -1)
@@ -1478,6 +1478,7 @@ obj_t rf_at(obj_t x, obj_t y)
     i32_t i;
     i64_t yl, xl;
     obj_t res, k, s, v;
+    byte_t *buf;
 
     switch (mtype2(x->type, y->type))
     {
@@ -1596,7 +1597,13 @@ obj_t rf_at(obj_t x, obj_t y)
         s = rf_get(k);
         drop(k);
 
-        v = compound_val(x);
+        v = enum_val(x);
+
+        if (y->i64 >= (i64_t)v->len)
+        {
+            drop(s);
+            raise(ERR_INDEX, "at: enum can not be resolved: index out of range");
+        }
 
         if (!s || is_error(s) || s->type != TYPE_SYMBOL)
         {
@@ -1624,7 +1631,7 @@ obj_t rf_at(obj_t x, obj_t y)
         if (is_error(s))
             return s;
 
-        v = compound_val(x);
+        v = enum_val(x);
 
         yl = y->len;
 
@@ -1657,6 +1664,20 @@ obj_t rf_at(obj_t x, obj_t y)
         drop(s);
 
         return res;
+
+    case mtype2(TYPE_ANYMAP, -TYPE_I64):
+        k = anymap_key(x);
+        v = anymap_val(x);
+
+        xl = k->len;
+        yl = v->len;
+
+        if (y->i64 >= (i64_t)v->len)
+            raise(ERR_INDEX, "at: anymap can not be resolved: index out of range");
+
+        buf = as_byte(k) + as_i64(v)[y->i64];
+
+        return load_obj(&buf, xl);
 
     default:
         raise(ERR_TYPE, "at: unsupported types: %d %d", x->type, y->type);
@@ -2118,8 +2139,9 @@ obj_t rf_filter(obj_t x, obj_t y)
 
 obj_t rf_take(obj_t x, obj_t y)
 {
-    u64_t i, l, m;
+    u64_t i, l, m, n;
     obj_t k, s, v, res;
+    byte_t *buf;
 
     switch (mtype2(x->type, y->type))
     {
@@ -2263,9 +2285,10 @@ obj_t rf_take(obj_t x, obj_t y)
         if (is_error(s))
             return s;
 
-        v = compound_val(x);
+        v = enum_val(x);
 
         l = y->i64;
+        m = v->len;
 
         if (!s || s->type != TYPE_SYMBOL)
         {
@@ -2284,17 +2307,55 @@ obj_t rf_take(obj_t x, obj_t y)
         for (i = 0; i < l; i++)
         {
 
-            if (as_i64(v)[i] >= (i64_t)s->len)
+            if (as_i64(v)[i % m] >= (i64_t)s->len)
             {
                 drop(s);
                 drop(res);
                 raise(ERR_INDEX, "take: enum can not be resolved: index out of range");
             }
 
-            as_symbol(res)[i] = as_i64(s)[as_i64(v)[i]];
+            as_symbol(res)[i] = as_i64(s)[as_i64(v)[i % m]];
         }
 
         drop(s);
+
+        return res;
+
+    case mtype2(TYPE_ANYMAP, -TYPE_I64):
+        l = y->i64;
+        res = list(l);
+
+        k = anymap_key(x);
+        s = anymap_val(x);
+
+        m = k->len;
+        n = s->len;
+
+        res = vector(TYPE_LIST, l);
+
+        for (i = 0; i < l; i++)
+        {
+            if (as_i64(s)[i % n] < (i64_t)m)
+            {
+                buf = as_byte(k) + as_i64(s)[i % n];
+                v = load_obj(&buf, l);
+
+                if (is_error(v))
+                {
+                    res->len = i;
+                    drop(res);
+                    return v;
+                }
+
+                as_list(res)[i] = v;
+            }
+            else
+            {
+                res->len = i;
+                drop(res);
+                raise(ERR_INDEX, "anymap value: index out of range: %d", as_i64(s)[i % n]);
+            }
+        }
 
         return res;
 

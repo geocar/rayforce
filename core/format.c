@@ -266,6 +266,7 @@ i32_t raw_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
     case TYPE_LIST:
         return obj_fmt_into(dst, len, offset, indent, limit, as_list(obj)[i]);
     case TYPE_ENUM:
+    case TYPE_ANYMAP:
         idx = i64(i);
         res = rf_at(obj, idx);
         drop(idx);
@@ -361,7 +362,7 @@ i32_t enum_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
     obj_t s, e, idx;
 
     s = rf_key(obj);
-    if (compound_val(obj)->len >= TABLE_MAX_HEIGHT)
+    if (enum_val(obj)->len >= TABLE_MAX_HEIGHT)
     {
         limit = TABLE_MAX_HEIGHT;
         idx = i64(TABLE_MAX_HEIGHT);
@@ -384,12 +385,10 @@ i32_t enum_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
 
 i32_t anymap_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
 {
-    return str_fmt_into(dst, len, offset, limit, "anymap");
     i32_t n;
-    obj_t s, a, idx;
+    obj_t a, idx;
 
-    s = rf_key(obj);
-    if (compound_val(obj)->len >= TABLE_MAX_HEIGHT)
+    if (anymap_val(obj)->len >= TABLE_MAX_HEIGHT)
     {
         limit = TABLE_MAX_HEIGHT;
         idx = i64(TABLE_MAX_HEIGHT);
@@ -399,12 +398,8 @@ i32_t anymap_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t
     else
         a = rf_value(obj);
 
-    n = str_fmt_into(dst, len, offset, limit, "'");
-    n += obj_fmt_into(dst, len, offset, indent, limit, s);
-    n += str_fmt_into(dst, len, offset, limit, "#");
-    n += obj_fmt_into(dst, len, offset, indent, limit, a);
+    n = obj_fmt_into(dst, len, offset, indent, limit, a);
 
-    drop(s);
     drop(a);
 
     return n;

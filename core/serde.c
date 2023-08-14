@@ -61,6 +61,8 @@ u64_t size_obj(obj_t obj)
         return sizeof(type_t) + sizeof(u64_t) + obj->len * sizeof(i64_t);
     case TYPE_F64:
         return sizeof(type_t) + sizeof(u64_t) + obj->len * sizeof(f64_t);
+    case TYPE_CHAR:
+        return sizeof(type_t) + sizeof(u64_t) + obj->len * sizeof(char_t);
     case TYPE_SYMBOL:
         l = obj->len;
         size = sizeof(type_t) + sizeof(u64_t);
@@ -122,6 +124,12 @@ u64_t save_obj(byte_t *buf, u64_t len, obj_t obj)
         for (i = 0; i < l; i++)
             buf[i] = as_byte(obj)[i];
         return sizeof(type_t) + sizeof(u64_t) + l * sizeof(byte_t);
+    case TYPE_CHAR:
+        l = obj->len;
+        memcpy(buf, &l, sizeof(u64_t));
+        buf += sizeof(u64_t);
+        memcpy(buf, as_string(obj), l);
+        return sizeof(type_t) + sizeof(u64_t) + l * sizeof(char_t);
     case TYPE_I64:
     case TYPE_TIMESTAMP:
         l = obj->len;
@@ -237,6 +245,12 @@ obj_t load_obj(byte_t **buf, u64_t len)
         obj = vector_byte(l);
         memcpy(as_byte(obj), *buf, l * sizeof(byte_t));
         (*buf) += l * sizeof(byte_t);
+        return obj;
+    case TYPE_CHAR:
+        memcpy(&l, *buf, sizeof(u64_t));
+        (*buf) += sizeof(u64_t);
+        obj = string_from_str(*buf, l);
+        (*buf) += l * sizeof(char_t);
         return obj;
     case TYPE_I64:
     case TYPE_TIMESTAMP:

@@ -166,6 +166,8 @@ nil_t init_typenames(obj_t typenames)
     regt(typenames,    TYPE_I64,        "I64");
     regt(typenames,    TYPE_F64,        "F64");
     regt(typenames,    TYPE_CHAR,       "string");
+    regt(typenames,    TYPE_ENUM,       "Enum");
+    regt(typenames,    TYPE_ANYMAP,     "Anymap");
     regt(typenames,    TYPE_SYMBOL,     "Symbol");
     regt(typenames,    TYPE_TIMESTAMP,  "Timestamp");
     regt(typenames,    TYPE_GUID,       "Guid");
