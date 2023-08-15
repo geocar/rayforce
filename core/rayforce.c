@@ -894,6 +894,7 @@ nil_t __attribute__((hot)) drop(obj_t obj)
             drop(as_lambda(obj)->constants);
             drop(as_lambda(obj)->args);
             drop(as_lambda(obj)->locals);
+            drop(as_lambda(obj)->body);
             drop(as_lambda(obj)->code);
             nfo_free(&as_lambda(obj)->nfo);
             heap_free(obj);

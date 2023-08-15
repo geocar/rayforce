@@ -804,27 +804,27 @@ obj_t rf_read_parse_compile(obj_t x)
 
     switch (x->type)
     {
-    case TYPE_CHAR:
-        red = rf_read(x);
-        if (red->type == TYPE_ERROR)
-            return red;
+    // case TYPE_CHAR:
+    //     red = rf_read(x);
+    //     if (red->type == TYPE_ERROR)
+    //         return red;
 
-        parser = parser_new();
-        par = parse(&parser, as_string(x), as_string(red));
-        drop(red);
+    //     parser = parser_new();
+    //     par = parse(&parser, as_string(x), as_string(red));
+    //     drop(red);
 
-        if (par->type == TYPE_ERROR)
-        {
-            print_error(par, as_string(x), as_string(red), red->len);
-            parser_free(&parser);
-            return par;
-        }
+    //     if (par->type == TYPE_ERROR)
+    //     {
+    //         print_error(par, as_string(x), as_string(red), red->len);
+    //         parser_free(&parser);
+    //         return par;
+    //     }
 
-        com = cc_compile_lambda(as_string(x), vector_symbol(0), &par, 1, &parser.nfo);
-        drop(par);
-        parser_free(&parser);
+    //     com = cc_compile_lambda(as_string(x), vector_symbol(0), &par, 1, &parser.nfo);
+    //     drop(par);
+    //     parser_free(&parser);
 
-        return com;
+    //     return com;
     default:
         raise(ERR_TYPE, "read_parse_compile: unsupported type: %d", x->type);
     }

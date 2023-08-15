@@ -539,12 +539,19 @@ i32_t internal_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_
     return symbol_fmt_into(dst, len, offset, limit, sym);
 }
 
-i32_t lambda_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t obj)
+i32_t lambda_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
 {
-    unused(limit);
-    unused(obj);
+    i32_t n;
 
-    return str_fmt_into(dst, len, offset, 0, "<lambda>");
+    n = str_fmt_into(dst, len, offset, indent, "(fn ");
+    n += obj_fmt_into(dst, len, offset, indent, limit, as_lambda(obj)->args);
+    n += str_fmt_into(dst, len, offset, indent, "\n");
+    indent += 2;
+    n += obj_fmt_into(dst, len, offset, indent, limit, as_lambda(obj)->body);
+    indent -= 2;
+    n += str_fmt_into(dst, len, offset, indent, ")");
+
+    return n;
 }
 
 i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
@@ -601,7 +608,7 @@ i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
     case TYPE_VARY:
         return internal_fmt_into(dst, len, offset, limit, obj);
     case TYPE_LAMBDA:
-        return lambda_fmt_into(dst, len, offset, limit, obj);
+        return lambda_fmt_into(dst, len, offset, indent, limit, obj);
     case TYPE_ERROR:
         return error_fmt_into(dst, len, offset, limit, obj);
     default:

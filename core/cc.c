@@ -193,7 +193,7 @@ cc_result_t cc_compile_fn(cc_t *cc, obj_t obj, u32_t arity)
         cerr(cc, obj, ERR_LENGTH, "'fn' expects vector of symbols with lambda arguments and a list body");
 
     arity -= 1;
-    fun = cc_compile_lambda("anonymous", clone(*(as_list(obj) + 1)), as_list(obj) + 2, arity, cc->nfo);
+    fun = cc_compile_lambda("anonymous", clone(*(as_list(obj) + 1)), rf_list(as_list(obj) + 2, arity), cc->nfo);
     if (fun->type == TYPE_ERROR)
     {
         drop(cc->lambda);
@@ -854,13 +854,28 @@ cc_result_t cc_compile_expr(bool_t has_consumer, cc_t *cc, obj_t obj)
     return CC_OK;
 }
 
-obj_t cc_compile_lambda(str_t name, obj_t args, obj_t *body, u64_t len, nfo_t *nfo)
+obj_t cc_compile_lambda(str_t name, obj_t args, obj_t body, nfo_t *nfo)
 {
+    span_t span;
+    str_t msg;
+    obj_t err, *code;
     nfo_t *pi, di;
     cc_result_t res;
-    u64_t i = 0;
+    u64_t i = 0, len;
     lambda_t *func;
-    obj_t *code;
+
+    if (body->type != TYPE_LIST)
+    {
+        span = nfo_get(nfo, (i64_t)body);
+        msg = str_fmt(0, "compile '%s': expected list", "top-level");
+        err = error(ERR_TYPE, msg);
+        heap_free(msg);
+        *(span_t *)as_list(err)[2] = span;
+
+        return err;
+    }
+
+    len = body->len;
 
     if (nfo == NULL)
     {
@@ -875,7 +890,7 @@ obj_t cc_compile_lambda(str_t name, obj_t args, obj_t *body, u64_t len, nfo_t *n
 
     cc_t cc = {
         .nfo = pi,
-        .lambda = lambda(args, string(0), di),
+        .lambda = lambda(args, clone(body), string(0), di),
     };
 
     func = as_lambda(cc.lambda);
@@ -883,26 +898,26 @@ obj_t cc_compile_lambda(str_t name, obj_t args, obj_t *body, u64_t len, nfo_t *n
 
     if (len == 0)
     {
-        push_opcode(&cc, *body, code, OP_PUSH);
+        push_opcode(&cc, body, code, OP_PUSH);
         push_const(&cc, null(0));
         goto epilogue;
     }
 
     // Compile all arguments but the last one
-    for (i = 0; i < len - 1; i++, body++)
+    for (i = 0; i < len - 1; i++)
     {
         // skip const expressions
-        if ((*body)->type != TYPE_LIST)
+        if (as_list(body)[i]->type != TYPE_LIST)
             continue;
 
-        res = cc_compile_expr(false, &cc, *body);
+        res = cc_compile_expr(false, &cc, as_list(body)[i]);
 
         if (res == CC_ERROR)
             return cc.lambda;
     }
 
     // Compile last argument
-    res = cc_compile_expr(true, &cc, *body);
+    res = cc_compile_expr(true, &cc, as_list(body)[i]);
 
     if (res == CC_ERROR)
         return cc.lambda;
@@ -919,20 +934,6 @@ epilogue:
  */
 obj_t cc_compile(obj_t body, nfo_t *nfo)
 {
-    span_t span;
-    str_t msg;
-    obj_t err;
 
-    if (body->type != TYPE_LIST)
-    {
-        span = nfo_get(nfo, (i64_t)body);
-        msg = str_fmt(0, "compile '%s': expected list", "top-level");
-        err = error(ERR_TYPE, msg);
-        heap_free(msg);
-        *(span_t *)as_list(err)[2] = span;
-
-        return err;
-    }
-
-    return cc_compile_lambda("top-level", vector_symbol(0), as_list(body), body->len, nfo);
+    return cc_compile_lambda("top-level", vector_symbol(0), body, nfo);
 }

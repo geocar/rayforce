@@ -25,13 +25,14 @@
 #include "string.h"
 #include "heap.h"
 
-obj_t lambda(obj_t args, obj_t code, nfo_t nfo)
+obj_t lambda(obj_t args, obj_t body, obj_t code, nfo_t nfo)
 {
     obj_t obj = heap_alloc(sizeof(struct obj_t) + sizeof(lambda_t));
     lambda_t *f = (lambda_t *)obj->arr;
 
     f->args = args;
     f->locals = list(0);
+    f->body = body;
     f->code = code;
     f->constants = list(0);
     f->nfo = nfo;
