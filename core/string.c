@@ -133,10 +133,9 @@ bool_t str_match(str_t str, str_t pat)
 
 str_t str_dup(str_t str)
 {
-    u64_t len = strlen(str);
-    str_t dup = heap_alloc(len + 1);
+    u64_t len = strlen(str) + 1;
+    str_t dup = heap_alloc(len);
     strncpy(dup, str, len);
-    dup[len] = '\0';
     return dup;
 }
 

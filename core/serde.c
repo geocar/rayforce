@@ -389,7 +389,7 @@ obj_t de_raw(byte_t *buf, u64_t len)
     header_t *header = (header_t *)buf;
 
     if (header->version > RAYFORCE_VERSION)
-        return error(ERR_NOT_SUPPORTED, "de: version is higher than supported");
+        raise(ERR_NOT_SUPPORTED, "de: version '%d' is higher than supported", header->version);
 
     if (header->size + sizeof(struct header_t) != len)
         return error(ERR_IO, "de: corrupted data in a buffer");
