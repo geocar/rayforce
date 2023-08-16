@@ -197,7 +197,7 @@ obj_t rf_get(obj_t x)
             }
 
             res = (obj_t)mmap_file(fd, size);
-            // fs_fclose(fd);
+            fs_fclose(fd);
 
             if (is_external_serialized(res))
             {
