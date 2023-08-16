@@ -52,43 +52,55 @@ obj_t ht_tab(u64_t size, type_t vals)
 
 nil_t rehash(obj_t *obj, hash_f hash)
 {
-    u64_t i, size, key, val, factor, index;
+    u64_t i, j, size, key, factor;
     obj_t new_obj;
     type_t type;
+    i64_t *orig_keys, *new_keys, *orig_vals = NULL, *new_vals = NULL;
 
     size = as_list(*obj)[0]->len;
+    orig_keys = as_i64(as_list(*obj)[0]);
+
     type = is_null(as_list(*obj)[1]) ? -1 : as_list(*obj)[1]->type;
+
+    if (type > -1)
+        orig_vals = as_i64(as_list(*obj)[1]);
+
     new_obj = ht_tab(size * 2, type);
-    factor = new_obj->len - 1;
+
+    if (new_obj == NULL)
+        panic("ht rehash: oom");
+
+    factor = as_list(new_obj)[0]->len - 1;
+    new_keys = as_i64(as_list(new_obj)[0]);
+
+    if (type > -1)
+        new_vals = as_i64(as_list(new_obj)[1]);
 
     for (i = 0; i < size; i++)
     {
-        if (as_i64(as_list(*obj)[0])[i] != NULL_I64)
+        if (orig_keys[i] != NULL_I64)
         {
-            key = as_i64(as_list(*obj)[0])[i];
+            key = orig_keys[i];
 
-            if (type > -1)
-                val = (i64_t)at_idx(as_list(*obj)[1], i);
+            // Recalculate the index for the new table
+            j = hash ? hash(key) & factor : (u64_t)key & factor;
 
-            index = hash ? hash(key) & factor : key & factor;
-
-            while (as_i64(as_list(new_obj)[0])[index] != NULL_I64)
+            while (new_keys[j] != NULL_I64)
             {
-                if (index == size)
-                    panic("hash tab is full!!");
+                j++;
 
-                index = index + 1;
+                if (j == size)
+                    panic("ht is full");
             }
 
-            as_i64(as_list(new_obj)[0])[index] = key;
+            new_keys[j] = key;
 
             if (type > -1)
-                set_idx(&as_list(new_obj)[1], i, (obj_t)val);
+                new_vals[j] = orig_vals[i];
         }
     }
 
     drop(*obj);
-
     *obj = new_obj;
 }
 

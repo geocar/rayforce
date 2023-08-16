@@ -799,8 +799,8 @@ obj_t rf_parse(obj_t x)
 
 obj_t rf_read_parse_compile(obj_t x)
 {
-    parser_t parser;
-    obj_t red, par, com;
+    // parser_t parser;
+    // obj_t red, par, com;
 
     switch (x->type)
     {

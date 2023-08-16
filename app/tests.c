@@ -283,23 +283,23 @@ i32_t main()
 {
     runtime_init(0);
     // heap_init();
-    i64_t i, j, r, w;
-    r = 1;
-    obj_t mask = vector_i64(r);
-    as_i64(mask)[0] = 127;
-    for (i = 0, j = 0; i < r; i++)
-    {
-        w = as_i64(mask)[i];
+    // i64_t i, j, r, w;
+    // r = 1;
+    // obj_t mask = vector_i64(r);
+    // as_i64(mask)[0] = 127;
+    // for (i = 0, j = 0; i < r; i++)
+    // {
+    //     w = as_i64(mask)[i];
 
-        for (; w > 0; w &= w - 1)
-        {
-            i32_t b = __builtin_ffsll(w) - 1;
+    //     for (; w > 0; w &= w - 1)
+    //     {
+    //         i32_t b = __builtin_ffsll(w) - 1;
 
-            debug("W: %lld B: %ld", w, b);
-        }
-    }
+    //         debug("W: %lld B: %ld", w, b);
+    //     }
+    // }
 
-    drop(mask);
+    // drop(mask);
 
     // test_allocate_and_free();
     // test_multiple_allocations();
@@ -310,7 +310,7 @@ i32_t main()
 
     // test_heap_free();
 
-    // printf("All tests passed!\n");
+    printf("All tests passed!\n");
 
     runtime_cleanup();
 

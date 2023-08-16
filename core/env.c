@@ -105,7 +105,6 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "de",        TYPE_UNARY,    FLAG_NONE,         de);
     
     // Binary           
-    regf(functions,  "set",       TYPE_BINARY,   FLAG_NONE,         rf_set);
     regf(functions,  "write",     TYPE_BINARY,   FLAG_NONE,         rf_write);
     regf(functions,  "at",        TYPE_BINARY,   FLAG_NONE,         rf_at);
     regf(functions,  "==",        TYPE_BINARY,   FLAG_ATOMIC,       rf_eq);

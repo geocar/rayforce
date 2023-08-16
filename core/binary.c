@@ -783,6 +783,9 @@ obj_t rf_table(obj_t x, obj_t y)
         case -TYPE_CHAR:
         case -TYPE_SYMBOL:
         case -TYPE_TIMESTAMP:
+        case TYPE_LAMBDA:
+        case TYPE_DICT:
+        case TYPE_TABLE:
             s = true;
             break;
         case TYPE_BOOL:
@@ -805,6 +808,7 @@ obj_t rf_table(obj_t x, obj_t y)
 
             cl = j;
             break;
+
         default:
             return error(ERR_TYPE, "Unsupported type in a Values list");
         }
@@ -2160,6 +2164,16 @@ obj_t rf_take(obj_t x, obj_t y)
 
         for (i = 0; i < m; i++)
             as_i64(res)[i] = as_i64(y)[i % l];
+
+        return res;
+
+    case mtype2(-TYPE_I64, TYPE_SYMBOL):
+        l = y->len;
+        m = x->i64;
+        res = vector_symbol(m);
+
+        for (i = 0; i < m; i++)
+            as_symbol(res)[i] = as_symbol(y)[i % l];
 
         return res;
         // case mtype2(-TYPE_I64, TYPE_NULL):

@@ -890,7 +890,7 @@ obj_t cc_compile_lambda(str_t name, obj_t args, obj_t body, nfo_t *nfo)
 
     cc_t cc = {
         .nfo = pi,
-        .lambda = lambda(args, clone(body), string(0), di),
+        .lambda = lambda(args, body, string(0), di),
     };
 
     func = as_lambda(cc.lambda);
@@ -934,6 +934,5 @@ epilogue:
  */
 obj_t cc_compile(obj_t body, nfo_t *nfo)
 {
-
-    return cc_compile_lambda("top-level", vector_symbol(0), body, nfo);
+    return cc_compile_lambda("top-level", vector_symbol(0), clone(body), nfo);
 }

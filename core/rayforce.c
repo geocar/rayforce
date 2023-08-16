@@ -869,14 +869,8 @@ nil_t __attribute__((hot)) drop(obj_t obj)
     case TYPE_ANYMAP:
         if (rc == 0)
         {
-            if (is_external_compound(obj))
-                mmap_free((str_t)obj - PAGE_SIZE, size_of(obj) + PAGE_SIZE);
-            else
-            {
-                // drop(as_list(obj)[0]);
-                // drop(as_list(obj)[1]);
-                heap_free(obj);
-            }
+            mmap_free(anymap_key(obj), size_of(obj));
+            mmap_free((str_t)obj - PAGE_SIZE, size_of(obj) + PAGE_SIZE);
         }
         return;
     case TYPE_TABLE:

@@ -47,7 +47,7 @@ static heap_t _HEAP = NULL;
 
 #ifdef SYS_MALLOC
 
-nil_t  *heap_alloc(u64_t size)                  { return malloc(size);           }
+nil_t  *heap_alloc(u64_t size)                   { return malloc(size);           }
 nil_t   heap_free(nil_t *block)                  { free(block);                   }
 nil_t  *heap_realloc(nil_t *ptr, u64_t new_size) { return realloc(ptr, new_size); }
 i64_t   heap_gc()                                { return 0;                      }

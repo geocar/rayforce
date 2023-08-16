@@ -436,7 +436,7 @@ str_t vm_code_fmt(obj_t fun)
             break;
         case OP_TRY:
             str_fmt_into(&s, &l, &o, 0, "%.4d: [%.4d] try ", c++, ip++);
-            obj_fmt_into(&s, &l, &o, 0, 0, (obj_t)(code + ip));
+            obj_fmt_into(&s, &l, &o, 0, 0, false, (obj_t)(code + ip));
             str_fmt_into(&s, &l, &o, 0, "\n");
             ip += sizeof(obj_t);
             break;

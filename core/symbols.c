@@ -33,7 +33,7 @@
 #include "runtime.h"
 #include "ops.h"
 
-#define SYMBOLS_POOL_SIZE 128
+#define SYMBOLS_POOL_SIZE 2
 
 typedef struct str_slice_t
 {
@@ -48,9 +48,21 @@ typedef struct str_slice_t
  */
 u64_t string_hash(i64_t val)
 {
-    str_slice_t *string = (str_slice_t *)val;
-    u64_t hash = 5381, len = string->len, i;
-    str_t str = string->str;
+    str_slice_t *string;
+    u64_t hash = 5381, len, i;
+    str_t str;
+
+    if ((1ull << 63) & val)
+    {
+        string = (str_slice_t *)(val & ~(1ull << 63));
+        len = string->len;
+        str = string->str;
+    }
+    else
+    {
+        str = (str_t)val;
+        len = strlen(str);
+    }
 
     for (i = 0; i < len; i++)
         hash += (hash << 5) + str[i];
@@ -68,7 +80,7 @@ u64_t string_hash(i64_t val)
 i32_t string_str_cmp(i64_t a, i64_t b)
 {
     str_t str_a = (str_t)a;
-    str_slice_t *str_b = (str_slice_t *)b;
+    str_slice_t *str_b = (str_slice_t *)(b & ~(1ull << 63));
 
     i64_t len_a = strlen(str_a);
 
@@ -150,7 +162,7 @@ i64_t intern_symbol(str_t s, i64_t len)
     str_t p;
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t idx = ht_tab_next_with(&symbols->str_to_id, (i64_t)&str_slice,
+    i64_t idx = ht_tab_next_with(&symbols->str_to_id, (1ull << 63) | (i64_t)&str_slice,
                                  &string_hash, &string_str_cmp);
 
     // insert new symbol
@@ -162,6 +174,7 @@ i64_t intern_symbol(str_t s, i64_t len)
 
         // insert id into id_to_str
         idx = ht_tab_next(&symbols->id_to_str, symbols->next_sym_id);
+        debug_assert(as_i64(as_list(symbols->id_to_str)[0])[idx] == NULL_I64);
         as_i64(as_list(symbols->id_to_str)[0])[idx] = symbols->next_sym_id;
         as_i64(as_list(symbols->id_to_str)[1])[idx] = (i64_t)p;
 
@@ -177,7 +190,7 @@ i64_t intern_keyword(str_t s, i64_t len)
     str_t p;
     symbols_t *symbols = runtime_get()->symbols;
     str_slice_t str_slice = {s, len};
-    i64_t idx = ht_tab_next_with(&symbols->str_to_id, (i64_t)&str_slice,
+    i64_t idx = ht_tab_next_with(&symbols->str_to_id, (1ull << 63) | (i64_t)&str_slice,
                                  &string_hash, &string_str_cmp);
 
     // insert new symbol

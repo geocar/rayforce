@@ -36,7 +36,7 @@
 #include "unary.h"
 #include "binary.h"
 
-#define MAX_ROW_WIDTH 80
+#define MAX_ROW_WIDTH 8000
 #define FORMAT_TRAILER_SIZE 4
 #define F64_PRECISION 2
 #define TABLE_MAX_WIDTH 10  // Maximum number of columns
@@ -264,7 +264,7 @@ i32_t raw_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
     case TYPE_CHAR:
         return str_fmt_into(dst, len, offset, limit, "%c", as_string(obj)[i]);
     case TYPE_LIST:
-        return obj_fmt_into(dst, len, offset, indent, limit, as_list(obj)[i]);
+        return obj_fmt_into(dst, len, offset, indent, limit, false, as_list(obj)[i]);
     case TYPE_ENUM:
     case TYPE_ANYMAP:
         idx = i64(i);
@@ -275,7 +275,7 @@ i32_t raw_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
             drop(res);
             return error_fmt_into(dst, len, offset, limit, res);
         }
-        n = obj_fmt_into(dst, len, offset, indent, limit, res);
+        n = obj_fmt_into(dst, len, offset, indent, limit, false, res);
         drop(res);
         return n;
     default:
@@ -317,7 +317,7 @@ i32_t vector_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t 
     return n;
 }
 
-i32_t list_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
+i32_t list_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, bool_t full, obj_t obj)
 {
     i32_t i, n, list_height = obj->len;
 
@@ -329,12 +329,30 @@ i32_t list_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
     if (list_height > LIST_MAX_HEIGHT)
         list_height = LIST_MAX_HEIGHT;
 
+    if (!full)
+    {
+        for (i = 0; i < list_height - 1; i++)
+        {
+            maxn(n, obj_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, false, as_list(obj)[i]));
+            maxn(n, str_fmt_into(dst, len, offset, 0, " "));
+        }
+
+        maxn(n, obj_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, false, as_list(obj)[i]));
+
+        if (list_height < (i32_t)obj->len)
+            maxn(n, str_fmt_into(dst, len, offset, 0, ".."));
+
+        maxn(n, str_fmt_into(dst, len, offset, 0, ")"));
+
+        return n;
+    }
+
     indent += 2;
 
     for (i = 0; i < list_height; i++)
     {
         maxn(n, str_fmt_into(dst, len, offset, 0, "\n%*.*s", indent, indent, PADDING));
-        maxn(n, obj_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, as_list(obj)[i]));
+        maxn(n, obj_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, false, as_list(obj)[i]));
     }
 
     if (list_height < (i32_t)obj->len)
@@ -343,6 +361,7 @@ i32_t list_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
     indent -= 2;
 
     maxn(n, str_fmt_into(dst, len, offset, 0, "\n%*.*s)", indent, indent, PADDING));
+
     return n;
 }
 
@@ -373,9 +392,9 @@ i32_t enum_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
         e = rf_value(obj);
 
     n = str_fmt_into(dst, len, offset, limit, "'");
-    n += obj_fmt_into(dst, len, offset, indent, limit, s);
+    n += obj_fmt_into(dst, len, offset, indent, limit, false, s);
     n += str_fmt_into(dst, len, offset, limit, "#");
-    n += obj_fmt_into(dst, len, offset, indent, limit, e);
+    n += obj_fmt_into(dst, len, offset, indent, limit, false, e);
 
     drop(s);
     drop(e);
@@ -383,7 +402,7 @@ i32_t enum_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
     return n;
 }
 
-i32_t anymap_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
+i32_t anymap_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, bool_t full, obj_t obj)
 {
     i32_t n;
     obj_t a, idx;
@@ -398,14 +417,14 @@ i32_t anymap_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t
     else
         a = rf_value(obj);
 
-    n = obj_fmt_into(dst, len, offset, indent, limit, a);
+    n = obj_fmt_into(dst, len, offset, indent, limit, full, a);
 
     drop(a);
 
     return n;
 }
 
-i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
+i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, bool_t full, obj_t obj)
 {
     obj_t keys = as_list(obj)[0], vals = as_list(obj)[1];
     i32_t i, n, dict_height = keys->len;
@@ -417,6 +436,28 @@ i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
 
     if (dict_height > LIST_MAX_HEIGHT)
         dict_height = LIST_MAX_HEIGHT;
+
+    if (!full)
+    {
+        for (i = 0; i < dict_height - 1; i++)
+        {
+            maxn(n, raw_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, keys, i));
+            maxn(n, str_fmt_into(dst, len, offset, MAX_ROW_WIDTH, ": "));
+            maxn(n, raw_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, vals, i));
+            maxn(n, str_fmt_into(dst, len, offset, MAX_ROW_WIDTH, " "));
+        }
+
+        maxn(n, raw_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, keys, i));
+        maxn(n, str_fmt_into(dst, len, offset, MAX_ROW_WIDTH, ": "));
+        maxn(n, raw_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, vals, i));
+
+        if (dict_height < (i32_t)keys->len)
+            maxn(n, str_fmt_into(dst, len, offset, 0, "..", indent, indent, PADDING));
+
+        maxn(n, str_fmt_into(dst, len, offset, limit, "}"));
+
+        return n;
+    }
 
     indent += 2;
 
@@ -438,13 +479,24 @@ i32_t dict_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t l
     return n;
 }
 
-i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, obj_t obj)
+i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, bool_t full, obj_t obj)
 {
     i64_t *header = as_symbol(as_list(obj)[0]);
     obj_t columns = as_list(obj)[1], column_widths;
     i32_t table_width, table_height;
     str_t s, formatted_columns[TABLE_MAX_WIDTH][TABLE_MAX_HEIGHT] = {{NULL}};
-    i32_t i, j, l, o, n = str_fmt_into(dst, len, offset, 0, "|");
+    i32_t i, j, l, o, n;
+
+    if (!full)
+    {
+        n = str_fmt_into(dst, len, offset, 0, "(table ");
+        n += obj_fmt_into(dst, len, offset, indent, MAX_ROW_WIDTH, false, as_list(obj)[0]);
+        n += str_fmt_into(dst, len, offset, indent, " ..)");
+
+        return n;
+    }
+
+    n = str_fmt_into(dst, len, offset, 0, "|");
 
     table_width = (as_list(obj)[0])->len;
     if (table_width > TABLE_MAX_WIDTH)
@@ -544,17 +596,13 @@ i32_t lambda_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t
     i32_t n;
 
     n = str_fmt_into(dst, len, offset, indent, "(fn ");
-    n += obj_fmt_into(dst, len, offset, indent, limit, as_lambda(obj)->args);
-    n += str_fmt_into(dst, len, offset, indent, "\n");
-    indent += 2;
-    n += obj_fmt_into(dst, len, offset, indent, limit, as_lambda(obj)->body);
-    indent -= 2;
-    n += str_fmt_into(dst, len, offset, indent, ")");
+    n += obj_fmt_into(dst, len, offset, indent, limit, false, as_lambda(obj)->args);
+    n += str_fmt_into(dst, len, offset, indent, " ..)");
 
     return n;
 }
 
-i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, obj_t obj)
+i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t limit, bool_t full, obj_t obj)
 {
     if (obj == NULL)
         return str_fmt_into(dst, len, offset, limit, "null");
@@ -594,15 +642,15 @@ i32_t obj_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, i32_t li
     case TYPE_CHAR:
         return string_fmt_into(dst, len, offset, limit, obj);
     case TYPE_LIST:
-        return list_fmt_into(dst, len, offset, indent, limit, obj);
+        return list_fmt_into(dst, len, offset, indent, limit, full, obj);
     case TYPE_ENUM:
         return enum_fmt_into(dst, len, offset, indent, limit, obj);
     case TYPE_ANYMAP:
-        return anymap_fmt_into(dst, len, offset, indent, limit, obj);
+        return anymap_fmt_into(dst, len, offset, indent, limit, full, obj);
     case TYPE_DICT:
-        return dict_fmt_into(dst, len, offset, indent, limit, obj);
+        return dict_fmt_into(dst, len, offset, indent, limit, full, obj);
     case TYPE_TABLE:
-        return table_fmt_into(dst, len, offset, indent, obj);
+        return table_fmt_into(dst, len, offset, indent, full, obj);
     case TYPE_UNARY:
     case TYPE_BINARY:
     case TYPE_VARY:
@@ -627,7 +675,7 @@ str_t obj_fmt(obj_t obj)
     if (obj == NULL)
         str_fmt_into(&dst, &len, &offset, limit, "null");
     else
-        obj_fmt_into(&dst, &len, &offset, 0, limit, obj);
+        obj_fmt_into(&dst, &len, &offset, 0, limit, true, obj);
 
     if (dst == NULL)
         panic("format: returns null");
@@ -680,7 +728,7 @@ str_t obj_fmt_n(obj_t *x, u64_t n)
         sz -= (end + 1 - start);
         start = end + 1;
 
-        obj_fmt_into(&s, &l, &o, 0, 0, *b);
+        obj_fmt_into(&s, &l, &o, 0, 0, true, *b);
     }
 
     if (sz > 0 && memchr(start, '%', sz))
