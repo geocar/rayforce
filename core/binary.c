@@ -56,6 +56,7 @@ obj_t call_binary(binary_f f, obj_t x, obj_t y)
         {
             if (dropx)
                 drop(x);
+
             return y;
         }
 
@@ -129,7 +130,7 @@ obj_t rf_call_binary_left_atomic(binary_f f, obj_t x, obj_t y)
     u64_t i, l;
     obj_t res, item, a;
 
-    if (x->type == TYPE_LIST)
+    if (x->type == TYPE_LIST || x->type == TYPE_ANYMAP)
     {
         l = x->len;
         a = at_idx(x, 0);
@@ -170,7 +171,7 @@ obj_t rf_call_binary_right_atomic(binary_f f, obj_t x, obj_t y)
     u64_t i, l;
     obj_t res, item, b;
 
-    if (y->type == TYPE_LIST)
+    if (y->type == TYPE_LIST || y->type == TYPE_ANYMAP)
     {
         l = y->len;
         b = at_idx(y, 0);
@@ -212,8 +213,8 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
     u64_t i, l;
     obj_t res, item, a, b;
 
-    if ((x->type == TYPE_LIST && is_vector(y)) ||
-        (y->type == TYPE_LIST && is_vector(x)))
+    if (((x->type == TYPE_LIST || x->type == TYPE_ANYMAP) && is_vector(y)) ||
+        ((y->type == TYPE_LIST || y->type == TYPE_ANYMAP) && is_vector(x)))
     {
         l = x->len;
 
@@ -253,7 +254,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
 
         return res;
     }
-    else if (x->type == TYPE_LIST)
+    else if (x->type == TYPE_LIST || x->type == TYPE_ANYMAP)
     {
         l = x->len;
         a = at_idx(x, 0);
@@ -285,7 +286,7 @@ obj_t rf_call_binary_atomic(binary_f f, obj_t x, obj_t y)
 
         return res;
     }
-    else if (y->type == TYPE_LIST)
+    else if (y->type == TYPE_LIST || y->type == TYPE_ANYMAP)
     {
         l = y->len;
         b = at_idx(y, 0);
@@ -1479,7 +1480,7 @@ obj_t rf_or(obj_t x, obj_t y)
 
 obj_t rf_at(obj_t x, obj_t y)
 {
-    u64_t i, j, yl, xl;
+    u64_t i, j, yl, xl, n;
     obj_t res, k, s, v, c, cols;
     byte_t *buf;
 
@@ -1667,22 +1668,34 @@ obj_t rf_at(obj_t x, obj_t y)
 
     case mtype2(TYPE_ENUM, TYPE_I64):
         k = rf_key(x);
+        v = enum_val(x);
+
         s = rf_get(k);
         drop(k);
 
         if (is_error(s))
             return s;
 
-        v = enum_val(x);
-
+        xl = s->len;
         yl = y->len;
+        n = v->len;
 
         if (!s || s->type != TYPE_SYMBOL)
         {
             res = vector_i64(yl);
 
             for (i = 0; i < yl; i++)
-                as_i64(res)[i] = as_i64(v)[y->i64];
+            {
+
+                if (as_i64(y)[i] >= (i64_t)n)
+                {
+                    drop(s);
+                    drop(res);
+                    raise(ERR_INDEX, "at: enum can not be resolved: index out of range");
+                }
+
+                as_i64(res)[i] = as_i64(v)[as_i64(y)[i]];
+            }
 
             drop(s);
 
@@ -1693,14 +1706,14 @@ obj_t rf_at(obj_t x, obj_t y)
 
         for (i = 0; i < yl; i++)
         {
-            if (as_i64(v)[y->i64] >= (i64_t)s->len)
+            if (as_i64(v)[i] >= (i64_t)xl)
             {
                 drop(s);
                 drop(res);
                 raise(ERR_INDEX, "at: enum can not be resolved: index out of range");
             }
 
-            as_symbol(res)[i] = as_i64(s)[as_i64(v)[y->i64]];
+            as_symbol(res)[i] = as_symbol(s)[as_i64(v)[as_i64(y)[i]]];
         }
 
         drop(s);
@@ -1721,29 +1734,29 @@ obj_t rf_at(obj_t x, obj_t y)
 
         return load_obj(&buf, xl);
 
-        // case mtype2(TYPE_ANYMAP, TYPE_I64):
-        //     k = anymap_key(x);
-        //     v = anymap_val(x);
+    case mtype2(TYPE_ANYMAP, TYPE_I64):
+        k = anymap_key(x);
+        v = anymap_val(x);
 
-        //     xl = k->len;
-        //     yl = v->len;
+        n = v->len;
+        yl = y->len;
 
-        //     res = vector_i64(yl);
+        res = vector(TYPE_LIST, yl);
 
-        //     for (i = 0; i < yl; i++)
-        //     {
-        //         if (as_i64(v)[y->i64] >= (i64_t)xl)
-        //         {
-        //             drop(res);
-        //             raise(ERR_INDEX, "at: anymap can not be resolved: index out of range");
-        //         }
+        for (i = 0; i < yl; i++)
+        {
+            if (as_i64(y)[i] >= (i64_t)n)
+            {
+                res->len = i;
+                drop(res);
+                raise(ERR_INDEX, "at: anymap can not be resolved: index out of range");
+            }
 
-        //         buf = as_byte(k) + as_i64(v)[y->i64];
+            buf = as_byte(k) + as_i64(v)[as_i64(y)[i]];
+            as_list(res)[i] = load_obj(&buf, k->len);
+        }
 
-        //         as_i64(res)[i] = load_obj(&buf, xl);
-        //     }
-
-        //     return res;
+        return res;
 
     default:
         raise(ERR_TYPE, "at: unsupported types: %d %d", x->type, y->type);
@@ -2304,15 +2317,13 @@ obj_t rf_take(obj_t x, obj_t y)
 
     case mtype2(-TYPE_I64, TYPE_ANYMAP):
         l = x->i64;
-        res = list(l);
+        res = vector(TYPE_LIST, l);
 
         k = anymap_key(y);
         s = anymap_val(y);
 
         m = k->len;
         n = s->len;
-
-        res = vector(TYPE_LIST, l);
 
         for (i = 0; i < l; i++)
         {

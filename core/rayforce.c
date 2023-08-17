@@ -33,6 +33,7 @@
 #include "runtime.h"
 #include "ops.h"
 #include "fs.h"
+#include "serde.h"
 
 CASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
@@ -377,6 +378,14 @@ obj_t write_obj(obj_t *obj, u64_t idx, obj_t val)
 
     switch ((*obj)->type)
     {
+    case TYPE_BOOL:
+        ret = write_raw(obj, idx, &val->bool);
+        drop(val);
+        break;
+    case TYPE_BYTE:
+        ret = write_raw(obj, idx, &val->byte);
+        drop(val);
+        break;
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
@@ -409,7 +418,10 @@ obj_t write_sym(obj_t *obj, u64_t idx, str_t str)
 
 obj_t at_idx(obj_t obj, u64_t idx)
 {
-    if (obj == NULL || !is_vector(obj))
+    obj_t k, v;
+    byte_t *buf;
+
+    if (obj == NULL || (!is_vector(obj) && obj->type != TYPE_ANYMAP))
         return null(0);
 
     switch (obj->type)
@@ -438,6 +450,19 @@ obj_t at_idx(obj_t obj, u64_t idx)
         if (idx < obj->len)
             return clone(as_list(obj)[idx]);
         return null(0);
+        // case TYPE_ENUM:
+
+    case TYPE_ANYMAP:
+        k = anymap_key(obj);
+        v = anymap_val(obj);
+        if (idx < v->len)
+        {
+            buf = as_byte(k) + as_i64(v)[idx];
+            return load_obj(&buf, k->len);
+        }
+
+        return null(0);
+
     default:
         panic(str_fmt(0, "at_idx: invalid type: %d", obj->type));
     }
@@ -458,6 +483,8 @@ obj_t at_obj(obj_t obj, obj_t idx)
     case mtype2(TYPE_F64, -TYPE_I64):
     case mtype2(TYPE_CHAR, -TYPE_I64):
     case mtype2(TYPE_LIST, -TYPE_I64):
+    case mtype2(TYPE_ENUM, -TYPE_I64):
+    case mtype2(TYPE_ANYMAP, -TYPE_I64):
         return at_idx(obj, idx->i64);
     default:
         if (obj->type == TYPE_DICT || obj->type == TYPE_TABLE)
