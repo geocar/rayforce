@@ -483,9 +483,8 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, bool_t
 {
     i64_t *header = as_symbol(as_list(obj)[0]);
     obj_t columns = as_list(obj)[1], column_widths;
-    i32_t table_width, table_height;
     str_t s, formatted_columns[TABLE_MAX_WIDTH][TABLE_MAX_HEIGHT] = {{NULL}};
-    i32_t i, j, l, o, n;
+    i32_t i, j, l, o, n, table_width, table_height;
 
     if (!full)
     {
@@ -570,7 +569,7 @@ i32_t table_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t indent, bool_t
 
     drop(column_widths);
 
-    if ((table_height > 0) && (table_height < as_list(columns)[0]->len))
+    if ((table_height > 0) && ((u64_t)table_height < as_list(columns)[0]->len))
         str_fmt_into(dst, len, offset, 0, "\n..");
 
     return n;

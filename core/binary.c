@@ -1572,7 +1572,7 @@ obj_t rf_at(obj_t x, obj_t y)
     case mtype2(TYPE_LIST, TYPE_I64):
         yl = y->len;
         xl = x->len;
-        res = list(yl);
+        res = vector(TYPE_LIST, yl);
         for (i = 0; i < yl; i++)
         {
             if (as_i64(y)[i] >= (i64_t)xl)
@@ -2205,8 +2205,8 @@ obj_t rf_filter(obj_t x, obj_t y)
 
 obj_t rf_take(obj_t x, obj_t y)
 {
-    u64_t i, j, l, m, n;
-    obj_t k, s, v, res, c, cols;
+    u64_t i, l, m, n;
+    obj_t k, s, v, res;
     byte_t *buf;
 
     switch (mtype2(x->type, y->type))
