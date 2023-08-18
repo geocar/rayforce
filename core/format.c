@@ -36,7 +36,7 @@
 #include "unary.h"
 #include "binary.h"
 
-#define MAX_ROW_WIDTH 8000
+#define MAX_ROW_WIDTH 80
 #define FORMAT_TRAILER_SIZE 4
 #define F64_PRECISION 2
 #define TABLE_MAX_WIDTH 10  // Maximum number of columns

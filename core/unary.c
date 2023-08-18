@@ -350,7 +350,7 @@ obj_t rf_group(obj_t x)
 obj_t rf_sum(obj_t x)
 {
     i32_t i;
-    i64_t l, isum = 0;
+    i64_t l, v, isum = 0;
     f64_t fsum = 0.0;
 
     switch (x->type)
@@ -361,10 +361,12 @@ obj_t rf_sum(obj_t x)
         return clone(x);
     case TYPE_I64:
         l = x->len;
-        // #pragma omp simd reduction(+ : isum)
+
         for (i = 0; i < l; i++)
-            if (as_i64(x)[i] != NULL_I64)
-                isum += as_i64(x)[i];
+        {
+            v = (as_i64(x)[i] == NULL_I64) ? 0 : as_i64(x)[i];
+            isum += v;
+        }
 
         return i64(isum);
     case TYPE_F64:
@@ -390,6 +392,7 @@ obj_t rf_avg(obj_t x)
     case TYPE_I64:
         l = x->len;
         isum = 0;
+
         for (i = 0; i < l; i++)
         {
             if (as_i64(x)[i] != NULL_I64)
@@ -416,7 +419,7 @@ obj_t rf_avg(obj_t x)
 obj_t rf_min(obj_t x)
 {
     i32_t i;
-    i64_t l, imin, *iv;
+    i64_t l, imin, *iv, v;
     f64_t fmin, *fv;
 
     switch (x->type)
@@ -430,18 +433,10 @@ obj_t rf_min(obj_t x)
         iv = as_i64(x);
         imin = iv[0];
 
-        // find first nonnull value
-        for (i = 0; i < l; i++)
-            if (iv[i] ^ NULL_I64)
-            {
-                imin = iv[i];
-                break;
-            }
-
         for (i = 0; i < l; i++)
         {
-            if (iv[i] ^ NULL_I64)
-                imin = iv[i] < imin ? iv[i] : imin;
+            v = (iv[i] == NULL_I64) ? INT64_MAX : iv[i];
+            imin = v < imin ? v : imin;
         }
 
         return i64(imin);
