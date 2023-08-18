@@ -257,7 +257,7 @@ obj_t error(i8_t code, str_t msg)
 
 obj_t resize(obj_t *obj, u64_t len)
 {
-    debug_assert(is_vector(*obj));
+    debug_assert(is_vector(*obj), "resize: invalid type: %d", (*obj)->type);
 
     if ((*obj)->len == len)
         return *obj;
@@ -831,7 +831,7 @@ obj_t cast(type_t type, obj_t obj)
 
 obj_t __attribute__((hot)) clone(obj_t obj)
 {
-    debug_assert(is_valid(obj));
+    debug_assert(is_valid(obj), "invalid object type: %d", obj->type);
 
     if (obj == NULL)
         return NULL;
@@ -848,7 +848,7 @@ obj_t __attribute__((hot)) clone(obj_t obj)
 
 nil_t __attribute__((hot)) drop(obj_t obj)
 {
-    debug_assert(is_valid(obj));
+    debug_assert(is_valid(obj), "invalid object type: %d", obj->type);
 
     if (obj == NULL)
         return;

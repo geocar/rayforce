@@ -1484,6 +1484,9 @@ obj_t rf_at(obj_t x, obj_t y)
     obj_t res, k, s, v, c, cols;
     byte_t *buf;
 
+    if (!x || !y)
+        return null(0);
+
     switch (mtype2(x->type, y->type))
     {
     case mtype2(TYPE_BOOL, -TYPE_I64):

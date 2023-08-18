@@ -82,7 +82,7 @@ nil_t *heap_add_pool(u64_t order)
     if (pool == NULL)
         return NULL;
 
-    debug_assert((i64_t)pool % 16 == 0);
+    debug_assert((i64_t)pool % 16 == 0, "pool is not aligned");
 
     node_t *node = (node_t *)pool;
     node->base = (nil_t *)(order << 56 | (u64_t)pool);

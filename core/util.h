@@ -55,7 +55,17 @@
         fflush(stderr);                      \
     } while (0)
 
-#define debug_assert(x) (assert(x))
+#define debug_assert(x, fmt, ...)                      \
+    {                                                  \
+        if (!(x))                                      \
+        {                                              \
+            fprintf(stderr, "-- ASSERTION FAILED:\n"); \
+            fprintf(stderr, fmt, ##__VA_ARGS__);       \
+            fprintf(stderr, "\n--\n");                 \
+            fflush(stderr);                            \
+            assert(x);                                 \
+        }                                              \
+    }
 
 #define debug_obj(o)             \
     {                            \

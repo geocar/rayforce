@@ -96,7 +96,7 @@ obj_t __attribute__((hot)) vm_exec(vm_t *vm, obj_t fun)
         {                                             \
             span_t span = nfo_get(&f->nfo, (i64_t)y); \
             *(span_t *)&as_list(_o)[2] = span;        \
-            while (vm->sp > 0)                        \
+            while (vm->sp != vm->bp)                  \
             {                                         \
                 _v = stack_pop();                     \
                 drop(_v);                             \
@@ -287,8 +287,11 @@ op_lget:
 op_lpush:
     b = vm->ip++;
     x1 = stack_pop(); // table or dict
-    if (x1->type != TYPE_TABLE && x1->type != TYPE_DICT)
+    if (!x1 || (x1->type != TYPE_TABLE && x1->type != TYPE_DICT))
+    {
+        drop(x1);
         unwrap(error(ERR_TYPE, "expected dict or table"), b);
+    }
     join_obj(&f->locals, x1);
     dispatch();
 op_lpop:
