@@ -478,13 +478,6 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t ar
         if (k->i64 != KW_FROM && k->i64 != KW_WHERE)
         {
             v = at_obj(params, k);
-            find_used_symbols(v, &syms);
-
-            if (k->i64 == KW_BY)
-            {
-                dropn(2, k, v);
-                continue;
-            }
 
             if (k->i64 == KW_TAKE)
             {
@@ -493,8 +486,16 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t ar
                 continue;
             }
 
+            find_used_symbols(v, &syms);
+
+            if (k->i64 == KW_BY)
+            {
+                dropn(2, k, v);
+                continue;
+            }
+
             join_obj(&cols, k);
-            drop(k);
+            drop(v);
             map = true;
         }
         else
@@ -516,6 +517,7 @@ cc_result_t cc_compile_select(bool_t has_consumer, cc_t *cc, obj_t obj, u32_t ar
     {
         push_opcode(cc, car, code, OP_PUSH);
         push_const(cc, take);
+        push_opcode(cc, car, code, OP_SWAP);
         push_opcode(cc, car, code, OP_CALL2);
         push_u8(code, 0);
         push_u64(code, rf_take);
