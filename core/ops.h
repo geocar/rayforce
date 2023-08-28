@@ -78,14 +78,14 @@
 // Calling context
 typedef struct ctx_t
 {
-    obj_t indices;
+    obj_t indices[16];
 } ctx_t;
 
 // Function types
 typedef u64_t (*hash_f)(i64_t);
 typedef i32_t (*cmp_f)(i64_t, i64_t);
 typedef obj_t (*unary_f)(obj_t, ctx_t *);
-typedef obj_t (*binary_f)(obj_t, obj_t);
+typedef obj_t (*binary_f)(obj_t, obj_t, ctx_t *);
 typedef obj_t (*vary_f)(obj_t *, i64_t n);
 
 i32_t i64_cmp(i64_t a, i64_t b);

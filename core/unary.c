@@ -130,7 +130,7 @@ obj_t rf_call_unary(u8_t attrs, unary_f f, obj_t x)
         if (x->type == TYPE_VECMAP)
         {
             ctx_t ctx = {0};
-            ctx.indices = as_list(x)[1];
+            ctx.indices[0] = as_list(x)[1];
             return f(as_list(x)[0], &ctx);
         }
         return f(x, NULL);
@@ -162,7 +162,7 @@ obj_t rf_get(obj_t x, ctx_t *ctx)
         {
             // first try to read columns schema
             s = string_from_str(".d", 2);
-            col = rf_concat(x, s);
+            col = rf_concat(x, s, NULL);
             keys = rf_get(col, ctx);
             drop(s);
             drop(col);
@@ -183,7 +183,7 @@ obj_t rf_get(obj_t x, ctx_t *ctx)
             {
                 v = at_idx(keys, i);
                 s = cast(TYPE_CHAR, v);
-                col = rf_concat(x, s);
+                col = rf_concat(x, s, NULL);
                 val = rf_get(col, ctx);
 
                 drop(v);
@@ -204,7 +204,7 @@ obj_t rf_get(obj_t x, ctx_t *ctx)
 
             // read symbol data (if any)
             s = string_from_str("sym", 3);
-            col = rf_concat(x, s);
+            col = rf_concat(x, s, NULL);
             v = rf_get(col, ctx);
 
             drop(s);
@@ -213,7 +213,7 @@ obj_t rf_get(obj_t x, ctx_t *ctx)
             if (!is_error(v))
             {
                 s = symbol("sym");
-                drop(rf_set(s, v));
+                drop(rf_set(s, v, NULL));
                 drop(s);
             }
 
@@ -254,7 +254,7 @@ obj_t rf_get(obj_t x, ctx_t *ctx)
             if (res->type == TYPE_ANYMAP)
             {
                 s = string_from_str("#", 1);
-                col = rf_concat(x, s);
+                col = rf_concat(x, s, NULL);
                 keys = rf_get(col, ctx);
                 drop(s);
                 drop(col);
@@ -430,8 +430,8 @@ obj_t rf_sum(obj_t x, ctx_t *ctx)
         }
         else
         {
-            l = ctx->indices->len;
-            indices = as_i64(ctx->indices);
+            l = ctx->indices[0]->len;
+            indices = as_i64(ctx->indices[0]);
             values = as_i64(x);
             for (i = 0; i < l; i++)
             {
