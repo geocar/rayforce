@@ -921,6 +921,18 @@ obj_t ray_value(obj_t x)
 
         return res;
 
+    case TYPE_LISTMAP:
+        xl = as_list(x)[1]->len;
+        res = vector(TYPE_LIST, xl);
+
+        for (i = 0; i < xl; i++)
+        {
+            k = ray_value(ray_vecmap(as_list(x)[0], as_list(as_list(x)[1])[i]));
+            write_obj(&res, i, k);
+        }
+
+        return res;
+
     default:
         return clone(x);
     }

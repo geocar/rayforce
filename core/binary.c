@@ -906,7 +906,7 @@ obj_t ray_dict(obj_t x, obj_t y)
 
 obj_t ray_table(obj_t x, obj_t y)
 {
-    bool_t s = false;
+    bool_t synergy = true;
     u64_t i, j, len, cl = 0;
     obj_t lst, c, l = null(0);
 
@@ -935,7 +935,6 @@ obj_t ray_table(obj_t x, obj_t y)
     {
         switch (as_list(y)[i]->type)
         {
-        // case TYPE_NULL:
         case -TYPE_BOOL:
         case -TYPE_I64:
         case -TYPE_F64:
@@ -945,7 +944,7 @@ obj_t ray_table(obj_t x, obj_t y)
         case TYPE_LAMBDA:
         case TYPE_DICT:
         case TYPE_TABLE:
-            s = true;
+            synergy = false;
             break;
         case TYPE_BOOL:
         case TYPE_I64:
@@ -962,20 +961,27 @@ obj_t ray_table(obj_t x, obj_t y)
             break;
         case TYPE_ENUM:
         case TYPE_VECMAP:
+            synergy = false;
             j = as_list(as_list(y)[i])[1]->len;
             if (cl != 0 && j != cl)
                 return error(ERR_LENGTH, "Values must be of the same length");
 
             cl = j;
             break;
-
+        case TYPE_LISTMAP:
+            synergy = false;
+            j = as_list(as_list(y)[i])[1]->len;
+            if (cl != 0 && j != cl)
+                return error(ERR_LENGTH, "Values must be of the same length");
+            cl = j;
+            break;
         default:
             return error(ERR_TYPE, "Unsupported type in a Values list");
         }
     }
 
-    // there are no atoms and all columns are of the same length
-    if (!s)
+    // there are no atoms, no lazytypes and all columns are of the same length
+    if (synergy)
     {
         drop(l);
         return table(clone(x), clone(y));
@@ -1001,7 +1007,9 @@ obj_t ray_table(obj_t x, obj_t y)
             drop(c);
             break;
         case TYPE_VECMAP:
+        case TYPE_LISTMAP:
             as_list(lst)[i] = ray_value(as_list(y)[i]);
+            break;
         default:
             as_list(lst)[i] = clone(as_list(y)[i]);
         }
