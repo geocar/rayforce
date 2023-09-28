@@ -86,7 +86,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PAT }} 
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        body_path: .release_notes.md
         draft: false
         prerelease: false
 
