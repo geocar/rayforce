@@ -33,8 +33,8 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         choco install make -y
-        choco install mingw --force --package-parameters="/InstallLocation:C:\tools\mingw64"
-        echo "C:\tools\mingw64\bin" >> $GITHUB_PATH
+        Invoke-WebRequest -Uri "https://github.com/jmeubank/tdm-gcc/releases/download/v10.3.0-tdm64-2/tdm64-gcc-10.3.0-2.exe" -OutFile "tdm-gcc.exe"
+        Start-Process -FilePath ./tdm-gcc.exe -ArgumentList "/S" -Wait
 
     - name: Make (Windows)
       if: runner.os == 'Windows'
