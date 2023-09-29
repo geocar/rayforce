@@ -35,11 +35,12 @@ jobs:
 
     - name: Get gcc (Windows)
       if: runner.os == 'Windows'
-      run: Invoke-WebRequest -Uri "https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0mcf-16.0.6-11.0.1-ucrt-r2/winlibs-x86_64-mcf-seh-gcc-13.2.0-mingw-w64ucrt-11.0.1-r2.zip" -OutFile "mingw.zip"
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0mcf-16.0.6-11.0.1-ucrt-r2/winlibs-x86_64-mcf-seh-gcc-13.2.0-mingw-w64ucrt-11.0.1-r2.zip" -OutFile "mingw.zip" -Verbose
         
     - name: Install gcc (Windows)
       if: runner.os == 'Windows'
-      run: Expand-Archive -Path mingw.zip
+      run: Expand-Archive -Path "mingw.zip"
         
     # $env:Path = "${{ github.workspace }}/mingw/bin;" + $env:Path
 
