@@ -53,6 +53,8 @@ u64_t size_obj(obj_t obj)
         return sizeof(type_t) + strlen(symtostr(obj->i64)) + 1;
     case -TYPE_CHAR:
         return sizeof(type_t) + sizeof(char_t);
+    case -TYPE_GUID:
+        return sizeof(type_t) + sizeof(guid_t);
     case TYPE_GUID:
         return sizeof(type_t) + sizeof(u64_t) + obj->len * sizeof(guid_t);
     case TYPE_BOOL:
@@ -124,9 +126,9 @@ u64_t save_obj(u8_t *buf, u64_t len, obj_t obj)
     case -TYPE_CHAR:
         buf[0] = obj->vchar;
         return sizeof(type_t) + sizeof(char_t);
-        // case TYPE_GUID:
-        //     memcpy(buf, &obj->guid, sizeof(guid_t));
-        //     return sizeof(type_t) + sizeof(guid_t);
+    case -TYPE_GUID:
+        memcpy(buf, as_string(obj), sizeof(guid_t));
+        return sizeof(type_t) + sizeof(guid_t);
 
     case TYPE_BOOL:
         l = obj->len;
@@ -186,6 +188,13 @@ u64_t save_obj(u8_t *buf, u64_t len, obj_t obj)
         }
 
         return sizeof(type_t) + sizeof(u64_t) + c;
+
+    case TYPE_GUID:
+        l = obj->len;
+        memcpy(buf, &l, sizeof(u64_t));
+        buf += sizeof(u64_t);
+        memcpy(buf, as_string(obj), l * sizeof(guid_t));
+        return sizeof(type_t) + sizeof(u64_t) + l * sizeof(guid_t);
 
     case TYPE_LIST:
         l = obj->len;
@@ -320,9 +329,10 @@ obj_t load_obj(u8_t **buf, u64_t len)
         (*buf)++;
         return obj;
 
-        // case TYPE_GUID:
-        //     obj = guid(buf);
-        //     return obj;
+    case -TYPE_GUID:
+        obj = guid(*buf);
+        buf += sizeof(guid_t);
+        return obj;
 
     case TYPE_BOOL:
         memcpy(&l, *buf, sizeof(u64_t));
@@ -376,6 +386,14 @@ obj_t load_obj(u8_t **buf, u64_t len)
             as_symbol(obj)[i] = id;
             *buf += c + 1;
         }
+        return obj;
+
+    case TYPE_GUID:
+        memcpy(&l, *buf, sizeof(u64_t));
+        *buf += sizeof(u64_t);
+        obj = vector_guid(l);
+        memcpy(as_string(obj), *buf, l * sizeof(guid_t));
+        *buf += l * sizeof(guid_t);
         return obj;
 
     case TYPE_LIST:
