@@ -27,13 +27,13 @@
 #include "sock.h"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-#include "poll_win.c"
+#include "iocp.c"
 #elif defined(__APPLE__) && defined(__MACH__)
-#include "poll_osx.c"
+#include "kqueue.c"
 #elif defined(__linux__)
-#include "poll_nix.c"
+#include "epoll.c"
 #elif defined(__EMSCRIPTEN__)
-#include "poll_emc.c"
+#include "wasm.c"
 #else
 #error "Unsupported platform"
 #endif
