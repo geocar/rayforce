@@ -855,12 +855,20 @@ obj_t ray_take(obj_t x, obj_t y)
         idxs = as_i64(as_list(y)[1]); // idxs
         l = as_list(y)[1]->len;       // idxs len
         v = as_list(y)[0];            // vals
-        n = x->i64;                   // take count
+        n = absi64(x->i64);           // take len
 
         res = vector(v->type, n);
 
-        for (i = 0; i < n; i++)
-            ins_obj(&res, i, at_idx(v, idxs[i % l]));
+        if (x->i64 >= 0)
+        {
+            for (i = 0; i < n; i++)
+                ins_obj(&res, i, at_idx(v, idxs[i % l]));
+        }
+        else
+        {
+            for (i = 0; i < n; i++)
+                ins_obj(&res, i, at_idx(v, idxs[l - 1 - (i % l)]));
+        }
 
         return res;
 
