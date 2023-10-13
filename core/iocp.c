@@ -40,6 +40,7 @@
 #include "hash.h"
 #include "format.h"
 #include "util.h"
+#include "heap.h"
 
 // Definitions and globals
 #define STDIN_WAKER_ID ~0ull

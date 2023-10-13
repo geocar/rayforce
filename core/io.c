@@ -132,9 +132,9 @@ obj_t ray_write(obj_t x, obj_t y)
 
         // send ipc msg
         if (x->i64 > 2)
-            return ipc_send_sync(runtime_get()->poll, x->i64, y);
+            return ipc_send_sync(runtime_get()->poll, x->i64, clone(y));
         else
-            return ipc_send_async(runtime_get()->poll, -x->i64, y);
+            return ipc_send_async(runtime_get()->poll, -x->i64, clone(y));
     }
 
     emit(ERR_NOT_IMPLEMENTED, "write: not implemented");

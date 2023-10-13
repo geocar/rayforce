@@ -25,7 +25,6 @@
 #include "format.h"
 #include "cc.h"
 #include "sock.h"
-#include "heap.h"
 
 nil_t prompt()
 {

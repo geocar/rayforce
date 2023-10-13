@@ -36,6 +36,7 @@
 #include "format.h"
 #include "util.h"
 #include "sock.h"
+#include "heap.h"
 
 __thread i32_t __EVENT_FD[2]; // eventfd to notify epoll loop of shutdown
 __thread u8_t __STDIN_BUF[BUF_SIZE + 1];
@@ -336,10 +337,8 @@ nil_t process_request(poll_t poll, selector_t selector)
 
     res = read_obj(selector);
 
-    if (is_error(res))
-    {
+    if (is_error(res) || is_null(res))
         v = res;
-    }
     else if (res->type == TYPE_CHAR)
     {
         v = eval_str(0, "ipc", as_string(res));

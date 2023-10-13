@@ -38,6 +38,7 @@
 #include "format.h"
 #include "util.h"
 #include "sock.h"
+#include "heap.h"
 
 __thread i32_t __EVENT_FD; // eventfd to notify epoll loop of shutdown
 __thread u8_t __STDIN_BUF[BUF_SIZE + 1];
@@ -355,10 +356,8 @@ nil_t process_request(poll_t poll, selector_t selector)
 
     res = read_obj(selector);
 
-    if (is_error(res))
-    {
+    if (is_error(res) || is_null(res))
         v = res;
-    }
     else if (res->type == TYPE_CHAR)
     {
         v = eval_str(0, "ipc", as_string(res));
@@ -384,7 +383,7 @@ i64_t poll_run(poll_t poll)
 {
     i64_t epoll_fd = poll->poll_fd, listen_fd = poll->ipc_fd,
           n, nfds, len, sock;
-    obj_t res, v;
+    obj_t res;
     str_t fmt;
     bool_t running = true;
     poll_result_t poll_result;
@@ -433,15 +432,14 @@ i64_t poll_run(poll_t poll)
             {
                 selector = (selector_t)ev.data.ptr;
 
-                if (((events[n].events & EPOLLERR) == EPOLLERR) ||
-                    ((events[n].events & EPOLLHUP) == EPOLLHUP))
+                if ((ev.events & EPOLLERR) || (ev.events & EPOLLHUP))
                 {
                     poll_deregister(poll, selector->id);
                     continue;
                 }
 
                 // ipc in
-                if ((events[n].events & EPOLLIN) == EPOLLIN)
+                if (ev.events & EPOLLIN)
                 {
                     poll_result = _recv(poll, selector);
                     if (poll_result == POLL_PENDING)
@@ -457,7 +455,7 @@ i64_t poll_run(poll_t poll)
                 }
 
                 // ipc out
-                if ((events[n].events & EPOLLOUT) == EPOLLOUT)
+                if (ev.events & EPOLLOUT)
                 {
                     poll_result = _send(poll, selector);
 
@@ -489,9 +487,6 @@ obj_t ipc_send_sync(poll_t poll, i64_t id, obj_t msg)
 
     queue_push(&selector->tx.queue, (nil_t *)((i64_t)msg | ((i64_t)MSG_TYPE_SYNC << 61)));
 
-    FD_ZERO(&fds);
-    FD_SET(selector->fd, &fds);
-
     while (true)
     {
         poll_result = _send(poll, selector);
@@ -500,6 +495,8 @@ obj_t ipc_send_sync(poll_t poll, i64_t id, obj_t msg)
             break;
 
         // block on select until we can send
+        FD_ZERO(&fds);
+        FD_SET(selector->fd, &fds);
         result = select(selector->fd + 1, NULL, &fds, NULL, NULL);
 
         if (result == -1)
@@ -526,6 +523,8 @@ recv:
             break;
 
         // block on select until we can recv
+        FD_ZERO(&fds);
+        FD_SET(selector->fd, &fds);
         result = select(selector->fd + 1, &fds, NULL, NULL, NULL);
 
         if (result == -1)
