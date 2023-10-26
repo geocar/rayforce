@@ -32,11 +32,11 @@
 #include "util.h"
 #include "runtime.h"
 
-#define __ARG_MASK 0xffffffffffffffff
+#define __NULL_ARG 0xffffffffffffffff
 #define __args_height(l, x, n)                                  \
     {                                                           \
         l = args_height(x, n);                                  \
-        if (l == __ARG_MASK)                                    \
+        if (l == __NULL_ARG)                                    \
             emit(ERR_LENGTH, "inconsistent arguments lengths"); \
                                                                 \
         if (l == 0)                                             \
@@ -73,18 +73,18 @@ u64_t args_height(obj_t *x, u64_t n)
     u64_t i, l;
     obj_t *b;
 
-    l = __ARG_MASK;
+    l = __NULL_ARG;
     for (i = 0; i < n; i++)
     {
         b = x + i;
-        if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && l == __ARG_MASK)
+        if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && l == __NULL_ARG)
             l = count(*b);
         else if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && count(*b) != l)
-            return __ARG_MASK;
+            return __NULL_ARG;
     }
 
     // all are atoms
-    if (l == __ARG_MASK)
+    if (l == __NULL_ARG)
         l = 1;
 
     return l;
@@ -94,8 +94,8 @@ obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n)
 {
     u64_t i, j, l;
     vm_t *vm;
+    vm_ctx_t ctx;
     obj_t v, *b, res;
-    i32_t bp, ip;
 
     switch (f->type)
     {
@@ -125,11 +125,9 @@ obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n)
             vm->stack[vm->sp++] = v;
         }
 
-        ip = vm->ip;
-        bp = vm->bp;
+        ctx = vm_save_ctx(vm);
         v = vm_exec(vm, f);
-        vm->ip = ip;
-        vm->bp = bp;
+        vm_restore_ctx(vm, ctx);
 
         if (is_error(v))
             return v;
@@ -151,11 +149,9 @@ obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n)
                 vm->stack[vm->sp++] = v;
             }
 
-            ip = vm->ip;
-            bp = vm->bp;
+            ctx = vm_save_ctx(vm);
             v = vm_exec(vm, f);
-            vm->ip = ip;
-            vm->bp = bp;
+            vm_restore_ctx(vm, ctx);
 
             // drop args
             for (j = 0; j < n; j++)
@@ -182,8 +178,8 @@ obj_t ray_fold_vary_f(obj_t f, obj_t *x, u64_t n)
 {
     u64_t i, j, o, l;
     vm_t *vm;
+    vm_ctx_t ctx;
     obj_t v, x1, x2, *b;
-    i32_t bp, ip;
 
     switch (f->type)
     {
@@ -254,11 +250,9 @@ obj_t ray_fold_vary_f(obj_t f, obj_t *x, u64_t n)
                 vm->stack[vm->sp++] = v;
             }
 
-            ip = vm->ip;
-            bp = vm->bp;
+            ctx = vm_save_ctx(vm);
             v = vm_exec(vm, f);
-            vm->ip = ip;
-            vm->bp = bp;
+            vm_restore_ctx(vm, ctx);
 
             // drop args
             for (j = 0; j < n; j++)

@@ -33,6 +33,12 @@
 
 #define VM_STACK_SIZE PAGE_SIZE * 4
 
+typedef struct vm_ctx_t
+{
+    i32_t bp;
+    i32_t ip;
+} vm_ctx_t;
+
 typedef enum vm_opcode_t
 {
     OP_RET = 0,    // Return
@@ -77,5 +83,7 @@ vm_t vm_new(obj_t *stack);
 obj_t vm_exec(vm_t *vm, obj_t fun) __attribute__((__noinline__));
 nil_t vm_free(vm_t *vm);
 str_t vm_code_fmt(obj_t fun);
+vm_ctx_t vm_save_ctx(vm_t *vm);
+nil_t vm_restore_ctx(vm_t *vm, vm_ctx_t ctx);
 
 #endif

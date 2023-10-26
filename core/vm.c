@@ -514,3 +514,7 @@ str_t vm_code_fmt(obj_t fun)
 
     return s;
 }
+
+vm_ctx_t vm_save_ctx(vm_t *vm) { return (vm_ctx_t){vm->bp, vm->ip}; }
+
+nil_t vm_restore_ctx(vm_t *vm, vm_ctx_t ctx) { vm->bp = ctx.bp, vm->ip = ctx.ip; }
