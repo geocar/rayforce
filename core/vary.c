@@ -32,6 +32,17 @@
 #include "util.h"
 #include "runtime.h"
 
+#define __ARG_MASK 0xffffffffffffffff
+#define __args_height(l, x, n)                                  \
+    {                                                           \
+        l = args_height(x, n);                                  \
+        if (l == __ARG_MASK)                                    \
+            emit(ERR_LENGTH, "inconsistent arguments lengths"); \
+                                                                \
+        if (l == 0)                                             \
+            return null(0);                                     \
+    }
+
 obj_t ray_call_vary_atomic(vary_f f, obj_t *x, u64_t n)
 {
     u64_t i, lists = 0;
@@ -57,6 +68,28 @@ obj_t ray_call_vary(u8_t attrs, vary_f f, obj_t *x, u64_t n)
     }
 }
 
+u64_t args_height(obj_t *x, u64_t n)
+{
+    u64_t i, l;
+    obj_t *b;
+
+    l = __ARG_MASK;
+    for (i = 0; i < n; i++)
+    {
+        b = x + i;
+        if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && l == __ARG_MASK)
+            l = count(*b);
+        else if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && count(*b) != l)
+            return __ARG_MASK;
+    }
+
+    // all are atoms
+    if (l == __ARG_MASK)
+        l = 1;
+
+    return l;
+}
+
 obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n)
 {
     u64_t i, j, l;
@@ -79,22 +112,8 @@ obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n)
     case TYPE_LAMBDA:
         if (n != as_lambda(f)->args->len)
             emit(ERR_TYPE, "'map': lambda call with wrong arguments count");
-        l = 0xffffffffffffffff;
-        for (i = 0; i < n; i++)
-        {
-            b = x + i;
-            if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && l == 0xffffffffffffffff)
-                l = count(*b);
-            else if ((is_vector(*b) || (*b)->type == TYPE_LISTMAP) && count(*b) != l)
-                emit(ERR_LENGTH, "'map': inconsistent arguments lengths")
-        }
 
-        if (l == 0)
-            return null(0);
-
-        // all are atoms
-        if (l == 0xffffffffffffffff)
-            l = 1;
+        __args_height(l, x, n);
 
         vm = &runtime_get()->vm;
 
@@ -159,12 +178,117 @@ obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n)
     }
 }
 
+obj_t ray_fold_vary_f(obj_t f, obj_t *x, u64_t n)
+{
+    u64_t i, j, o, l;
+    vm_t *vm;
+    obj_t v, x1, x2, *b;
+    i32_t bp, ip;
+
+    switch (f->type)
+    {
+    case TYPE_UNARY:
+        if (n != 1)
+            emit(ERR_TYPE, "'fold': unary call with wrong arguments count");
+        return ray_call_unary(FN_ATOMIC, (unary_f)f->i64, x[0]);
+    case TYPE_BINARY:
+        __args_height(l, x, n);
+        if (n == 1)
+        {
+            o = 1;
+            b = x;
+            v = at_idx(x[0], 0);
+        }
+        else if (n == 2)
+        {
+            o = 0;
+            b = x + 1;
+            v = clone(x[0]);
+        }
+        else
+            emit(ERR_TYPE, "'fold': binary call with wrong arguments count");
+
+        for (i = o; i < l; i++)
+        {
+            x1 = v;
+            x2 = at_idx(*b, i);
+            v = ray_call_binary(FN_ATOMIC, (binary_f)f->i64, x1, x2);
+            drop(x1);
+            drop(x2);
+
+            if (is_error(v))
+                return v;
+        }
+
+        return v;
+    case TYPE_VARY:
+        return ray_call_vary(FN_ATOMIC, (vary_f)f->i64, x, n);
+    case TYPE_LAMBDA:
+        if (n != as_lambda(f)->args->len)
+            emit(ERR_TYPE, "'fold': lambda call with wrong arguments count");
+
+        __args_height(l, x, n);
+
+        vm = &runtime_get()->vm;
+
+        // interpret first arg as an initial value
+        if (n > 1)
+        {
+            o = 1;
+            v = clone(x[0]);
+        }
+        else
+        {
+            o = 0;
+            v = null(x[0]->type);
+        }
+
+        for (i = 0; i < l; i++)
+        {
+            vm->stack[vm->sp++] = v;
+
+            for (j = o; j < n; j++)
+            {
+                b = x + j;
+                v = at_idx(*b, i);
+                vm->stack[vm->sp++] = v;
+            }
+
+            ip = vm->ip;
+            bp = vm->bp;
+            v = vm_exec(vm, f);
+            vm->ip = ip;
+            vm->bp = bp;
+
+            // drop args
+            for (j = 0; j < n; j++)
+                drop(vm->stack[--vm->sp]);
+
+            // check error
+            if (is_error(v))
+                return v;
+        }
+
+        return v;
+    default:
+        emit(ERR_TYPE, "'fold': unsupported function type: %d", f->type);
+    }
+}
+
 obj_t ray_map_vary(obj_t *x, u64_t n)
 {
     if (n == 0)
         return list(0);
 
     return ray_map_vary_f(x[0], x + 1, n - 1);
+}
+
+obj_t ray_fold_vary(obj_t *x, u64_t n)
+{
+    if (n == 0)
+        return null(0);
+
+    return ray_fold_vary_f(x[0], x + 1, n - 1);
 }
 
 obj_t ray_gc(obj_t *x, u64_t n)

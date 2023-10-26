@@ -29,8 +29,9 @@
 
 obj_t ray_call_vary(u8_t attrs, vary_f f, obj_t *x, u64_t n);
 obj_t ray_map_vary_f(obj_t f, obj_t *x, u64_t n);
+obj_t ray_fold_vary_f(obj_t f, obj_t *x, u64_t n);
 obj_t ray_map_vary(obj_t *x, u64_t n);
-
+obj_t ray_fold_vary(obj_t *x, u64_t n);
 obj_t ray_gc(obj_t *x, u64_t n);
 obj_t ray_format(obj_t *x, u64_t n);
 obj_t ray_print(obj_t *x, u64_t n);

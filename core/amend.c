@@ -36,7 +36,7 @@ obj_t ray_amend(obj_t *x, u64_t n)
 
     switch (x[0]->type)
     {
-    case TYPE_SYMBOL:
+    case -TYPE_SYMBOL:
         env = as_list(runtime_get()->env.variables);
         i = find_obj(env[0], x[0]);
         if (i == env[0]->len)
