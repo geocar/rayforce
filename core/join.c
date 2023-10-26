@@ -35,24 +35,25 @@ typedef struct lj_ctx_t
     obj_t rcols;
 } lj_ctx_t;
 
-obj_t lj_column(obj_t left_col, obj_t right_col, i64_t ids[])
+obj_t lj_column(obj_t left_col, obj_t right_col, i64_t ids[], u64_t len)
 {
-    u64_t i, l;
+    u64_t i;
     obj_t v, res;
     i64_t idx;
+    type_t type;
 
     // there is no such column in the right table
     if (is_null(right_col))
         return clone(left_col);
 
-    l = left_col->len;
+    type = is_null(left_col) ? right_col->type : left_col->type;
 
-    if ((!is_null(left_col)) && (right_col->type != left_col->type))
+    if (right_col->type != type)
         emit(ERR_TYPE, "join_column: incompatible types");
 
-    res = vector(left_col->type, l);
+    res = vector(type, len);
 
-    for (i = 0; i < l; i++)
+    for (i = 0; i < len; i++)
     {
         idx = ids[i];
         if (idx != NULL_I64)
@@ -114,14 +115,14 @@ i32_t cmp_row(i64_t row1, i64_t row2, nil_t *seed)
     lj_ctx_t *ctx = (lj_ctx_t *)seed;
     obj_t lcols = ctx->lcols;
     obj_t rcols = ctx->rcols;
-    i32_t result = 0;
 
     l = lcols->len;
 
     for (i = 0; i < l; i++)
-        result |= as_u64(as_list(lcols)[i], row1) != as_u64(as_list(rcols)[i], row2);
+        if (as_u64(as_list(lcols)[i], row1) != as_u64(as_list(rcols)[i], row2))
+            return 1;
 
-    return result;
+    return 0;
 }
 
 obj_t build_idx(obj_t lcols, obj_t rcols)
@@ -165,6 +166,7 @@ obj_t build_idx(obj_t lcols, obj_t rcols)
 
 obj_t ray_lj(obj_t *x, u64_t n)
 {
+    u64_t ll;
     i64_t i, j, l;
     obj_t k1, k2, c1, c2, un, col, cols, vals, idx, rescols, resvals;
 
@@ -180,9 +182,15 @@ obj_t ray_lj(obj_t *x, u64_t n)
     if (x[2]->type != TYPE_TABLE)
         emit(ERR_TYPE, "lj: third argument must be a table");
 
+    if (count(x[1]) == 0 || count(x[2]) == 0)
+        return clone(x[1]);
+
+    ll = count(x[1]);
+
     k1 = ray_at(x[1], x[0]);
     if (is_error(k1))
         return k1;
+
     k2 = ray_at(x[2], x[0]);
     if (is_error(k2))
     {
@@ -213,6 +221,14 @@ obj_t ray_lj(obj_t *x, u64_t n)
 
     l = cols->len;
 
+    if (l == 0)
+    {
+        drop(k1);
+        drop(idx);
+        drop(cols);
+        emit(ERR_LENGTH, "lj: no columns to join on");
+    }
+
     // resulting columns
     vals = vector(TYPE_LIST, l);
 
@@ -240,7 +256,7 @@ obj_t ray_lj(obj_t *x, u64_t n)
             }
         }
 
-        col = lj_column(c1, c2, as_i64(idx));
+        col = lj_column(c1, c2, as_i64(idx), ll);
         if (is_error(col))
         {
             drop(k1);

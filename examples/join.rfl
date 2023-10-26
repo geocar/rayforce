@@ -3,8 +3,8 @@
 (set x (table [a b c] 
     (list (take n (til 5)) (take n [I J K]) (til n))))
 
-(set y (table [a b c] 
-    (list (take n (+ 1 (til 5))) (take n [I J K]) (til n))))
+(set y (table [a b c d] 
+    (list (take n (+ 1 (til 5))) (take n [I J K]) (til n) (til n))))
 
 ;; (lj [a] x y)
 ;; (lj [a b] x y)
