@@ -101,10 +101,11 @@ u64_t rfi_kmh_hash(i64_t key, nil_t *seed);
 u64_t rfi_fnv1a_hash_64(i64_t key, nil_t *seed);
 // Identity
 u64_t rfi_i64_hash(i64_t a, nil_t *seed);
-
 obj_t distinct(obj_t x);
 obj_t group(i64_t values[], i64_t indices[], i64_t len);
 u64_t count(obj_t x);
+u64_t hash_obj(obj_t obj);
+
 /**
  * Returns the value at the given index of the object as an unsigned 64-bit integer.
  * The type of the object determines the underlying type of the value.
@@ -113,7 +114,7 @@ u64_t count(obj_t x);
  * @param idx The index of the value to retrieve.
  * @return The value at the given index of the object as an unsigned 64-bit integer.
  */
-inline __attribute__((always_inline)) u64_t as_u64(obj_t obj, i64_t idx)
+inline __attribute__((always_inline)) u64_t hash_idx(obj_t obj, i64_t idx)
 {
     switch (obj->type)
     {
@@ -129,6 +130,8 @@ inline __attribute__((always_inline)) u64_t as_u64(obj_t obj, i64_t idx)
         return (u64_t)as_f64(obj)[idx];
     case TYPE_GUID:
         return *(u64_t *)&as_guid(obj)[idx];
+    case TYPE_LIST:
+        return hash_obj(as_list(obj)[idx]);
     default:
         return (u64_t)as_list(obj)[idx];
     }

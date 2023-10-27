@@ -27,6 +27,7 @@
 #include "util.h"
 #include "hash.h"
 #include "heap.h"
+#include "serde.h"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
@@ -589,3 +590,24 @@ obj_t sys_error(os_error_type_t type, str_t msg)
 }
 
 #endif
+
+u64_t hash_obj(obj_t obj)
+{
+    u64_t hash = 5381, len, i;
+    str_t str;
+
+    switch (obj->type)
+    {
+    case TYPE_CHAR:
+        len = obj->len;
+
+        str = as_string(obj);
+        for (i = 0; i < len; i++)
+            hash += (hash << 5) + str[i];
+
+        return hash;
+    // TODO: implement hash for other types
+    default:
+        return 0;
+    }
+}

@@ -80,7 +80,7 @@ u64_t hash_row(i64_t row, nil_t *seed)
 
     for (i = 0; i < n; i++)
     {
-        val = (as_u64(as_list(cols)[i], row) * 2654435761ll) & 0xFFFFFFFF;
+        val = (hash_idx(as_list(cols)[i], row) * 2654435761ll) & 0xFFFFFFFF;
         res ^= val;
     }
 
@@ -97,7 +97,7 @@ i32_t cmp_row(i64_t row1, i64_t row2, nil_t *seed)
     l = lcols->len;
 
     for (i = 0; i < l; i++)
-        if (as_u64(as_list(lcols)[i], row1) != as_u64(as_list(rcols)[i], row2))
+        if (hash_idx(as_list(lcols)[i], row1) != hash_idx(as_list(rcols)[i], row2))
             return 1;
 
     return 0;

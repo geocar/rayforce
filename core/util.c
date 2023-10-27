@@ -31,60 +31,6 @@
 #include "env.h"
 #include "runtime.h"
 
-i32_t size_of_type(type_t type)
-{
-    switch (type)
-    {
-    case TYPE_BOOL:
-        return sizeof(bool_t);
-    case TYPE_BYTE:
-        return sizeof(u8_t);
-    case TYPE_I64:
-    case TYPE_SYMBOL:
-    case TYPE_TIMESTAMP:
-        return sizeof(i64_t);
-    case TYPE_F64:
-        return sizeof(f64_t);
-    case TYPE_GUID:
-        return sizeof(guid_t);
-    case TYPE_CHAR:
-        return sizeof(char_t);
-    case TYPE_LIST:
-        return sizeof(obj_t);
-    default:
-        throw("sizeof: unknown type: %d", type);
-    }
-}
-
-u64_t size_of(obj_t obj)
-{
-    if (!obj)
-        return 0;
-
-    u64_t size = sizeof(struct obj_t);
-
-    if (is_atom(obj))
-        return size;
-
-    if (is_vector(obj))
-    {
-        size += obj->len * size_of_type(obj->type);
-        return size;
-    }
-
-    switch (obj->type)
-    {
-    case TYPE_ENUM:
-        size += obj->len * sizeof(i64_t);
-        return size;
-    case TYPE_ANYMAP:
-        size += obj->len * sizeof(i64_t);
-        return size;
-    default:
-        throw("sizeof: unknown type: %d", obj->type);
-    }
-}
-
 u32_t next_power_of_two_u32(u32_t n)
 {
     if (n == 0)

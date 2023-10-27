@@ -43,6 +43,8 @@ CASSERT(sizeof(header_t) == 16, header_t);
 
 obj_t de_raw(u8_t *buf, u64_t len);
 i64_t ser_raw(u8_t **buf, obj_t obj);
+u64_t size_of_type(type_t type);
+u64_t size_of(obj_t obj);
 u64_t size_obj(obj_t obj);
 u64_t save_obj(u8_t *buf, u64_t len, obj_t obj);
 obj_t load_obj(u8_t **buf, u64_t len);
