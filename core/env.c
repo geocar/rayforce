@@ -69,16 +69,19 @@ obj_t ray_memstat()
 {
     obj_t keys, vals;
     memstat_t stat = heap_memstat();
+    symbols_t *symbols = runtime_get()->symbols;
 
-    keys = vector_symbol(3);
-    ins_sym(&keys, 0, "total");
-    ins_sym(&keys, 1, "used ");
-    ins_sym(&keys, 2, "free ");
+    keys = vector_symbol(4);
+    ins_sym(&keys, 0, "msys");
+    ins_sym(&keys, 1, "heap");
+    ins_sym(&keys, 2, "free");
+    ins_sym(&keys, 3, "syms");
 
-    vals = vector(TYPE_LIST, 3);
-    as_list(vals)[0] = i64(stat.total);
-    as_list(vals)[1] = i64(stat.used);
+    vals = vector(TYPE_LIST, 4);
+    as_list(vals)[0] = i64(stat.system + symbols_memsize(symbols));
+    as_list(vals)[1] = i64(stat.heap);
     as_list(vals)[2] = i64(stat.free);
+    as_list(vals)[3] = i64(symbols_count(symbols));
 
     return dict(keys, vals);
 }

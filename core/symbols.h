@@ -55,9 +55,10 @@ typedef struct symbols_t
 
 i64_t intern_symbol(str_t s, i64_t len);
 i64_t intern_keyword(str_t s, i64_t len);
-
 symbols_t *symbols_new();
 nil_t symbols_free(symbols_t *symbols);
 str_t symtostr(i64_t key);
+u64_t symbols_count(symbols_t *symbols);
+u64_t symbols_memsize(symbols_t *symbols);
 
 #endif

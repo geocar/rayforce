@@ -223,3 +223,23 @@ str_t symtostr(i64_t key)
 
     return (str_t)as_i64(as_list(symbols->id_to_str)[1])[idx];
 }
+
+u64_t symbols_count(symbols_t *symbols)
+{
+    return symbols->next_sym_id;
+}
+
+u64_t symbols_memsize(symbols_t *symbols)
+{
+    pool_node_t *node = symbols->pool_node_0;
+    u64_t size = 0;
+
+    // calculate all nodes
+    while (node)
+    {
+        size += STRINGS_POOL_SIZE;
+        node = node->next;
+    }
+
+    return size;
+}

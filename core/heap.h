@@ -27,46 +27,45 @@
 #include "rayforce.h"
 #include "symbols.h"
 
-#define MIN_ORDER       6                   // 2^6  = 64 bytes
-#define MAX_ORDER       25                  // 2^25 = 32MB
-#define MAX_POOL_ORDER  36                  // 2^36 = 64GB
-#define MIN__HEAP       (1ull << MIN_ORDER) // 64 bytes
-#define MAX__HEAP       (1ull << MAX_ORDER) // 32MB
-#define POOL_SIZE       (1ull << MAX_ORDER) // 32MB
-#define NUM_16_BLOCKS   1024 * 1024 * 32    // 32M blocks
+#define MIN_ORDER 6                   // 2^6  = 64 bytes
+#define MAX_ORDER 25                  // 2^25 = 32MB
+#define MAX_POOL_ORDER 36             // 2^36 = 64GB
+#define POOL_SIZE (1ull << MAX_ORDER) // 32MB
+#define NUM_16_BLOCKS 1024 * 1024     // 1M blocks
 
 typedef struct node_t
 {
-    nil_t            *base;  // base address of the root block (pool) + original order in 7's byte
+    nil_t *base; // base address of the root block (pool) + original order in 7's byte
     union
     {
         struct node_t *next; // next block in the pool
-        u64_t          size; // size of the block (splitted)
+        u64_t size;          // size of the block (splitted)
     };
 } node_t;
 
 typedef struct memstat_t
 {
-    u64_t total;
-    u64_t used;
-    u64_t free;
+    u64_t system; // system memory used
+    u64_t heap;   // total heap memory
+    u64_t free;   // free heap memory
 } memstat_t;
 
 typedef struct heap_t
 {
-    nil_t  *blocks16;                     // pool of 16 bytes blocks
-    nil_t  *freelist16;                   // blocks of 16 bytes
+    nil_t *blocks16;                      // pool of 16 bytes blocks
+    nil_t *freelist16;                    // blocks of 16 bytes
     node_t *freelist[MAX_POOL_ORDER + 2]; // free list of blocks by order
-    u64_t   avail;                        // mask of available blocks by order
-} __attribute__((aligned(PAGE_SIZE))) *heap_t;
+    u64_t avail;                          // mask of available blocks by order
+    memstat_t memstat;
+} __attribute__((aligned(PAGE_SIZE))) * heap_t;
 
-extern nil_t    *heap_alloc(u64_t size);
-extern nil_t    *heap_realloc(nil_t *block, u64_t size);
-extern nil_t     heap_free(nil_t *block);
-extern heap_t    heap_init();
-extern heap_t    heap_get();
-extern i64_t     heap_gc();
-extern nil_t     heap_cleanup();
+extern nil_t *heap_alloc(u64_t size);
+extern nil_t *heap_realloc(nil_t *block, u64_t size);
+extern nil_t heap_free(nil_t *block);
+extern heap_t heap_init();
+extern heap_t heap_get();
+extern i64_t heap_gc();
+extern nil_t heap_cleanup();
 extern memstat_t heap_memstat();
 
 #endif
