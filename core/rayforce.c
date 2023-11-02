@@ -160,15 +160,18 @@ obj_t timestamp(i64_t val)
 obj_t vector(type_t type, u64_t len)
 {
     type_t t;
+    obj_t vec;
 
     if (type < 0)
         t = -type;
-    else if (type > 0 && type < TYPE_TABLE)
+    else if (type > 0 && type < TYPE_ENUM)
         t = type;
+    else if (type == TYPE_ENUM)
+        t = TYPE_SYMBOL;
     else
         t = TYPE_LIST;
 
-    obj_t vec = (obj_t)heap_alloc(sizeof(struct obj_t) + len * size_of_type(t));
+    vec = (obj_t)heap_alloc(sizeof(struct obj_t) + len * size_of_type(t));
 
     if (!vec)
         emit(ERR_HEAP, "oom");

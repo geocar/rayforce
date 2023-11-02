@@ -90,7 +90,6 @@ typedef enum
 } os_error_type_t;
 
 bool_t ops_is_nan(f64_t x);
-bool_t ops_as_bool(obj_t x);
 u64_t ops_rand_u64();
 obj_t ops_distinct(obj_t x);
 obj_t ops_group(i64_t values[], i64_t indices[], i64_t len);

@@ -251,16 +251,26 @@ obj_t ray_lj(obj_t *x, u64_t n)
         as_list(vals)[i] = col;
     }
 
-    // Cleanup and assemble result table
+    // cleanup and assemble result table
     drop(idx);
     rescols = ray_concat(x[0], cols);
     drop(cols);
-    l = rescols->len;
-    resvals = vector(TYPE_LIST, l);
-    as_list(resvals)[0] = k1;
-    for (i = 1; i < l; i++)
-        as_list(resvals)[i] = clone(as_list(vals)[i - 1]);
-    drop(vals);
+
+    // handle case when columns list is just one-element list
+    if (x[0]->len == 1)
+    {
+        l = rescols->len;
+        resvals = vector(TYPE_LIST, l);
+        as_list(resvals)[0] = k1;
+        for (i = 1; i < l; i++)
+            as_list(resvals)[i] = clone(as_list(vals)[i - 1]);
+        drop(vals);
+    }
+    else
+    {
+        resvals = ray_concat(k1, vals);
+        dropn(2, k1, vals);
+    }
 
     return table(rescols, resvals);
 }

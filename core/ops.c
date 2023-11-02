@@ -28,6 +28,8 @@
 #include "hash.h"
 #include "heap.h"
 #include "serde.h"
+#include "items.h"
+#include "unary.h"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
@@ -54,32 +56,6 @@ u64_t ops_rand_u64()
     __RND_SEED__ += time(0);
     __RND_SEED__ = (6364136223846793005ull * __RND_SEED__ + 1442695040888963407ull) % (1ull << 63);
     return __RND_SEED__;
-}
-
-bool_t ops_as_bool(obj_t x)
-{
-    if (is_null(x))
-        return false;
-
-    switch (x->type)
-    {
-    case -TYPE_BOOL:
-        return x->bool;
-    case -TYPE_I64:
-        return x->i64 != 0;
-    case -TYPE_F64:
-        return x->f64 != 0.0;
-    case -TYPE_CHAR:
-        return x->vchar != 0;
-    case TYPE_BOOL:
-    case TYPE_I64:
-    case TYPE_F64:
-    case TYPE_CHAR:
-    case TYPE_LIST:
-        return x->len != 0;
-    default:
-        return false;
-    }
 }
 
 bool_t cnt_update(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval)
@@ -196,6 +172,9 @@ obj_t ops_distinct(obj_t x)
 
 bool_t ops_eq_idx(obj_t a, i64_t ai, obj_t b, i64_t bi)
 {
+    obj_t lv, rv;
+    bool_t eq;
+
     switch (a->type)
     {
     case TYPE_I64:
@@ -210,8 +189,20 @@ bool_t ops_eq_idx(obj_t a, i64_t ai, obj_t b, i64_t bi)
         return memcmp(as_guid(a) + ai, as_guid(b) + bi, sizeof(guid_t)) == 0;
     case TYPE_LIST:
         return objcmp(as_list(a)[ai], as_list(b)[bi]) == 0;
+    case TYPE_ENUM:
+        lv = at_idx(a, ai);
+        rv = at_idx(b, bi);
+        eq = lv->i64 == rv->i64;
+        dropn(2, lv, rv);
+        return eq;
+    case TYPE_ANYMAP:
+        lv = at_idx(a, ai);
+        rv = at_idx(b, bi);
+        eq = objcmp(lv, rv) == 0;
+        dropn(2, lv, rv);
+        return eq;
     default:
-        return false;
+        throw("hash: unsupported type: %d", a->type);
     }
 }
 
@@ -250,11 +241,10 @@ u64_t ops_hash_obj(obj_t obj)
             hash ^= (u64_t)str[i];
             hash *= 0x100000001b3ull;
         }
-
         return hash;
-    // TODO: implement hash for other types
+
     default:
-        return (u64_t)obj;
+        throw("hash: unsupported type: %d", obj->type);
     }
 }
 
@@ -264,6 +254,8 @@ nil_t ops_hash_list(obj_t obj, u64_t out[], u64_t len)
     f64_t *f64v;
     guid_t *g64v;
     u64_t i, *u64v;
+    obj_t k, v;
+    i64_t *ids;
 
     switch (obj->type)
     {
@@ -298,12 +290,27 @@ nil_t ops_hash_list(obj_t obj, u64_t out[], u64_t len)
         for (i = 0; i < len; i++)
             out[i] = hashu64(ops_hash_obj(as_list(obj)[i]), out[i]);
         break;
-    default:
-        // TODO: error
+    case TYPE_ENUM:
+        k = ray_key(obj);
+        v = ray_get(k);
+        drop(k);
+        u64v = (u64_t *)as_symbol(v);
+        ids = as_i64(enum_val(obj));
+        for (i = 0; i < len; i++)
+            out[i] = hashu64(u64v[ids[i]], out[i]);
+        drop(v);
         break;
+    case TYPE_ANYMAP:
+        for (i = 0; i < len; i++)
+        {
+            v = at_idx(obj, i);
+            out[i] = hashu64(ops_hash_obj(v), out[i]);
+            drop(v);
+        }
+        break;
+    default:
+        throw("hash list: unsupported type: %d", obj->type);
     }
-
-    return;
 }
 
 obj_t ops_find(i64_t x[], u64_t xl, i64_t y[], u64_t yl)

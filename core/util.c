@@ -50,7 +50,7 @@ u64_t next_power_of_two_u64(u64_t n)
     if ((n & (n - 1)) == 0)
         return n;
 
-    return 1UL << (64 - __builtin_clzll(n));
+    return 1ull << (64 - __builtin_clzll(n));
 }
 
 bool_t is_valid(obj_t obj)
