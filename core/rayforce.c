@@ -51,6 +51,9 @@ obj_t atom(type_t type)
 {
     obj_t a = (obj_t)heap_alloc(sizeof(struct obj_t));
 
+    if (!a)
+        emit(ERR_HEAP, "oom");
+
     a->mmod = MMOD_INTERNAL;
     a->refc = 1;
     a->type = -type;
@@ -167,6 +170,9 @@ obj_t vector(type_t type, u64_t len)
 
     obj_t vec = (obj_t)heap_alloc(sizeof(struct obj_t) + len * size_of_type(t));
 
+    if (!vec)
+        emit(ERR_HEAP, "oom");
+
     vec->mmod = MMOD_INTERNAL;
     vec->refc = 1;
     vec->type = t;
@@ -180,6 +186,10 @@ obj_t vector(type_t type, u64_t len)
 obj_t string(u64_t len)
 {
     obj_t string = vector(TYPE_CHAR, len + 1);
+
+    if (!string)
+        emit(ERR_HEAP, "oom");
+
     as_string(string)[len] = '\0';
     string->len = len;
 
@@ -189,8 +199,13 @@ obj_t string(u64_t len)
 obj_t list(u64_t len, ...)
 {
     u64_t i;
-    obj_t l = (obj_t)heap_alloc(sizeof(struct obj_t) + sizeof(obj_t) * len);
+    obj_t l;
     va_list args;
+
+    l = (obj_t)heap_alloc(sizeof(struct obj_t) + sizeof(obj_t) * len);
+
+    if (!l)
+        emit(ERR_HEAP, "oom");
 
     l->mmod = MMOD_INTERNAL;
     l->refc = 1;
@@ -214,6 +229,10 @@ obj_t dict(obj_t keys, obj_t vals)
     obj_t dict;
 
     dict = list(2, keys, vals);
+
+    if (!dict)
+        emit(ERR_HEAP, "oom");
+
     dict->type = TYPE_DICT;
 
     return dict;
@@ -222,6 +241,10 @@ obj_t dict(obj_t keys, obj_t vals)
 obj_t table(obj_t keys, obj_t vals)
 {
     obj_t t = list(2, keys, vals);
+
+    if (!t)
+        emit(ERR_HEAP, "oom");
+
     t->type = TYPE_TABLE;
 
     return t;
@@ -231,6 +254,9 @@ obj_t venum(obj_t sym, obj_t vec)
 {
     obj_t e = list(2, sym, vec);
 
+    if (!e)
+        emit(ERR_HEAP, "oom");
+
     e->type = TYPE_ENUM;
 
     return e;
@@ -239,6 +265,9 @@ obj_t venum(obj_t sym, obj_t vec)
 obj_t anymap(obj_t sym, obj_t vec)
 {
     obj_t e = list(2, sym, vec);
+
+    if (!e)
+        emit(ERR_HEAP, "oom");
 
     e->type = TYPE_ANYMAP;
 
@@ -253,6 +282,9 @@ obj_t anymap(obj_t sym, obj_t vec)
 obj_t error(i8_t code, str_t msg)
 {
     obj_t obj = list(5, i64(code), string_from_str(msg, strlen(msg)), NULL, NULL, NULL);
+
+    if (!obj)
+        emit(ERR_HEAP, "oom");
 
     obj->mmod = MMOD_INTERNAL;
     obj->refc = 1;
@@ -781,6 +813,8 @@ i32_t objcmp(obj_t a, obj_t b)
             if (d != 0)
                 return d;
         }
+
+        return 0;
 
     default:
         return -1;

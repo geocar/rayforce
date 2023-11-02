@@ -35,7 +35,7 @@
 #include <errno.h>
 #endif
 
-static u64_t __RND_SEED__ = 0;
+__thread u64_t __RND_SEED__ = 0;
 
 /*
  * In case of using -Ofast compiler flag, we can not just use x != x due to
@@ -106,11 +106,8 @@ i64_t ops_ceil_f64(f64_t x)
 
 u64_t ops_rand_u64()
 {
-#define A 6364136223846793005ULL
-#define C 1442695040888963407ULL
-#define M (1ULL << 63)
     __RND_SEED__ += time(0);
-    __RND_SEED__ = (A * __RND_SEED__ + C) % M;
+    __RND_SEED__ = (6364136223846793005ull * __RND_SEED__ + 1442695040888963407ull) % (1ull << 63);
     return __RND_SEED__;
 }
 
@@ -248,6 +245,78 @@ obj_t ops_distinct(obj_t x)
 
     resize(&vec, j);
     drop(set);
+
+    return vec;
+}
+
+obj_t ops_find(i64_t x[], u64_t xl, i64_t y[], u64_t yl, bool_t allow_null)
+{
+    u64_t i, range;
+    i64_t max = 0, min = 0, n, p, *k, *v, *r, *f;
+    obj_t vec, ht;
+
+    if (xl == 0)
+        return vector_i64(0);
+
+    max = min = x[0];
+
+    for (i = 0; i < xl; i++)
+    {
+        max = (x[i] > max) ? x[i] : max;
+        min = (x[i] < min) ? x[i] : min;
+    }
+
+    range = max - min + 1;
+
+    if (range <= yl)
+    {
+        vec = vector_i64(yl + range);
+        r = as_i64(vec);
+        f = r + yl;
+
+        for (i = 0; i < range; i++)
+            f[i] = NULL_I64;
+
+        for (i = 0; i < xl; i++)
+        {
+            n = x[i] - min;
+            f[n] = (f[n] == NULL_I64) ? (i64_t)i : NULL_I64;
+        }
+
+        for (i = 0; i < yl; i++)
+        {
+            n = y[i] - min;
+            r[i] = (y[i] < min || y[i] > max) ? NULL_I64 : f[n];
+        }
+
+        resize(&vec, yl);
+
+        return vec;
+    }
+
+    vec = vector_i64(yl);
+    r = as_i64(vec);
+
+    // otherwise, use a hash table
+    ht = ht_tab(xl, TYPE_I64);
+
+    for (i = 0; i < xl; i++)
+    {
+        p = ht_tab_next(&ht, x[i] - min);
+        if (as_i64(as_list(ht)[0])[p] == NULL_I64)
+        {
+            as_i64(as_list(ht)[0])[p] = x[i] - min;
+            as_i64(as_list(ht)[1])[p] = i;
+        }
+    }
+
+    for (i = 0; i < yl; i++)
+    {
+        p = ht_tab_get(ht, y[i] - min);
+        r[i] = p == NULL_I64 ? NULL_I64 : as_i64(as_list(ht)[1])[p];
+    }
+
+    drop(ht);
 
     return vec;
 }

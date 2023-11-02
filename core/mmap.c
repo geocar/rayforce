@@ -76,7 +76,14 @@ nil_t *mmap_stack(u64_t size)
 
 nil_t *mmap_malloc(u64_t size)
 {
-    return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE | MAP_NORESERVE | MAP_LOCKED, -1, 0);
+    nil_t *ptr;
+
+    ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE | MAP_NORESERVE | MAP_LOCKED, -1, 0);
+
+    if (ptr == MAP_FAILED)
+        return NULL;
+
+    return ptr;
 }
 
 nil_t *mmap_file(i64_t fd, u64_t size)

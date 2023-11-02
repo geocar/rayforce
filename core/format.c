@@ -300,8 +300,8 @@ i32_t error_fmt_into(str_t *dst, i32_t *len, i32_t *offset, i32_t limit, obj_t o
         case ERR_INDEX:
             error_desc = "index";
             break;
-        case ERR__HEAP:
-            error_desc = "alloc";
+        case ERR_HEAP:
+            error_desc = "heap";
             break;
         case ERR_IO:
             error_desc = "io";

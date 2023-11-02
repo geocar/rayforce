@@ -85,7 +85,7 @@ nil_t *heap_add_pool(u64_t order)
     if (pool == NULL)
         return NULL;
 
-    debug_assert((i64_t)pool % 16 == 0, "pool is not aligned");
+    // debug_assert((i64_t)pool % 16 == 0, "pool is not aligned");
 
     node = (node_t *)pool;
     node->base = (nil_t *)(order << 56 | (u64_t)pool);
@@ -211,6 +211,10 @@ nil_t *__attribute__((hot)) heap_alloc(u64_t size)
         i = MAX_ORDER;
 
         node_t *node = (node_t *)heap_add_pool(i);
+
+        if (node == NULL)
+            return NULL;
+
         block_size = blocksize(i);
         node->next = NULL;
         __HEAP->freelist[i] = node;

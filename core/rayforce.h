@@ -59,7 +59,7 @@ extern "C"
 #define ERR_TYPE 4
 #define ERR_LENGTH 5
 #define ERR_INDEX 6
-#define ERR__HEAP 7
+#define ERR_HEAP 7
 #define ERR_IO 8
 #define ERR_NOT_FOUND 9
 #define ERR_NOT_EXIST 10

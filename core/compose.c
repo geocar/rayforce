@@ -66,6 +66,9 @@ obj_t ray_til(obj_t x)
 
     vec = vector_i64(l);
 
+    if (is_error(vec))
+        return vec;
+
     for (i = 0; i < l; i++)
         as_i64(vec)[i] = i;
 
