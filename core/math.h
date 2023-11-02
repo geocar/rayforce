@@ -36,5 +36,8 @@ obj_t ray_sum(obj_t x);
 obj_t ray_avg(obj_t x);
 obj_t ray_min(obj_t x);
 obj_t ray_max(obj_t x);
+obj_t ray_round(obj_t x);
+obj_t ray_floor(obj_t x);
+obj_t ray_ceil(obj_t x);
 
 #endif // MATH_H

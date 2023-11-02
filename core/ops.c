@@ -49,21 +49,6 @@ bool_t ops_is_nan(f64_t x)
     return (bits & 0x7ff0000000000000ull) == 0x7ff0000000000000ull && (bits & 0x000fffffffffffffull) != 0;
 }
 
-i64_t ops_round_f64(f64_t x)
-{
-    return x >= 0.0 ? (i64_t)(x + 0.5) : (i64_t)(x - 0.5);
-}
-
-i64_t ops_floor_f64(f64_t x)
-{
-    return x >= 0.0 ? (i64_t)x : (i64_t)(x - 1.0);
-}
-
-i64_t ops_ceil_f64(f64_t x)
-{
-    return x >= 0.0 ? (i64_t)(x + 1.0) : (i64_t)x;
-}
-
 u64_t ops_rand_u64()
 {
     __RND_SEED__ += time(0);

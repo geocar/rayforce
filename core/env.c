@@ -101,6 +101,9 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "avg",       TYPE_UNARY,    FN_NONE,           ray_avg);
     regf(functions,  "min",       TYPE_UNARY,    FN_ATOMIC,         ray_min);
     regf(functions,  "max",       TYPE_UNARY,    FN_ATOMIC,         ray_max);
+    regf(functions,  "round",     TYPE_UNARY,    FN_ATOMIC,         ray_round);
+    regf(functions,  "floor",     TYPE_UNARY,    FN_ATOMIC,         ray_floor);
+    regf(functions,  "ceil",      TYPE_UNARY,    FN_ATOMIC,         ray_ceil);
     regf(functions,  "first",     TYPE_UNARY,    FN_NONE,           ray_first);
     regf(functions,  "last",      TYPE_UNARY,    FN_NONE,           ray_last);
     regf(functions,  "count",     TYPE_UNARY,    FN_NONE,           ray_count);

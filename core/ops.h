@@ -72,6 +72,9 @@
 #define minf64(x, y) ((x) < (y) ? (x) : (y))
 #define roti32(x, y) (((x) << (y)) | ((x) >> (32 - (y))))
 #define roti64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
+#define roundf64(x) ((x) >= 0.0 ? (i64_t)((x) + 0.5) : (i64_t)((x)-0.5))
+#define floorf64(x) ((x) >= 0.0 ? (i64_t)(x) : (i64_t)((x)-1.0))
+#define ceilf64(x) ((x) >= 0.0 ? (i64_t)((x) + 1.0) : (i64_t)(x))
 
 // Function types
 typedef u64_t (*hash_f)(i64_t, nil_t *);
@@ -88,9 +91,6 @@ typedef enum
 
 bool_t ops_is_nan(f64_t x);
 bool_t ops_as_bool(obj_t x);
-i64_t ops_round_f64(f64_t x);
-i64_t ops_floor_f64(f64_t x);
-i64_t ops_ceil_f64(f64_t x);
 u64_t ops_rand_u64();
 obj_t ops_distinct(obj_t x);
 obj_t ops_group(i64_t values[], i64_t indices[], i64_t len);

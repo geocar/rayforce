@@ -2603,3 +2603,147 @@ dispatch:
         emit(ERR_TYPE, "max: unsupported type: %d", x->type);
     }
 }
+
+obj_t ray_round(obj_t x)
+{
+    u64_t i, l = 0;
+    i64_t *xids = NULL, *rvals;
+    f64_t *xfvals;
+    obj_t res;
+
+dispatch:
+    switch (x->type)
+    {
+    case -TYPE_F64:
+        return i64(roundf64(x->f64));
+    case TYPE_F64:
+        if (xids)
+        {
+            res = vector_i64(l);
+            rvals = as_i64(res);
+            xfvals = as_f64(x);
+
+            for (i = 0; i < l; i++)
+                rvals[i] = roundf64(xfvals[xids[i]]);
+
+            return res;
+        }
+
+        l = x->len;
+
+        res = vector_f64(l);
+        rvals = as_i64(res);
+        xfvals = as_f64(x);
+
+        for (i = 0; i < l; i++)
+            rvals[i] = roundf64(xfvals[i]);
+
+        return res;
+    default:
+        if (x->type == TYPE_VECMAP)
+        {
+            xids = as_i64(as_list(x)[1]);
+            l = as_list(x)[1]->len;
+            x = as_list(x)[0];
+            goto dispatch;
+        }
+
+        emit(ERR_TYPE, "round: unsupported type: %d", x->type);
+    }
+}
+
+obj_t ray_floor(obj_t x)
+{
+    u64_t i, l = 0;
+    i64_t *xids = NULL, *rvals;
+    f64_t *xfvals;
+    obj_t res;
+
+dispatch:
+    switch (x->type)
+    {
+    case -TYPE_F64:
+        return i64(floorf64(x->f64));
+    case TYPE_F64:
+        if (xids)
+        {
+            res = vector_i64(l);
+            rvals = as_i64(res);
+            xfvals = as_f64(x);
+
+            for (i = 0; i < l; i++)
+                rvals[i] = floorf64(xfvals[xids[i]]);
+
+            return res;
+        }
+
+        l = x->len;
+
+        res = vector_f64(l);
+        rvals = as_i64(res);
+        xfvals = as_f64(x);
+
+        for (i = 0; i < l; i++)
+            rvals[i] = floorf64(xfvals[i]);
+
+        return res;
+    default:
+        if (x->type == TYPE_VECMAP)
+        {
+            xids = as_i64(as_list(x)[1]);
+            l = as_list(x)[1]->len;
+            x = as_list(x)[0];
+            goto dispatch;
+        }
+
+        emit(ERR_TYPE, "floor: unsupported type: %d", x->type);
+    }
+}
+
+obj_t ray_ceil(obj_t x)
+{
+    u64_t i, l = 0;
+    i64_t *xids = NULL, *rvals;
+    f64_t *xfvals;
+    obj_t res;
+
+dispatch:
+    switch (x->type)
+    {
+    case -TYPE_F64:
+        return i64(ceilf64(x->f64));
+    case TYPE_F64:
+        if (xids)
+        {
+            res = vector_i64(l);
+            rvals = as_i64(res);
+            xfvals = as_f64(x);
+
+            for (i = 0; i < l; i++)
+                rvals[i] = ceilf64(xfvals[xids[i]]);
+
+            return res;
+        }
+
+        l = x->len;
+
+        res = vector_f64(l);
+        rvals = as_i64(res);
+        xfvals = as_f64(x);
+
+        for (i = 0; i < l; i++)
+            rvals[i] = ceilf64(xfvals[i]);
+
+        return res;
+    default:
+        if (x->type == TYPE_VECMAP)
+        {
+            xids = as_i64(as_list(x)[1]);
+            l = as_list(x)[1]->len;
+            x = as_list(x)[0];
+            goto dispatch;
+        }
+
+        emit(ERR_TYPE, "ceil: unsupported type: %d", x->type);
+    }
+}
