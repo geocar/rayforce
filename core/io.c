@@ -99,7 +99,10 @@ obj_t ray_read(obj_t x)
         fs_fclose(fd);
 
         if (c != size)
+        {
+            drop(res);
             return sys_error(ERROR_TYPE_SYS, as_string(x));
+        }
 
         return res;
     default:
