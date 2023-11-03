@@ -25,13 +25,19 @@
 #include <stdio.h>
 #include "string.h"
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+#include <windows.h>
+#elif defined(__APPLE__) && defined(__MACH__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#elif defined(__linux__)
+#endif
+
 sys_info_t get_sys_info()
 {
     sys_info_t info;
 
-#ifdef _WIN32
-#include <windows.h>
-
+#if defined(_WIN32) || defined(__CYGWIN__)
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     snprintf(info.cpu, sizeof(info.cpu), "%u", si.dwProcessorType);
@@ -41,7 +47,7 @@ sys_info_t get_sys_info()
     GlobalMemoryStatusEx(&memInfo);
     info.mem = (i32_t)(memInfo.ullTotalPhys / (1024 * 1024));
 
-#elif __linux__
+#elif defined(__linux__)
     FILE *cpuFile = fopen("/proc/cpuinfo", "r");
     char_t line[256];
 
@@ -69,10 +75,7 @@ sys_info_t get_sys_info()
     }
     fclose(memFile);
 
-#elif __APPLE__
-#include <sys/types.h>
-#include <sys/sysctl.h>
-
+#elif defined(__APPLE__) && defined(__MACH__)
     size_t len = sizeof(info.cpu);
     sysctlbyname("machdep.cpu.brand_string", &info.cpu, &len, NULL, 0);
 
