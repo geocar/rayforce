@@ -96,7 +96,7 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len);
 u64_t ops_count(obj_t x);
 bool_t ops_eq_idx(obj_t a, i64_t ai, obj_t b, i64_t bi);
 u64_t ops_hash_obj(obj_t obj);
-nil_t ops_hash_list(obj_t obj, u64_t *out, u64_t len);
+nil_t ops_hash_list(obj_t obj, u64_t *out, u64_t len, u64_t seed);
 obj_t ops_find(i64_t x[], u64_t xl, i64_t y[], u64_t yl);
 obj_t sys_error(os_error_type_t, str_t msg);
 

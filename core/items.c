@@ -388,11 +388,7 @@ obj_t ray_find(obj_t x, obj_t y)
         res = vector_i64(maxi64(xl, yl));
         ht = ht_tab(maxi64(xl, yl) * 2, -1);
 
-        // initialize hashes
-        for (i = 0; i < xl; i++)
-            as_i64(res)[i] = 0xa5b6c7d8e9f01234ull;
-
-        ops_hash_list(x, (u64_t *)as_i64(res), xl);
+        ops_hash_list(x, (u64_t *)as_i64(res), xl, 0xa5b6c7d8e9f01234ull);
         ctx = (__items_find_ctx_t){.lobj = x, .robj = x, .hashes = (u64_t *)as_i64(res)};
         for (i = 0; i < xl; i++)
         {
@@ -401,11 +397,7 @@ obj_t ray_find(obj_t x, obj_t y)
                 as_i64(as_list(ht)[0])[idx] = i;
         }
 
-        // (re)initialize hashes
-        for (i = 0; i < yl; i++)
-            as_i64(res)[i] = 0xa5b6c7d8e9f01234ull;
-
-        ops_hash_list(y, (u64_t *)as_i64(res), yl);
+        ops_hash_list(y, (u64_t *)as_i64(res), yl, 0xa5b6c7d8e9f01234ull);
         ctx = (__items_find_ctx_t){.lobj = x, .robj = y, .hashes = (u64_t *)as_i64(res)};
         for (i = 0; i < yl; i++)
         {

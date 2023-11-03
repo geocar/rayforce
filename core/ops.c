@@ -248,7 +248,7 @@ u64_t ops_hash_obj(obj_t obj)
     }
 }
 
-nil_t ops_hash_list(obj_t obj, u64_t out[], u64_t len)
+nil_t ops_hash_list(obj_t obj, u64_t out[], u64_t len, u64_t seed)
 {
     u8_t *u8v;
     f64_t *f64v;
@@ -263,32 +263,56 @@ nil_t ops_hash_list(obj_t obj, u64_t out[], u64_t len)
     case TYPE_BYTE:
     case TYPE_CHAR:
         u8v = as_u8(obj);
-        for (i = 0; i < len; i++)
-            out[i] = hashu64((u64_t)u8v[i], out[i]);
+        if (seed != 0)
+            for (i = 0; i < len; i++)
+                out[i] = hashu64((u64_t)u8v[i], seed);
+        else
+            for (i = 0; i < len; i++)
+                out[i] = hashu64((u64_t)u8v[i], out[i]);
         break;
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
         u64v = (u64_t *)as_i64(obj);
-        for (i = 0; i < len; i++)
-            out[i] = hashu64(u64v[i], out[i]);
+        if (seed != 0)
+            for (i = 0; i < len; i++)
+                out[i] = hashu64(u64v[i], seed);
+        else
+            for (i = 0; i < len; i++)
+                out[i] = hashu64(u64v[i], out[i]);
         break;
     case TYPE_F64:
         f64v = as_f64(obj);
-        for (i = 0; i < len; i++)
-            out[i] = hashu64((u64_t)f64v[i], out[i]);
+        if (seed != 0)
+            for (i = 0; i < len; i++)
+                out[i] = hashu64((u64_t)f64v[i], seed);
+        else
+            for (i = 0; i < len; i++)
+                out[i] = hashu64((u64_t)f64v[i], out[i]);
         break;
     case TYPE_GUID:
         g64v = as_guid(obj);
-        for (i = 0; i < len; i++)
+        if (seed != 0)
+        {
+            for (i = 0; i < len; i++)
+            {
+                out[i] = hashu64(*(u64_t *)&g64v[i], seed);
+                out[i] = hashu64(*((u64_t *)&g64v[i] + 1), out[i]);
+            }
+        }
+        else
         {
             out[i] = hashu64(*(u64_t *)&g64v[i], out[i]);
             out[i] = hashu64(*((u64_t *)&g64v[i] + 1), out[i]);
         }
         break;
     case TYPE_LIST:
-        for (i = 0; i < len; i++)
-            out[i] = hashu64(ops_hash_obj(as_list(obj)[i]), out[i]);
+        if (seed != 0)
+            for (i = 0; i < len; i++)
+                out[i] = hashu64(ops_hash_obj(as_list(obj)[i]), seed);
+        else
+            for (i = 0; i < len; i++)
+                out[i] = hashu64(ops_hash_obj(as_list(obj)[i]), out[i]);
         break;
     case TYPE_ENUM:
         k = ray_key(obj);
@@ -296,16 +320,32 @@ nil_t ops_hash_list(obj_t obj, u64_t out[], u64_t len)
         drop(k);
         u64v = (u64_t *)as_symbol(v);
         ids = as_i64(enum_val(obj));
-        for (i = 0; i < len; i++)
-            out[i] = hashu64(u64v[ids[i]], out[i]);
+        if (seed != 0)
+            for (i = 0; i < len; i++)
+                out[i] = hashu64(u64v[ids[i]], seed);
+        else
+            for (i = 0; i < len; i++)
+                out[i] = hashu64(u64v[ids[i]], out[i]);
         drop(v);
         break;
     case TYPE_ANYMAP:
-        for (i = 0; i < len; i++)
+        if (seed != 0)
         {
-            v = at_idx(obj, i);
-            out[i] = hashu64(ops_hash_obj(v), out[i]);
-            drop(v);
+            for (i = 0; i < len; i++)
+            {
+                v = at_idx(obj, i);
+                out[i] = hashu64(ops_hash_obj(v), seed);
+                drop(v);
+            }
+        }
+        else
+        {
+            for (i = 0; i < len; i++)
+            {
+                v = at_idx(obj, i);
+                out[i] = hashu64(ops_hash_obj(v), out[i]);
+                drop(v);
+            }
         }
         break;
     default:

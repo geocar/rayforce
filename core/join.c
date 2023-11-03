@@ -71,16 +71,12 @@ obj_t select_column(obj_t left_col, obj_t right_col, i64_t ids[], u64_t len)
 
 nil_t precalc_hash(obj_t cols, u64_t *out, u64_t ncols, u64_t nrows)
 {
-    u64_t i, j;
+    u64_t i;
 
-    // initialize hashes
-    for (j = 0; j < nrows; j++)
-        out[j] = 0xa5b6c7d8e9f01234ull;
-
-    ops_hash_list(as_list(cols)[0], out, nrows);
+    ops_hash_list(as_list(cols)[0], out, nrows, 0xa5b6c7d8e9f01234ull);
 
     for (i = 1; i < ncols; i++)
-        ops_hash_list(as_list(cols)[i], out, nrows);
+        ops_hash_list(as_list(cols)[i], out, nrows, 0);
 
     return;
 }
