@@ -126,56 +126,6 @@ dispatch:
     return res;
 }
 
-obj_t ray_parse(obj_t x)
-{
-    parser_t parser;
-    obj_t res;
-
-    switch (x->type)
-    {
-    case TYPE_CHAR:
-        parser = parser_new();
-        res = parse(&parser, "top-level", as_string(x));
-        parser_free(&parser);
-        return res;
-    default:
-        throw(ERR_TYPE, "parse: unsupported type: %d", x->type);
-    }
-}
-
-obj_t ray_read_parse_compile(obj_t x)
-{
-    // parser_t parser;
-    // obj_t red, par, com;
-
-    switch (x->type)
-    {
-    // case TYPE_CHAR:
-    //     red = ray_read(x);
-    //     if (red->type == TYPE_ERROR)
-    //         return red;
-
-    //     parser = parser_new();
-    //     par = parse(&parser, as_string(x), as_string(red));
-    //     drop(red);
-
-    //     if (par->type == TYPE_ERROR)
-    //     {
-    //         print_error(par, as_string(x), as_string(red), red->len);
-    //         parser_free(&parser);
-    //         return par;
-    //     }
-
-    //     com = cc_compile_lambda(as_string(x), vector_symbol(0), &par, 1, &parser.nfo);
-    //     drop(par);
-    //     parser_free(&parser);
-
-    //     return com;
-    default:
-        throw(ERR_TYPE, "read_parse_compile: unsupported type: %d", x->type);
-    }
-}
-
 obj_t ray_rc(obj_t x)
 {
     // substract 1 to skip the our reference

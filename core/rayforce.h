@@ -181,6 +181,7 @@ extern nil_t dropn(u64_t n, ...);
 
 // Checkers
 extern bool_t is_null(obj_t obj);
+#define type(obj) ((!obj)? 0 : obj->type)
 #define is_error(obj)  (obj && (obj)->type == TYPE_ERROR)
 #define is_atom(obj)   (obj && (obj)->type < 0)
 #define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type <= TYPE_CHAR)

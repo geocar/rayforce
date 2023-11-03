@@ -82,7 +82,7 @@ obj_t parse_cmdline(i32_t argc, str_t argv[])
 nil_t runtime_init(i32_t argc, str_t argv[])
 {
     i64_t i;
-    obj_t filename = null(0), file = null(0), res;
+    obj_t file, res;
     str_t fmt;
 
     heap_init();
@@ -104,25 +104,15 @@ nil_t runtime_init(i32_t argc, str_t argv[])
             __RUNTIME->addr.port = atoi(as_string(as_list(as_list(__RUNTIME->args)[1])[i]));
 
         // load file
-        filename = runtime_get_arg("file");
-        if (filename != NULL)
+        file = runtime_get_arg("file");
+        if (!is_null(file))
         {
-            file = ray_read(filename);
-            if (file->type == TYPE_ERROR)
-                printf("No such file: '%s'\n", as_string(filename));
-            else
-            {
-                res = eval_str(0, as_string(filename), as_string(file));
-                fmt = obj_fmt(res);
-                printf("%s\n", fmt);
-                heap_free(fmt);
-                drop(res);
-            }
-
-            drop(file);
+            res = ray_load(file);
+            fmt = obj_fmt(res);
+            printf("%s\n", fmt);
+            heap_free(fmt);
+            dropn(2, file, res);
         }
-
-        drop(filename);
 
         __RUNTIME->poll = poll_init(__RUNTIME->addr.port);
     }

@@ -418,3 +418,41 @@ obj_t ray_csv(obj_t *x, i64_t n)
         throw(ERR_LENGTH, "csv: expected 1 or 2 arguments, got %d", n);
     }
 }
+
+obj_t ray_parse(obj_t x)
+{
+    if (!x || x->type != TYPE_CHAR)
+        throw(ERR_TYPE, "parse: expected string");
+
+    return parse(&runtime_get()->parser, "repl", as_string(x));
+}
+
+obj_t ray_eval(obj_t x)
+{
+    if (!x || x->type != TYPE_CHAR)
+        throw(ERR_TYPE, "eval: expected string");
+
+    return eval_str(0, "repl", as_string(x));
+}
+
+obj_t ray_exec(obj_t x)
+{
+    return eval_obj(0, "repl", x);
+}
+
+obj_t ray_load(obj_t x)
+{
+    obj_t file, res;
+
+    if (!x || x->type != TYPE_CHAR)
+        throw(ERR_TYPE, "load: expected string");
+
+    file = ray_read(x);
+    if (is_error(file))
+        return file;
+
+    res = eval_str(0, as_string(x), as_string(file));
+    drop(file);
+
+    return res;
+}

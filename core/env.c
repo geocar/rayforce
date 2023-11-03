@@ -92,6 +92,10 @@ nil_t init_functions(obj_t functions)
     // Unary
     regf(functions,  "get",       TYPE_UNARY,    FN_NONE,           ray_get);
     regf(functions,  "read",      TYPE_UNARY,    FN_NONE,           ray_read);
+    regf(functions,  "parse",     TYPE_UNARY,    FN_NONE,           ray_parse);
+    regf(functions,  "eval",      TYPE_UNARY,    FN_NONE,           ray_eval);
+    regf(functions,  "exec",      TYPE_UNARY,    FN_NONE,           ray_exec);
+    regf(functions,  "load",      TYPE_UNARY,    FN_NONE,           ray_load);
     regf(functions,  "type",      TYPE_UNARY,    FN_NONE,           ray_type);
     regf(functions,  "til",       TYPE_UNARY,    FN_NONE,           ray_til);
     regf(functions,  "reverse",   TYPE_UNARY,    FN_NONE,           ray_reverse);
