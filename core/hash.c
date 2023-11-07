@@ -107,51 +107,60 @@ nil_t rehash(obj_t *obj, hash_f hash, nil_t *seed)
 i64_t ht_tab_next(obj_t *obj, i64_t key)
 {
     u64_t i, size;
+    i64_t *keys;
 
     size = as_list(*obj)[0]->len;
+    keys = as_i64(as_list(*obj)[0]);
 
     while (true)
     {
         for (i = (u64_t)key & (size - 1); i < size; i++)
         {
-            if ((as_i64(as_list(*obj)[0])[i] == NULL_I64) || (as_i64(as_list(*obj)[0])[i] == key))
+            if ((keys[i] == NULL_I64) || (keys[i] == key))
                 return i;
         }
 
         rehash(obj, NULL, NULL);
         size = as_list(*obj)[0]->len;
+        keys = as_i64(as_list(*obj)[0]);
     }
 }
 
 i64_t ht_tab_next_with(obj_t *obj, i64_t key, hash_f hash, cmp_f cmp, nil_t *seed)
 {
     u64_t i, size;
+    i64_t *keys;
 
     size = as_list(*obj)[0]->len;
+    keys = as_i64(as_list(*obj)[0]);
+
     while (true)
     {
         for (i = hash(key, seed) & (size - 1); i < size; i++)
         {
-            if (as_i64(as_list(*obj)[0])[i] == NULL_I64 || cmp(as_i64(as_list(*obj)[0])[i], key, seed) == 0)
+            if (keys[i] == NULL_I64 || cmp(keys[i], key, seed) == 0)
                 return i;
         }
 
         rehash(obj, hash, seed);
         size = as_list(*obj)[0]->len;
+        keys = as_i64(as_list(*obj)[0]);
     }
 }
 
 i64_t ht_tab_get(obj_t obj, i64_t key)
 {
     u64_t i, size;
+    i64_t *keys;
 
     size = as_list(obj)[0]->len;
+    keys = as_i64(as_list(obj)[0]);
+
     for (i = (u64_t)key & (size - 1); i < size; i++)
     {
-        if (as_i64(as_list(obj)[0])[i] == NULL_I64)
+        if (keys[i] == NULL_I64)
             return NULL_I64;
-
-        if (as_i64(as_list(obj)[0])[i] == key)
+        else if (keys[i] == key)
             return i;
     }
 
@@ -161,14 +170,16 @@ i64_t ht_tab_get(obj_t obj, i64_t key)
 i64_t ht_tab_get_with(obj_t obj, i64_t key, hash_f hash, cmp_f cmp, nil_t *seed)
 {
     u64_t i, size;
+    i64_t *keys;
 
     size = as_list(obj)[0]->len;
+    keys = as_i64(as_list(obj)[0]);
+
     for (i = hash(key, seed) & (size - 1); i < size; i++)
     {
-        if (as_i64(as_list(obj)[0])[i] == NULL_I64)
+        if (keys[i] == NULL_I64)
             return NULL_I64;
-
-        if (cmp(as_i64(as_list(obj)[0])[i], key, seed) == 0)
+        else if (cmp(keys[i], key, seed) == 0)
             return i;
     }
 

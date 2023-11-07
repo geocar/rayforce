@@ -77,7 +77,7 @@ obj_t __attribute__((hot)) vm_exec(vm_t *vm, obj_t fun)
     register u64_t i, j, l;
     register i32_t sp, bp, ip;
     i32_t b;
-    u64_t a;
+    volatile u64_t a;
 
     // init registers
     vm->ip = 0;

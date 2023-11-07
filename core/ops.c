@@ -542,9 +542,7 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
     }
 
     // use hash table if range is large
-    ht = ht_tab(len, TYPE_LIST);
-    hk = as_i64(as_list(ht)[0]);
-    hv = as_i64(as_list(ht)[1]);
+    ht = ht_tab(len, TYPE_I64);
 
     // count occurrences
     if (indices)
@@ -553,6 +551,8 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
         {
             n = values[indices[i]];
             idx = ht_tab_next(&ht, n);
+            hk = as_i64(as_list(ht)[0]);
+            hv = as_i64(as_list(ht)[1]);
             if (hk[idx] == NULL_I64)
             {
                 hk[idx] = n;
@@ -568,6 +568,8 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
         {
             n = values[i];
             idx = ht_tab_next(&ht, n);
+            hk = as_i64(as_list(ht)[0]);
+            hv = as_i64(as_list(ht)[1]);
             if (hk[idx] == NULL_I64)
             {
                 hk[idx] = n;
@@ -598,8 +600,8 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
         for (i = 0; i < len; i++)
         {
             n = values[indices[i]];
-            l = vv[idx]->len++;
             idx = ht_tab_get(ht, n);
+            l = vv[idx]->len++;
             as_i64(vv[idx])[l] = indices[i];
         }
     }
@@ -608,8 +610,8 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
         for (i = 0; i < len; i++)
         {
             n = values[i];
-            l = vv[idx]->len++;
             idx = ht_tab_get(ht, n);
+            l = vv[idx]->len++;
             as_i64(vv[idx])[l] = i;
         }
     }
@@ -626,6 +628,7 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
 
     resize(&as_list(ht)[0], j);
     resize(&as_list(ht)[1], j);
+    as_list(ht)[1]->type = TYPE_LIST;
 
     return ht;
 }
