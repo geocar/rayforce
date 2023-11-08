@@ -99,54 +99,29 @@ inline __attribute__((always_inline)) u64_t hashu64(u64_t h, u64_t k)
     return b;
 }
 
-bool_t cnt_update(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval)
-{
-    unused(key);
-    unused(*tkey);
-    unused(seed);
-    unused(val);
-
-    *tval += 1;
-    return true;
-}
-
-bool_t pos_update(i64_t key, i64_t val, nil_t *seed, i64_t *tkey, i64_t *tval)
-{
-    unused(key);
-    unused(*tkey);
-
-    // contains count of elements (replace with vector)
-    if ((*tval & (1ll << 62)) == 0)
-    {
-        obj_t *vv = (obj_t *)seed;
-        obj_t v = vector_i64(*tval);
-        as_i64(v)[0] = val;
-        v->len = 1;
-        *vv = v;
-        *tval = (i64_t)seed | 1ll << 62;
-
-        return false;
-    }
-
-    // contains vector
-    obj_t *vv = (obj_t *)(*tval & ~(1ll << 62));
-    i64_t *v = as_i64(*vv);
-    v[(*vv)->len++] = val;
-    return true;
-}
-
-obj_t ops_distinct_raw(i64_t x[], u64_t len)
+obj_t ops_distinct_raw(i64_t values[], i64_t indices[], u64_t len)
 {
     u64_t i, j, range;
     i64_t p, min, max, k, *out;
     obj_t vec, set;
 
-    min = max = x[0];
-
-    for (i = 0; i < len; i++)
+    if (indices)
     {
-        max = (x[i] > max) ? x[i] : max;
-        min = (x[i] < min) ? x[i] : min;
+        min = max = values[indices[0]];
+        for (i = 0; i < len; i++)
+        {
+            min = values[indices[i]] < min ? values[indices[i]] : min;
+            max = values[indices[i]] > max ? values[indices[i]] : max;
+        }
+    }
+    else
+    {
+        min = max = values[0];
+        for (i = 0; i < len; i++)
+        {
+            max = (values[i] > max) ? values[i] : max;
+            min = (values[i] < min) ? values[i] : min;
+        }
     }
 
     range = max - min + 1;
@@ -159,7 +134,7 @@ obj_t ops_distinct_raw(i64_t x[], u64_t len)
         memset(out, 0, sizeof(i64_t) * range);
 
         for (i = 0; i < len; i++)
-            out[x[i] - min]++;
+            out[values[i] - min]++;
 
         // compact keys
         for (i = 0, j = 0; i < range; i++)
@@ -179,7 +154,7 @@ obj_t ops_distinct_raw(i64_t x[], u64_t len)
 
     for (i = 0; i < len; i++)
     {
-        k = x[i] - min;
+        k = values[i] - min;
         p = ht_tab_next(&set, k);
         out = as_i64(as_list(set)[0]);
         if (out[p] == NULL_I64)
@@ -215,7 +190,7 @@ u64_t __obj_hash(i64_t a, nil_t *seed)
     return ops_hash_obj((obj_t)a);
 }
 
-obj_t ops_distinct_obj(obj_t x[], u64_t len)
+obj_t ops_distinct_obj(obj_t values[], i64_t indices[], u64_t len)
 {
     u64_t i, j;
     i64_t p, *out;
@@ -225,10 +200,10 @@ obj_t ops_distinct_obj(obj_t x[], u64_t len)
 
     for (i = 0; i < len; i++)
     {
-        p = ht_tab_next_with(&set, (i64_t)x[i], &__obj_hash, &__obj_cmp, NULL);
+        p = ht_tab_next_with(&set, (i64_t)values[i], &__obj_hash, &__obj_cmp, NULL);
         out = as_i64(as_list(set)[0]);
         if (out[p] == NULL_I64)
-            out[p] = (i64_t)clone(x[i]);
+            out[p] = (i64_t)clone(values[i]);
     }
 
     // compact keys
@@ -535,20 +510,41 @@ obj_t ops_group(i64_t values[], i64_t indices[], i64_t len)
         for (i = 0; i < range; i++)
             hk[i] = 0;
 
-        for (i = 0; i < len; i++)
-            hk[values[i] - min]++;
-
-        for (i = 0; i < range; i++)
+        if (indices)
         {
-            vv[i] = hk[i] ? vector_i64(hk[i]) : null(0);
-            hk[i] = 0;
+            for (i = 0; i < len; i++)
+                hk[values[indices[i]] - min]++;
+
+            for (i = 0; i < range; i++)
+            {
+                vv[i] = hk[i] ? vector_i64(hk[i]) : null(0);
+                hk[i] = 0;
+            }
+
+            // fill up positions
+            for (i = 0; i < len; i++)
+            {
+                idx = values[indices[i]] - min;
+                as_i64(vv[idx])[hk[idx]++] = indices[i];
+            }
         }
-
-        // fill up positions
-        for (i = 0; i < len; i++)
+        else
         {
-            idx = values[i] - min;
-            as_i64(vv[idx])[hk[idx]++] = i;
+            for (i = 0; i < len; i++)
+                hk[values[i] - min]++;
+
+            for (i = 0; i < range; i++)
+            {
+                vv[i] = hk[i] ? vector_i64(hk[i]) : null(0);
+                hk[i] = 0;
+            }
+
+            // fill up positions
+            for (i = 0; i < len; i++)
+            {
+                idx = values[i] - min;
+                as_i64(vv[idx])[hk[idx]++] = i;
+            }
         }
 
         // compact keys/vals

@@ -50,18 +50,27 @@ obj_t ray_count(obj_t x)
 obj_t ray_distinct(obj_t x)
 {
     obj_t res = NULL;
+    u64_t l;
+    i64_t *indices = NULL;
 
+dispatch:
     switch (x->type)
     {
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
-        res = ops_distinct_raw(as_i64(x), x->len);
+        l = indices == NULL ? x->len : l;
+        res = ops_distinct_raw(as_i64(x), indices, x->len);
         res->type = x->type;
         return res;
     case TYPE_LIST:
-        res = ops_distinct_obj(as_list(x), x->len);
+        res = ops_distinct_obj(as_list(x), indices, x->len);
         return res;
+    case TYPE_VECMAP:
+        l = as_list(x)[1]->len;
+        indices = as_i64(as_list(x)[1]);
+        x = as_list(x)[0];
+        goto dispatch;
     default:
         throw(ERR_TYPE, "distinct: invalid type: '%s", typename(x->type));
     }
