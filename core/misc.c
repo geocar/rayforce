@@ -53,36 +53,29 @@ obj_t ray_distinct(obj_t x)
 {
     obj_t res = NULL;
     u64_t l;
-    i64_t *indices = NULL;
 
-dispatch:
     switch (x->type)
     {
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
-        l = indices == NULL ? x->len : l;
-        res = index_distinct_i64(as_i64(x), indices, l);
+        l = x->len;
+        res = index_distinct_i64(as_i64(x), l);
         res->type = x->type;
         return res;
     case TYPE_ENUM:
-        l = indices == NULL ? ops_count(x) : l;
-        res = index_distinct_i64(as_i64(enum_val(x)), indices, l);
+        l = ops_count(x);
+        res = index_distinct_i64(as_i64(enum_val(x)), l);
         res = venum(ray_key(x), res);
         return res;
     case TYPE_LIST:
-        l = indices == NULL ? ops_count(x) : l;
-        res = index_distinct_obj(as_list(x), indices, l);
+        l = ops_count(x);
+        res = index_distinct_obj(as_list(x), l);
         return res;
     case TYPE_GUID:
-        l = indices == NULL ? x->len : l;
-        res = index_distinct_guid(as_guid(x), indices, l);
+        l = x->len;
+        res = index_distinct_guid(as_guid(x), l);
         return res;
-    case TYPE_FILTERMAP:
-        l = as_list(x)[1]->len;
-        indices = as_i64(as_list(x)[1]);
-        x = as_list(x)[0];
-        goto dispatch;
     default:
         throw(ERR_TYPE, "distinct: invalid type: '%s", typename(x->type));
     }

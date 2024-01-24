@@ -29,19 +29,10 @@
 #include "items.h"
 #include "unary.h"
 
-obj_t index_distinct_i8(i8_t values[], i64_t indices[], u64_t len)
+i64_t index_range(i64_t *pmin, i64_t *pmax, i64_t values[], i64_t indices[], u64_t len)
 {
-    unused(values);
-    unused(indices);
-    unused(len);
-    throw(ERR_NOT_IMPLEMENTED, "index_distinct_i8 not implemented");
-}
-
-obj_t index_distinct_i64(i64_t values[], i64_t indices[], u64_t len)
-{
-    u64_t i, j, range;
-    i64_t p, min, max, k, *out;
-    obj_t vec, set;
+    u64_t i;
+    i64_t min, max;
 
     if (indices)
     {
@@ -57,12 +48,31 @@ obj_t index_distinct_i64(i64_t values[], i64_t indices[], u64_t len)
         min = max = values[0];
         for (i = 0; i < len; i++)
         {
-            max = (values[i] > max) ? values[i] : max;
-            min = (values[i] < min) ? values[i] : min;
+            min = values[i] < min ? values[i] : min;
+            max = values[i] > max ? values[i] : max;
         }
     }
 
-    range = max - min + 1;
+    *pmin = min;
+    *pmax = max;
+
+    return max - min + 1;
+}
+
+obj_t index_distinct_i8(i8_t values[], u64_t len)
+{
+    unused(values);
+    unused(len);
+    throw(ERR_NOT_IMPLEMENTED, "index_distinct_i8 not implemented");
+}
+
+obj_t index_distinct_i64(i64_t values[], u64_t len)
+{
+    u64_t i, j, range;
+    i64_t p, min, max, k, *out;
+    obj_t vec, set;
+
+    range = index_range(&min, &max, values, NULL, len);
 
     // use open addressing if range is small
     if (range <= len)
@@ -71,16 +81,9 @@ obj_t index_distinct_i64(i64_t values[], i64_t indices[], u64_t len)
         out = as_i64(vec);
         memset(out, 0, sizeof(i64_t) * range);
 
-        if (indices)
-        {
-            for (i = 0; i < len; i++)
-                out[values[indices[i]] - min]++;
-        }
-        else
-        {
-            for (i = 0; i < len; i++)
-                out[values[i] - min]++;
-        }
+        for (i = 0; i < len; i++)
+            out[values[i] - min]++;
+
         // compact keys
         for (i = 0, j = 0; i < range; i++)
         {
@@ -123,9 +126,8 @@ obj_t index_distinct_i64(i64_t values[], i64_t indices[], u64_t len)
     return vec;
 }
 
-obj_t index_distinct_guid(guid_t values[], i64_t indices[], u64_t len)
+obj_t index_distinct_guid(guid_t values[], u64_t len)
 {
-    unused(indices);
     u64_t i, j;
     i64_t p, *out;
     obj_t vec, set;
@@ -161,9 +163,8 @@ obj_t index_distinct_guid(guid_t values[], i64_t indices[], u64_t len)
     return vec;
 }
 
-obj_t index_distinct_obj(obj_t values[], i64_t indices[], u64_t len)
+obj_t index_distinct_obj(obj_t values[], u64_t len)
 {
-    unused(indices);
     u64_t i, j;
     i64_t p, *out;
     obj_t vec, set;
@@ -194,36 +195,6 @@ obj_t index_distinct_obj(obj_t values[], i64_t indices[], u64_t len)
     drop(set);
 
     return vec;
-}
-
-i64_t index_range(i64_t *pmin, i64_t *pmax, i64_t values[], i64_t indices[], u64_t len)
-{
-    u64_t i;
-    i64_t min, max;
-
-    if (indices)
-    {
-        min = max = values[indices[0]];
-        for (i = 0; i < len; i++)
-        {
-            min = values[indices[i]] < min ? values[indices[i]] : min;
-            max = values[indices[i]] > max ? values[indices[i]] : max;
-        }
-    }
-    else
-    {
-        min = max = values[0];
-        for (i = 0; i < len; i++)
-        {
-            min = values[i] < min ? values[i] : min;
-            max = values[i] > max ? values[i] : max;
-        }
-    }
-
-    *pmin = min;
-    *pmax = max;
-
-    return max - min + 1;
 }
 
 obj_t index_group_i8(i8_t values[], i64_t indices[], u64_t len)
