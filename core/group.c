@@ -30,9 +30,10 @@
 
 /*
  * result is a list:
- *   [0] - value
+ *   [0] - groups number
  *   [1] - bins
  *   [2] - filters
+ *   [3] - count of each group
  */
 obj_t __group(obj_t x, obj_t y, obj_t z)
 {
@@ -53,7 +54,7 @@ obj_t __group(obj_t x, obj_t y, obj_t z)
         return table(clone(as_list(x)[0]), res);
 
     default:
-        res = vn_list(3, clone(x), clone(y), clone(z));
+        res = vn_list(4, clone(x), clone(y), clone(z), NULL);
         res->type = TYPE_GROUPMAP;
         return res;
     }
@@ -107,6 +108,93 @@ obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
     drop(bins);
 
     return res;
+}
+
+obj_t group_collect(obj_t obj, obj_t grp)
+{
+    u64_t i, l, m, n;
+    obj_t bins, res, group_counts;
+    i64_t *cnts, *grps, *ids;
+
+    // Count groups
+    // TODO: this point must be synchronized in case of parallel execution
+    group_counts = as_list(grp)[3];
+    if (group_counts == NULL)
+    {
+        n = as_list(grp)[0]->i64;
+        l = as_list(grp)[1]->len;
+        group_counts = vector_i64(n);
+        grps = as_i64(group_counts);
+        memset(grps, 0, n * sizeof(i64_t));
+        ids = as_i64(as_list(grp)[1]);
+        for (i = 0; i < l; i++)
+            grps[ids[i]]++;
+
+        as_list(grp)[3] = group_counts;
+    }
+    // --
+
+    cnts = as_i64(group_counts);
+    bins = as_list(grp)[1];
+    n = group_counts->len;
+    l = bins->len;
+
+    switch (obj->type)
+    {
+    case TYPE_I64:
+    case TYPE_SYMBOL:
+    case TYPE_TIMESTAMP:
+        res = list(n);
+        for (i = 0; i < n; i++)
+        {
+            m = cnts[i];
+            as_list(res)[i] = vector(obj->type, m);
+            as_list(res)[i]->len = 0;
+        }
+
+        for (i = 0; i < l; i++)
+        {
+            n = as_i64(bins)[i];
+            as_i64(as_list(res)[n])[as_list(res)[n]->len++] = as_i64(obj)[i];
+        }
+
+        return res;
+    case TYPE_F64:
+        res = list(n);
+        for (i = 0; i < n; i++)
+        {
+            m = cnts[i];
+            as_list(res)[i] = vector(obj->type, m);
+            as_list(res)[i]->len = 0;
+        }
+
+        for (i = 0; i < l; i++)
+        {
+            n = as_i64(bins)[i];
+            as_f64(as_list(res)[n])[as_list(res)[n]->len++] = as_f64(obj)[i];
+        }
+
+        return res;
+
+    case TYPE_LIST:
+        res = list(n);
+        for (i = 0; i < n; i++)
+        {
+            m = cnts[i];
+            as_list(res)[i] = vector(obj->type, m);
+            as_list(res)[i]->len = 0;
+        }
+
+        for (i = 0; i < l; i++)
+        {
+            n = as_i64(bins)[i];
+            as_list(as_list(res)[n])[as_list(res)[n]->len++] = clone(as_list(obj)[i]);
+        }
+
+        return res;
+    default:
+        throw(ERR_TYPE, "collect_group: unsupported type: '%s", typename(obj->type));
+    }
 }
 
 // obj_t group_call(obj_t car, obj_t args, type_t types[], u64_t cnt)
