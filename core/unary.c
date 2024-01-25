@@ -56,7 +56,7 @@ obj_t __unary_call(u8_t attrs, unary_f f, obj_t x)
         v = group_collect(x);
         if (attrs & FN_ATOMIC)
         {
-            res = unary_call_atomic(attrs, f, v);
+            res = unary_call_atomic(attrs & !FN_GROUP_MAP, f, v);
             drop(v);
             return res;
         }
