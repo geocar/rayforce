@@ -208,7 +208,7 @@ u64_t save_obj(u8_t *buf, u64_t len, obj_t obj)
         return sizeof(type_t) + sizeof(u64_t) + l * sizeof(u8_t);
 
     case TYPE_CHAR:
-        l = obj->len;
+        l = ops_count(obj);
         memcpy(buf, &l, sizeof(u64_t));
         buf += sizeof(u64_t);
         memcpy(buf, as_string(obj), l);

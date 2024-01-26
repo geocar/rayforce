@@ -431,7 +431,7 @@ obj_t __ray_set(obj_t x, obj_t y)
             // save columns schema
             s = string_from_str(".d", 2);
             col = ray_concat(x, s);
-            res = ray_set(col, as_list(y)[0]);
+            res = __ray_set(col, as_list(y)[0]);
 
             drop(s);
             drop(col);
@@ -458,7 +458,7 @@ obj_t __ray_set(obj_t x, obj_t y)
             {
                 s = string_from_str("sym", 3);
                 col = ray_concat(x, s);
-                res = ray_set(col, sym);
+                res = __ray_set(col, sym);
 
                 drop(s);
                 drop(col);
@@ -469,7 +469,7 @@ obj_t __ray_set(obj_t x, obj_t y)
                 drop(res);
 
                 s = symbol("sym");
-                res = ray_set(s, sym);
+                res = __ray_set(s, sym);
 
                 drop(s);
 
@@ -506,7 +506,7 @@ obj_t __ray_set(obj_t x, obj_t y)
                 p = at_idx(as_list(y)[0], i);
                 s = as(TYPE_CHAR, p);
                 col = ray_concat(x, s);
-                res = ray_set(col, v);
+                res = __ray_set(col, v);
 
                 drop(p);
                 drop(v);
@@ -609,7 +609,7 @@ obj_t __ray_set(obj_t x, obj_t y)
                 b += sz;
             }
 
-            res = ray_set(col, buf);
+            res = __ray_set(col, buf);
 
             drop(col);
             drop(buf);

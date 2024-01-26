@@ -60,169 +60,6 @@ obj_t get_symbols(obj_t obj)
     return symbols;
 }
 
-// obj_t field_map(obj_t car, obj_t *args, u64_t args_len, obj_t *group_counts)
-// {
-//     u64_t i;
-//     type_t types[args_len];
-//     obj_t res, x, y, v;
-//     lambda_t *lambda;
-
-//     switch (car->type)
-//     {
-//     case TYPE_UNARY:
-//         x = eval(args[0]);
-
-//         if (is_error(x))
-//             return x;
-
-//         if (x->type == TYPE_GROUPMAP)
-//         {
-//             if (!(car->attrs & FN_AGGR))
-//             {
-//                 v = collect_group(as_list(x)[0], as_list(x)[1], group_counts);
-//                 drop(x);
-//                 x = v;
-//             }
-//         }
-
-//         res = unary_call(car->attrs, (unary_f)car->i64, x);
-//         drop(x);
-
-//         return res;
-
-//     case TYPE_BINARY:
-//         x = eval(args[0]);
-
-//         if (is_error(x))
-//             return x;
-
-//         y = eval(args[1]);
-
-//         if (is_error(y))
-//         {
-//             drop(x);
-//             return y;
-//         }
-
-//         if (x->type == TYPE_GROUPMAP)
-//         {
-//             if (!(car->attrs & FN_AGGR))
-//             {
-//                 v = collect_group(as_list(x)[0], as_list(x)[1], group_counts);
-//                 drop(x);
-//                 x = v;
-//             }
-//         }
-
-//         if (y->type == TYPE_GROUPMAP)
-//         {
-//             if (!(car->attrs & FN_AGGR))
-//             {
-//                 v = collect_group(as_list(y)[0], as_list(y)[1], group_counts);
-//                 drop(y);
-//                 y = v;
-//             }
-//         }
-
-//         res = binary_call(car->attrs, (binary_f)car->i64, x, y);
-//         drop(x);
-//         drop(y);
-
-//         return res;
-//     case TYPE_VARY:
-//         if (car->attrs & FN_SPECIAL_FORM)
-//             res = ((vary_f)car->i64)(args, args_len);
-//         else
-//         {
-//             if (!stack_enough(args_len))
-//                 return unwrap(error_str(ERR_STACK_OVERFLOW, "stack overflow"), (i64_t)car);
-
-//             for (i = 0; i < args_len; i++)
-//             {
-//                 x = eval(args[i]);
-//                 if (is_error(x))
-//                     return x;
-
-//                 if (x->type == TYPE_GROUPMAP)
-//                 {
-//                     if (!(car->attrs & FN_AGGR))
-//                     {
-//                         v = collect_group(as_list(x)[0], as_list(x)[1], group_counts);
-//                         drop(x);
-//                         x = v;
-//                     }
-//                 }
-//                 else if (x->type == TYPE_FILTERMAP)
-//                 {
-//                     v = at_obj(as_list(x)[0], as_list(x)[1]);
-//                     drop(x);
-//                     x = v;
-//                 }
-//                 stack_push(x);
-//             }
-
-//             res = vary_call(car->attrs, (vary_f)car->i64, stack_peek(args_len - 1), args_len);
-
-//             for (i = 0; i < args_len; i++)
-//                 drop(stack_pop());
-//         }
-
-//         return unwrap(res, (i64_t)car);
-
-//     case TYPE_LAMBDA:
-//         lambda = as_lambda(car);
-//         if (args_len != lambda->args->len)
-//             return unwrap(error_str(ERR_ARITY, "wrong number of arguments"), (i64_t)car);
-
-//         if (!stack_enough(args_len))
-//             return unwrap(error_str(ERR_STACK_OVERFLOW, "stack overflow"), (i64_t)car);
-
-//         res = list(args_len);
-
-//         for (i = 0; i < args_len; i++)
-//         {
-//             x = eval(args[i]);
-//             if (is_error(x))
-//                 return x;
-
-//             types[i] = x->type;
-//             if (x->type == TYPE_GROUPMAP)
-//             {
-//                 v = collect_group(as_list(x)[0], as_list(x)[1], group_counts);
-//                 drop(x);
-//                 x = v;
-//             }
-//             else if (x->type == TYPE_FILTERMAP)
-//             {
-//                 v = at_obj(as_list(x)[0], as_list(x)[1]);
-//                 drop(x);
-//                 x = v;
-//             }
-
-//             if (is_error(x))
-//             {
-//                 res->len = i;
-//                 drop(res);
-//                 return x;
-//             }
-
-//             as_list(res)[i] = x;
-//         }
-
-//         if (*group_counts)
-//             v = group_call(car, res, types, (*group_counts)->len);
-//         else
-//             v = filter_call(car, res);
-
-//         drop(res);
-
-//         return v;
-
-//     default:
-//         return error(ERR_TYPE, "eval_field: not callable: '%s'", typename(car->type));
-//     }
-// }
-
 obj_t ray_select(obj_t obj)
 {
     u64_t i, l, tablen;
@@ -278,12 +115,6 @@ obj_t ray_select(obj_t obj)
         }
     }
 
-    // if (filters->len == 0)
-    // {
-    //     drop(filters);
-    //     filters = NULL;
-    // }
-
     // Apply groupping
     prm = get_param(obj, "by");
     if (prm)
@@ -309,9 +140,10 @@ obj_t ray_select(obj_t obj)
 
         if (is_error(prm))
         {
+            drop(tab);
             drop(filters);
             drop(groupby);
-            drop(tab);
+            drop(bysym);
             return prm;
         }
 

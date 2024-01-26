@@ -68,7 +68,7 @@ obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
 {
     u64_t l;
     i64_t *ids;
-    obj_t bins, res;
+    obj_t bins, v, res;
 
     if (z)
     {
@@ -77,7 +77,7 @@ obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
     }
     else
     {
-        l = x->len;
+        l = ops_count(x);
         ids = NULL;
     }
 
@@ -102,6 +102,9 @@ obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
     case TYPE_GUID:
         bins = index_group_guid(as_guid(x), ids, l);
         break;
+    case TYPE_ENUM:
+        bins = index_group_i64(as_i64(enum_val(x)), ids, l);
+        break;
     case TYPE_LIST:
         bins = index_group_obj(as_list(x), ids, l);
         break;
@@ -111,7 +114,15 @@ obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
 
     res = __group(y, bins, z);
 
-    *aggr = aggr_first(x, bins, z);
+    v = aggr_first(x, bins, z);
+    if (is_error(v))
+    {
+        drop(res);
+        drop(bins);
+        return v;
+    }
+
+    *aggr = v;
     drop(bins);
 
     return res;
