@@ -39,7 +39,7 @@
 #include "io.h"
 #include "error.h"
 
-#define MAX_ROW_WIDTH 80
+#define MAX_ROW_WIDTH 800
 #define FORMAT_TRAILER_SIZE 4
 #define F64_PRECISION 2
 #define TABLE_MAX_WIDTH 10      // Maximum number of columns
@@ -47,7 +47,6 @@
 #define LIST_MAX_HEIGHT 5       // Maximum number of list/dict rows
 #define ERR_STACK_MAX_HEIGHT 10 // Maximum number of error stack frames
 #define MAX_ERROR_LEN 4096
-#define MAX_ROW_LIMIT 2147483646
 
 #define maxn(n, e)         \
     {                      \
@@ -56,7 +55,6 @@
     }
 
 const str_t PADDING = "                                                                                                   ";
-const str_t TABLE_SEPARATOR = " | ";
 const str_t TABLE_HEADER_SEPARATOR = "------------------------------------------------------------------------------------";
 
 /*
@@ -67,14 +65,14 @@ const str_t TABLE_HEADER_SEPARATOR = "------------------------------------------
  */
 i64_t str_vfmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, str_t fmt, va_list vargs)
 {
-    i64_t n = 0, size = limit > 0 ? limit : MAX_ROW_LIMIT;
-    str_t p, s;
+    i64_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
+    str_t s;
     va_list args;
 
-    // If ptr is NULL, realloc behaves like malloc.
-    if (*len <= (size + *offset))
+    // Allocate or expand the buffer if necessary
+    if (*len <= (*offset + size))
     {
-        *len += size + 1;
+        *len = *offset + size;
         s = heap_realloc(*dst, *len);
 
         if (s == NULL)
@@ -88,31 +86,32 @@ i64_t str_vfmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, str_t fm
 
     while (1)
     {
-        p = *dst + *offset;
-
         va_copy(args, vargs); // Make a copy of args to use with vsnprintf
-        n = vsnprintf(p, size, fmt, args);
-        va_end(vargs);
+        n = vsnprintf(*dst + *offset, size, fmt, args);
+        va_end(args); // args should be ended, not vargs
 
         if (n < 0)
         {
-            if (*dst != NULL)
-                heap_free(*dst);
-
-            panic("str_vfmt_into: OOM");
+            heap_free(*dst);
+            panic("str_vfmt_into: Error in vsnprintf");
         }
 
         if (n < size)
-            break;
+        {
+            *offset += n;
+            return n; // n fits into buffer, return n
+        }
 
         if (limit > 0)
         {
-            *offset += size - 1;
-            return n;
+            *offset += size - 1; // Increase offset by size, but take care of the null-terminator
+            return n;            // Return truncated size
         }
 
-        size = n + 1;
-        s = heap_realloc(*dst, size);
+        // Expand the buffer for the next iteration
+        size = n; // +1 for the null terminator
+        *len = *offset + size;
+        s = heap_realloc(*dst, *len);
 
         if (s == NULL)
         {
@@ -121,12 +120,7 @@ i64_t str_vfmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, str_t fm
         }
 
         *dst = s;
-        *len += size;
     }
-
-    *offset += n;
-
-    return n;
 }
 
 i64_t str_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, str_t fmt, ...)
@@ -143,7 +137,7 @@ i64_t str_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, str_t fmt
 
 str_t str_vfmt(i64_t limit, str_t fmt, va_list vargs)
 {
-    i64_t n = 0, size = limit > 0 ? limit : MAX_ROW_LIMIT;
+    i64_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
     str_t p = heap_alloc(size), s;
     va_list args;
 
@@ -601,7 +595,7 @@ i64_t string_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, obj_t 
 
     n = str_fmt_into(dst, len, offset, limit, "\"");
 
-    l = obj->len - 1; // skip trailing \0
+    l = ops_count(obj);
     for (i = 0; i < l; i++)
     {
         n += char_fmt_into(dst, len, offset, limit, false, as_string(obj)[i]);
@@ -742,8 +736,6 @@ i64_t table_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, bool_t
     if (table_width == 0)
         return str_fmt_into(dst, len, offset, 0, "@table");
 
-    n = str_fmt_into(dst, len, offset, 0, "|");
-
     if (table_width > TABLE_MAX_WIDTH)
         table_width = TABLE_MAX_WIDTH;
 
@@ -760,22 +752,21 @@ i64_t table_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, bool_t
         n = strlen(symtostr(header[i]));
 
         // Then traverse column until maximum height limit
-        if (table_height > 0)
+        for (j = 0; j < table_height; j++)
         {
-            for (j = 0; j < table_height; j++)
-            {
-                column = as_list(columns)[i];
-                s = NULL;
-                l = 0;
-                o = 0;
-                raw_fmt_into(&s, &l, &o, 0, 31, column, j);
-                formatted_columns[i][j] = s;
-                maxn(n, o);
-            }
+            column = as_list(columns)[i];
+            s = NULL;
+            l = 0;
+            o = 0;
+            raw_fmt_into(&s, &l, &o, 0, 31, column, j);
+            formatted_columns[i][j] = s;
+            maxn(n, o);
         }
 
         as_i64(column_widths)[i] = n;
     }
+
+    n = str_fmt_into(dst, len, offset, 0, "|");
 
     // Print table header
     for (i = 0; i < table_width; i++)
@@ -783,7 +774,7 @@ i64_t table_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, bool_t
         n = as_i64(column_widths)[i];
         s = symtostr(header[i]);
         n = n - strlen(s);
-        str_fmt_into(dst, len, offset, 0, " %s%*.*s |", s, n, n, PADDING);
+        n += str_fmt_into(dst, len, offset, 0, " %s%*.*s |", s, n, n, PADDING);
     }
 
     if (as_list(obj)[0]->len > TABLE_MAX_WIDTH)

@@ -36,9 +36,8 @@ obj_t string_from_str(str_t str, i64_t len)
     if (len == 0)
         return string(0);
 
-    s = string(len + 1);
-    memcpy(as_string(s), str, len);
-    as_string(s)[len] = '\0';
+    s = string(len); // string constructor awares of the additional byte for '\0'
+    strncpy(as_string(s), str, len);
 
     return s;
 }

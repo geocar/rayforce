@@ -169,7 +169,7 @@ obj_t ray_write(obj_t x, obj_t y)
 
 obj_t parse_csv_field(type_t type, str_t start, str_t end, i64_t row, obj_t out)
 {
-    i64_t inum;
+    i64_t n, inum;
     f64_t fnum;
 
     switch (type)
@@ -214,13 +214,19 @@ obj_t parse_csv_field(type_t type, str_t start, str_t end, i64_t row, obj_t out)
     case TYPE_SYMBOL:
         if (start == NULL || end == NULL)
         {
-            as_symbol(out)[row] = NULL_I64;
+            as_symbol(out)[row] = 0;
             break;
         }
-        as_symbol(out)[row] = intern_symbol(start, end - start);
+        n = end - start;
+        if ((n > 0) && (*(end - 1) == '\r'))
+            n--;
+        as_symbol(out)[row] = intern_symbol(start, n);
         break;
     case TYPE_CHAR:
-        as_list(out)[row] = string_from_str(start, end - start);
+        n = end - start;
+        if ((n > 0) && (*(end - 1) == '\r'))
+            n--;
+        as_list(out)[row] = string_from_str(start, n);
         break;
     default:
         throw(ERR_TYPE, "csv: unsupported type: '%s", typename(type));
@@ -392,12 +398,19 @@ obj_t ray_csv(obj_t *x, i64_t n)
 
         names = vector_symbol(l);
         pos = buf;
+
         for (i = 0; i < l; i++)
         {
             prev = pos;
             pos = memchr(pos, sep, len);
             if (pos == NULL)
+            {
                 pos = prev + len;
+                // truncate \r (if any)
+                if ((len > 0) && (pos[-1] == '\r'))
+                    pos--;
+            }
+
             as_symbol(names)[i] = intern_symbol(prev, pos - prev);
             pos++;
             len -= (pos - prev);
@@ -416,7 +429,7 @@ obj_t ray_csv(obj_t *x, i64_t n)
         lines--;
 
         // allocate columns
-        cols = vector(TYPE_LIST, l);
+        cols = list(l);
         for (i = 0; i < l; i++)
         {
             if (as_string(types)[i] == TYPE_CHAR)
@@ -429,6 +442,14 @@ obj_t ray_csv(obj_t *x, i64_t n)
         for (j = 0, prev = line; j < lines; j++)
         {
             line = memchr(prev, '\n', size);
+            // the last line may not end with \n
+            if (line == NULL)
+            {
+                line = prev + size;
+                // truncate \r (if any)
+                if ((size > 0) && (line[-1] == '\r'))
+                    line--;
+            }
             res = parse_csv_line((type_t *)as_string(types), l, prev, line, j, cols, sep);
             if (!is_null(res))
             {
