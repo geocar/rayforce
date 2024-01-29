@@ -455,8 +455,7 @@ obj_t aggr_max(obj_t val, obj_t bins, obj_t filter)
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (xo[n] == NULL_I64 || xi[ids[i]] > xo[n])
-                    xo[n] = xi[ids[i]];
+                xo[n] = maxi64(xo[n], xi[ids[i]]);
             }
         }
         else
@@ -464,8 +463,7 @@ obj_t aggr_max(obj_t val, obj_t bins, obj_t filter)
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (xo[n] == NULL_I64 || xi[i] > xo[n])
-                    xo[n] = xi[i];
+                xo[n] = maxi64(xo[n], xi[i]);
             }
         }
         return res;
@@ -483,8 +481,7 @@ obj_t aggr_max(obj_t val, obj_t bins, obj_t filter)
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (ops_is_nan(fo[n]) || xf[ids[i]] > fo[n])
-                    fo[n] = xf[ids[i]];
+                fo[n] = maxf64(fo[n], xf[ids[i]]);
             }
         }
         else
@@ -492,8 +489,7 @@ obj_t aggr_max(obj_t val, obj_t bins, obj_t filter)
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (ops_is_nan(fo[n]) || xf[i] > fo[n])
-                    fo[n] = xf[i];
+                fo[n] = maxf64(fo[n], xf[i]);
             }
         }
         return res;
@@ -516,7 +512,6 @@ obj_t aggr_min(obj_t val, obj_t bins, obj_t filter)
     {
     case TYPE_I64:
     case TYPE_TIMESTAMP:
-    case TYPE_SYMBOL:
         xi = as_i64(val);
         xm = as_i64(as_list(bins)[1]);
         res = vector(val->type, n);
@@ -539,10 +534,10 @@ obj_t aggr_min(obj_t val, obj_t bins, obj_t filter)
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (xo[n] == NULL_I64 || xi[i] < xo[n])
-                    xo[n] = xi[i];
+                xo[n] = mini64(xo[n], xi[i]);
             }
         }
+
         return res;
     case TYPE_F64:
         xf = as_f64(val);
@@ -552,14 +547,13 @@ obj_t aggr_min(obj_t val, obj_t bins, obj_t filter)
         for (i = 0; i < n; i++)
             fo[i] = NULL_F64;
 
-        if (filter)
+        if (filter != NULL_OBJ)
         {
             ids = as_i64(filter);
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (ops_is_nan(fo[n]) || xf[ids[i]] < fo[n])
-                    fo[n] = xf[ids[i]];
+                fo[n] = minf64(fo[n], xf[ids[i]]);
             }
         }
         else
@@ -567,8 +561,7 @@ obj_t aggr_min(obj_t val, obj_t bins, obj_t filter)
             for (i = 0; i < l; i++)
             {
                 n = xm[i];
-                if (ops_is_nan(fo[n]) || xf[i] < fo[n])
-                    fo[n] = xf[i];
+                fo[n] = minf64(fo[n], xf[i]);
             }
         }
         return res;
