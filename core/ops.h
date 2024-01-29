@@ -26,6 +26,11 @@
 
 #include "rayforce.h"
 
+// Global null object to be referenced by all null objects.
+static struct obj_t __NULL_OBJECT = {.type = TYPE_NULL};
+
+#define NULL_OBJ (&__NULL_OBJECT)
+
 // Function's attributes
 #define FN_NONE 0
 #define FN_LEFT_ATOMIC 1
@@ -87,6 +92,7 @@ typedef i64_t (*cmp_f)(i64_t, i64_t, nil_t *);
 typedef obj_t (*unary_f)(obj_t);
 typedef obj_t (*binary_f)(obj_t, obj_t);
 typedef obj_t (*vary_f)(obj_t *, i64_t n);
+
 typedef enum
 {
     ERROR_TYPE_OS,

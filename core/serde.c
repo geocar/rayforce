@@ -52,6 +52,8 @@ u64_t size_of_type(type_t type)
         return sizeof(char_t);
     case TYPE_LIST:
         return sizeof(obj_t);
+    case TYPE_NULL:
+        return 0;
     default:
         panic("sizeof: unknown type: %d", type);
     }
@@ -81,6 +83,8 @@ u64_t size_of(obj_t obj)
     case TYPE_ANYMAP:
         size += obj->len * sizeof(i64_t);
         return size;
+    case TYPE_NULL:
+        return 0;
     default:
         panic("sizeof: unknown type: %d", obj->type);
     }
@@ -144,6 +148,8 @@ u64_t size_obj(obj_t obj)
     case TYPE_BINARY:
     case TYPE_VARY:
         return sizeof(type_t) + sizeof(env_get_internal_name(obj)) + 1;
+    case TYPE_NULL:
+        return sizeof(type_t);
     case TYPE_ERROR:
         return sizeof(type_t) + sizeof(i8_t) + as_list(obj)[1]->len + 1;
     default:

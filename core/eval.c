@@ -101,8 +101,8 @@ inline __attribute__((always_inline)) ctx_t *ctx_clone(obj_t info)
     if (__INTERPRETER->cp == 1)
     {
         sp = __INTERPRETER->sp;
-        stack_push(NULL);
-        f = lambda(vector_symbol(0), NULL, info);
+        stack_push(null(0));
+        f = lambda(vector_symbol(0), null(0), info);
         as_lambda(f)->name = symbol("top-level");
     }
     else

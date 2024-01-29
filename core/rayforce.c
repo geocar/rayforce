@@ -90,7 +90,7 @@ obj_t null(type_t type)
     case TYPE_TIMESTAMP:
         return timestamp(NULL_I64);
     default:
-        return NULL;
+        return &__NULL_OBJECT;
     }
 }
 
@@ -801,7 +801,7 @@ obj_t remove_obj(obj_t *obj, obj_t idx)
 
 bool_t is_null(obj_t obj)
 {
-    return (obj == NULL) ||
+    return (obj->type == TYPE_NULL) ||
            (obj->type == -TYPE_I64 && obj->i64 == NULL_I64) ||
            (obj->type == -TYPE_SYMBOL && obj->i64 == NULL_I64) ||
            (obj->type == -TYPE_F64 && obj->f64 == NULL_F64) ||
@@ -1060,7 +1060,7 @@ obj_t __attribute__((hot)) clone(obj_t obj)
     debug_assert(is_valid(obj), "invalid object type: %d", obj->type);
 
     if (obj == NULL)
-        return NULL;
+        return null(0);
 
     if (!__RC_SYNC)
         (obj)->rc += 1;
