@@ -39,7 +39,8 @@ typedef struct timestamp_t
     u32_t nanos;
 } timestamp_t;
 
-timestamp_t ray_timestamp_from_i64(i64_t offset);
-i64_t ray_timestamp_into_i64(timestamp_t ts);
+timestamp_t timestamp_from_i64(i64_t offset);
+timestamp_t timestamp_from_str(str_t src);
+i64_t timestamp_into_i64(timestamp_t ts);
 
 #endif

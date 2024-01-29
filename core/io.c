@@ -33,6 +33,7 @@
 #include "poll.h"
 #include "runtime.h"
 #include "error.h"
+#include "timestamp.h"
 
 obj_t ray_hopen(obj_t x)
 {
@@ -186,18 +187,14 @@ obj_t parse_csv_field(type_t type, str_t start, str_t end, i64_t row, obj_t out)
         else
             as_i64(out)[row] = inum;
         break;
-        // TODO: parse timestamp literals
     case TYPE_TIMESTAMP:
         if (start == NULL || end == NULL)
         {
             as_timestamp(out)[row] = NULL_I64;
             break;
         }
-        inum = strtoll(start, &end, 10);
-        if ((inum == LONG_MAX || inum == LONG_MIN) && errno == ERANGE)
-            as_timestamp(out)[row] = NULL_I64;
-        else
-            as_timestamp(out)[row] = inum;
+        inum = timestamp_into_i64(timestamp_from_str(start));
+        as_timestamp(out)[row] = inum;
         break;
     case TYPE_F64:
         if (start == NULL || end == NULL)
@@ -470,7 +467,7 @@ obj_t ray_csv(obj_t *x, i64_t n)
 
         return table(names, cols);
     default:
-        throw(ERR_LENGTH, "csv: expected 1 or 2 arguments, got %d", n);
+        throw(ERR_LENGTH, "csv: expected 1..3 arguments, got %d", n);
     }
 }
 

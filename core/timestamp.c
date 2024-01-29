@@ -21,6 +21,8 @@
  *   SOFTWARE.
  */
 
+#include <errno.h>
+#include <limits.h>
 #include "timestamp.h"
 #include "ops.h"
 #include "util.h"
@@ -138,7 +140,7 @@ i64_t date_into_days(date_t dt)
 }
 
 //
-timestamp_t ray_timestamp_from_i64(i64_t offset)
+timestamp_t timestamp_from_i64(i64_t offset)
 {
     i64_t days = offset / NSECS_IN_DAY;
     i64_t span = offset % NSECS_IN_DAY;
@@ -166,8 +168,11 @@ timestamp_t ray_timestamp_from_i64(i64_t offset)
     return ts;
 }
 
-i64_t ray_timestamp_into_i64(timestamp_t ts)
+i64_t timestamp_into_i64(timestamp_t ts)
 {
+    if (ts.null)
+        return NULL_I64;
+
     date_t dt = {
         .year = ts.year,
         .month = ts.month,
@@ -191,4 +196,86 @@ i64_t ray_timestamp_into_i64(timestamp_t ts)
     }
 
     return (dss * NSECS_IN_DAY + offs);
+}
+
+timestamp_t timestamp_from_str(str_t src)
+{
+    i64_t cnt, val;
+    timestamp_t ts = {0};
+    char_t *cur, *end;
+
+    if (src == NULL)
+        goto null;
+
+    cur = src;
+    cnt = 0;
+
+    while (*cur != '\0' && cnt < 7)
+    {
+        errno = 0;                    // reset errno before the call
+        val = strtoll(cur, &end, 10); // base 10 for decimal
+
+        if ((val == LONG_MAX || val == LONG_MIN) && errno == ERANGE)
+            goto null;
+
+        if (cur == end)
+            goto null;
+
+        if (errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+            goto null;
+
+        switch (cnt)
+        {
+        case 0:
+            if (val < 0)
+                goto null;
+            ts.year = (u16_t)val;
+            break;
+        case 1:
+            if (val < 1 || val > 12)
+                goto null;
+            ts.month = (u8_t)val;
+            break;
+        case 2:
+            if (val < 1 || val > 31)
+                goto null;
+            ts.day = (u8_t)val;
+            break;
+        case 3:
+            if (val < 0 || val > 23)
+                goto null;
+            ts.hours = (u8_t)val;
+            break;
+        case 4:
+            if (val < 0 || val > 59)
+                goto null;
+            ts.mins = (u8_t)val;
+            break;
+        case 5:
+            if (val < 0 || val > 59)
+                goto null;
+            ts.secs = (u8_t)val;
+            break;
+        case 6:
+            ts.nanos = (u32_t)val;
+            break;
+        default:
+            break;
+        }
+
+        cnt++;
+        cur = end;
+
+        // skip non-digits
+        while (*cur && (*cur < '0' || *cur > '9'))
+            cur++;
+    }
+
+    if (cnt < 3)
+    {
+    null:
+        ts.null = true;
+    }
+
+    return ts;
 }

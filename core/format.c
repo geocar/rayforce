@@ -263,7 +263,7 @@ i64_t ts_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, i64_t val)
     if (val == NULL_I64)
         return str_fmt_into(dst, len, offset, limit, "0t");
 
-    timestamp_t ts = ray_timestamp_from_i64(val);
+    timestamp_t ts = timestamp_from_i64(val);
     i64_t n;
 
     if (!ts.hours && !ts.mins && !ts.secs && !ts.nanos)
