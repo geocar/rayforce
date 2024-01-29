@@ -189,9 +189,9 @@ extern nil_t drop(obj_t obj);
 // Checkers
 extern bool_t is_null(obj_t obj);
 extern str_t typename(type_t type);
-#define is_error(obj)  (obj && (obj)->type == TYPE_ERROR)
-#define is_atom(obj)   (obj && (obj)->type < 0)
-#define is_vector(obj) (obj && (obj)->type >= 0 && (obj)->type <= TYPE_CHAR)
+#define is_error(obj)  ((obj)->type == TYPE_ERROR)
+#define is_atom(obj)   ((obj)->type < 0)
+#define is_vector(obj) ((obj)->type >= 0 && (obj)->type <= TYPE_CHAR)
 
 // Push a value to the end of a list
 extern obj_t push_raw(obj_t *obj, raw_t val); // push raw value into a list

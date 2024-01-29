@@ -138,14 +138,13 @@ i64_t str_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, str_t fmt
 str_t str_vfmt(i64_t limit, str_t fmt, va_list vargs)
 {
     i64_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH;
-    str_t p = heap_alloc(size), s;
+    str_t p, s;
     va_list args;
 
+    p = heap_alloc(size);
+
     if (!p)
-    {
-        // Handle allocation failure
-        return NULL_OBJ;
-    }
+        panic("str_vfmt: OOM");
 
     while (1)
     {
@@ -157,7 +156,7 @@ str_t str_vfmt(i64_t limit, str_t fmt, va_list vargs)
         {
             // Handle encoding error
             heap_free(p);
-            return NULL_OBJ;
+            return NULL;
         }
 
         if (n < size)
@@ -169,11 +168,8 @@ str_t str_vfmt(i64_t limit, str_t fmt, va_list vargs)
         size = n + 1; // Increase buffer size
         s = heap_realloc(p, size);
         if (!s)
-        {
-            // Handle reallocation failure
-            heap_free(p);
-            return NULL_OBJ;
-        }
+            panic("str_vfmt: OOM");
+
         p = s;
     }
 
@@ -928,7 +924,7 @@ str_t obj_fmt(obj_t obj)
     str_t dst = NULL;
     i64_t len = 0, offset = 0, limit = MAX_ROW_WIDTH;
 
-    if (obj == NULL)
+    if (obj->type == TYPE_NULL)
         str_fmt_into(&dst, &len, &offset, limit, "null");
     else
         obj_fmt_into(&dst, &len, &offset, 0, limit, true, obj);
@@ -952,13 +948,13 @@ str_t obj_fmt_n(obj_t *x, u64_t n)
     obj_t *b = x;
 
     if (n == 0)
-        return NULL_OBJ;
+        return NULL;
 
     if (n == 1)
         return obj_fmt(*b);
 
     if ((*b)->type != TYPE_CHAR)
-        return NULL_OBJ;
+        return NULL;
 
     p = as_string(*b);
     sz = strlen(p);
@@ -975,7 +971,7 @@ str_t obj_fmt_n(obj_t *x, u64_t n)
             if (s)
                 heap_free(s);
 
-            return NULL_OBJ;
+            return NULL;
         }
 
         if (end > start)
@@ -992,7 +988,7 @@ str_t obj_fmt_n(obj_t *x, u64_t n)
         if (s)
             heap_free(s);
 
-        return NULL_OBJ;
+        return NULL;
     }
 
     str_fmt_into(&s, &l, &o, end - start, "%s", start);

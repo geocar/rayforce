@@ -49,7 +49,7 @@
 obj_t unary_call_atomic(unary_f f, obj_t x)
 {
     u64_t i, l;
-    obj_t res = NULL, item = NULL, a, *v;
+    obj_t res = NULL_OBJ, item = NULL_OBJ, a, *v;
 
     switch (x->type)
     {
@@ -126,9 +126,6 @@ obj_t unary_call_atomic(unary_f f, obj_t x)
 
 obj_t unary_call(u8_t attrs, unary_f f, obj_t x)
 {
-    if (!x)
-        return NULL_OBJ;
-
     if (attrs & FN_ATOMIC)
         return unary_call_atomic(f, x);
 

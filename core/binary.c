@@ -53,7 +53,7 @@ obj_t binary_call_left_atomic(binary_f f, obj_t x, obj_t y)
         if (is_error(item))
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
@@ -83,7 +83,7 @@ obj_t binary_call_left_atomic(binary_f f, obj_t x, obj_t y)
         if (item->type == TYPE_ERROR)
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
@@ -125,7 +125,7 @@ obj_t binary_call_right_atomic(binary_f f, obj_t x, obj_t y)
         if (is_error(item))
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
@@ -155,7 +155,7 @@ obj_t binary_call_right_atomic(binary_f f, obj_t x, obj_t y)
         if (is_error(item))
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
@@ -214,7 +214,7 @@ obj_t binary_call_atomic(binary_f f, obj_t x, obj_t y)
         if (is_error(item))
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
@@ -252,7 +252,7 @@ obj_t binary_call_atomic(binary_f f, obj_t x, obj_t y)
         if (is_error(item))
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
@@ -286,7 +286,7 @@ obj_t binary_call_atomic(binary_f f, obj_t x, obj_t y)
         if (is_error(item))
             return item;
 
-        res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+        res = item->type < 0 ? vector(item->type, l) : list(l);
 
         ins_obj(&res, 0, item);
 
