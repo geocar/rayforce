@@ -902,10 +902,7 @@ obj_t obj_stringify(obj_t obj)
     i64_t n, len = sizeof(struct obj_t),
              offset = sizeof(struct obj_t), limit = MAX_ROW_WIDTH;
 
-    if (obj == NULL)
-        n = str_fmt_into(&dst, &len, &offset, limit, "null");
-    else
-        n = obj_fmt_into(&dst, &len, &offset, 0, limit, true, obj);
+    n = obj_fmt_into(&dst, &len, &offset, 0, limit, true, obj);
 
     if (dst == NULL)
         panic("format: returns null");
@@ -924,10 +921,7 @@ str_t obj_fmt(obj_t obj)
     str_t dst = NULL;
     i64_t len = 0, offset = 0, limit = MAX_ROW_WIDTH;
 
-    if (obj->type == TYPE_NULL)
-        str_fmt_into(&dst, &len, &offset, limit, "null");
-    else
-        obj_fmt_into(&dst, &len, &offset, 0, limit, true, obj);
+    obj_fmt_into(&dst, &len, &offset, 0, limit, true, obj);
 
     if (dst == NULL)
         panic("format: returns null");

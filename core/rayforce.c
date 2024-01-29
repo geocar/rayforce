@@ -890,7 +890,7 @@ i64_t find_raw(obj_t obj, raw_t val)
 {
     i64_t i, l;
 
-    if (obj == NULL || !is_vector(obj))
+    if (!is_vector(obj))
         return NULL_I64;
 
     switch (obj->type)
@@ -928,7 +928,7 @@ i64_t find_raw(obj_t obj, raw_t val)
 
 i64_t find_obj(obj_t obj, obj_t val)
 {
-    if (obj == NULL || !is_vector(obj))
+    if (!is_vector(obj))
         return NULL_I64;
 
     switch (obj->type)

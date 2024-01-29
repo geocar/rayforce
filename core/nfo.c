@@ -36,7 +36,7 @@ nil_t nfo_insert(obj_t nfo, i64_t index, span_t span)
 {
     i64_t i;
 
-    if (!nfo)
+    if (nfo == NULL_OBJ)
         return;
 
     i = ht_tab_next(&as_list(nfo)[2], index);

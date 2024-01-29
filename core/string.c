@@ -266,7 +266,7 @@ obj_t vn_vstring(str_t fmt, va_list args)
 
     res = (obj_t)dst;
 
-    if (res == NULL)
+    if (res == NULL_OBJ)
         return res;
 
     res->len = n + 1; // + 1 for '\0'

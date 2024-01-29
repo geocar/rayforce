@@ -439,7 +439,7 @@ obj_t parse_char(parser_t *parser)
 {
     span_t span = span_start(parser);
     str_t pos = parser->current + 1; // skip '''
-    obj_t res = NULL;
+    obj_t res = NULL_OBJ;
     i64_t id;
     char_t ch;
 
@@ -560,7 +560,7 @@ obj_t parse_string(parser_t *parser)
 obj_t parse_symbol(parser_t *parser)
 {
     str_t pos = parser->current;
-    obj_t res = NULL;
+    obj_t res = NULL_OBJ;
     span_t span = span_start(parser);
     i64_t id;
 
@@ -605,7 +605,7 @@ obj_t parse_symbol(parser_t *parser)
     if (parser->replace_symbols)
         res = env_get_internal_function_by_id(id);
 
-    if (!res)
+    if (res == NULL_OBJ)
         res = symboli64(id);
 
     shift(parser, pos - parser->current);
@@ -752,7 +752,7 @@ obj_t parse_vector(parser_t *parser)
 
 obj_t parse_list(parser_t *parser)
 {
-    obj_t lst = NULL, tok, args, body, err;
+    obj_t lst = NULL_OBJ, tok, args, body, err;
     span_t span = span_start(parser);
 
     shift(parser, 1); // skip '('
@@ -838,7 +838,7 @@ obj_t parse_list(parser_t *parser)
             return err;
         }
 
-        if (!lst)
+        if (lst == NULL_OBJ)
             lst = vn_list(1, tok);
         else
             push_obj(&lst, tok);
@@ -856,7 +856,7 @@ obj_t parse_list(parser_t *parser)
 
 obj_t parse_dict(parser_t *parser)
 {
-    obj_t tok, keys = NULL, vals = list(0), d, err;
+    obj_t tok, keys = NULL_OBJ, vals = list(0), d, err;
     span_t span = span_start(parser);
 
     shift(parser, 1); // skip '{'
@@ -884,7 +884,7 @@ obj_t parse_dict(parser_t *parser)
             return err;
         }
 
-        if (!keys)
+        if (keys == NULL_OBJ)
             keys = vector(tok->type, 0);
 
         push_obj(&keys, tok);
@@ -1031,7 +1031,7 @@ nil_t skip_whitespaces(parser_t *parser)
 
 obj_t advance(parser_t *parser)
 {
-    obj_t tok = NULL, err = NULL;
+    obj_t tok = NULL_OBJ, err = NULL_OBJ;
 
     skip_whitespaces(parser);
 
@@ -1088,7 +1088,7 @@ obj_t advance(parser_t *parser)
 
 obj_t parse_do(parser_t *parser)
 {
-    obj_t tok, car = NULL, lst = NULL;
+    obj_t tok, car = NULL_OBJ, lst = NULL_OBJ;
 
     while (!at_eof(*parser->current))
     {
@@ -1116,15 +1116,15 @@ obj_t parse_do(parser_t *parser)
             break;
         }
 
-        if (car == NULL)
+        if (car == NULL_OBJ)
             car = tok;
-        else if (lst == NULL)
+        else if (lst == NULL_OBJ)
             lst = vn_list(3, env_get_internal_function("do"), car, tok);
         else
             push_obj(&lst, tok);
     }
 
-    return lst ? lst : car;
+    return lst != NULL_OBJ ? lst : car;
 }
 
 obj_t parse(str_t input, obj_t nfo)

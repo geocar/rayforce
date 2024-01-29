@@ -179,7 +179,7 @@ obj_t call(obj_t obj, u64_t arity)
     sp = __INTERPRETER->sp - arity;
 
     // local env
-    stack_push(NULL);
+    stack_push(NULL_OBJ);
 
     lambda = as_lambda(obj);
 
