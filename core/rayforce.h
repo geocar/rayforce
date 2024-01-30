@@ -115,6 +115,7 @@ typedef struct guid_t {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
+
 typedef struct obj_t
 {
     u8_t mmod;       // memory model (0 - internal, 1 - memmapped)
@@ -136,6 +137,7 @@ typedef struct obj_t
         };
     };
 } *obj_t;
+
 #ifdef __clang__
 #pragma clang diagnostic pop
 #else
@@ -143,28 +145,28 @@ typedef struct obj_t
 #endif
 
 // Version
-extern u8_t version(); // get version as u8_t (major - 5 bits, minor - 3 bits)
+u8_t version(); // get version as u8_t (major - 5 bits, minor - 3 bits)
 
 // Constructors
-extern obj_t null(type_t type);                             // create null of type
-extern obj_t atom(type_t type);                             // create atom of type
-extern obj_t list(u64_t len);                               // create list
-extern obj_t vn_list(u64_t len, ...);                       // create list from values
-extern obj_t vector(type_t type, u64_t len);                // create vector of type
-extern obj_t vn_symbol(u64_t len, ...);                     // create vector symbols from strings
-extern obj_t bool(bool_t val);                              // bool atom
-extern obj_t u8(u8_t val);                                  // byte atom
-extern obj_t i64(i64_t val);                                // i64 atom
-extern obj_t f64(f64_t val);                                // f64 atom
-extern obj_t symbol(str_t ptr);                             // symbol
-extern obj_t symboli64(i64_t id);                           // symbol from i64
-extern obj_t timestamp(i64_t val);                          // timestamp
-extern obj_t guid(u8_t buf[16]);                            // GUID
-extern obj_t vchar(char_t c);                               // char
-extern obj_t string(u64_t len);                             // string 
-extern obj_t vn_string(str_t fmt, ...);                     // string from format
-extern obj_t venum(obj_t sym, obj_t vec);                   // enum
-extern obj_t anymap(obj_t sym, obj_t vec);                  // anymap
+obj_t null(type_t type);                             // create null of type
+obj_t atom(type_t type);                             // create atom of type
+obj_t list(u64_t len);                               // create list
+obj_t vn_list(u64_t len, ...);                       // create list from values
+obj_t vector(type_t type, u64_t len);                // create vector of type
+obj_t vn_symbol(u64_t len, ...);                     // create vector symbols from strings
+obj_t bool(bool_t val);                              // bool atom
+obj_t u8(u8_t val);                                  // byte atom
+obj_t i64(i64_t val);                                // i64 atom
+obj_t f64(f64_t val);                                // f64 atom
+obj_t symbol(str_t ptr);                             // symbol
+obj_t symboli64(i64_t id);                           // symbol from i64
+obj_t timestamp(i64_t val);                          // timestamp
+obj_t guid(u8_t buf[16]);                            // GUID
+obj_t vchar(char_t c);                               // char
+obj_t string(u64_t len);                             // string 
+obj_t vn_string(str_t fmt, ...);                     // string from format
+obj_t venum(obj_t sym, obj_t vec);                   // enum
+obj_t anymap(obj_t sym, obj_t vec);                  // anymap
 
 #define vector_bool(len)      (vector(TYPE_BOOL,      len)) // bool vector
 #define vector_u8(len)        (vector(TYPE_BYTE,      len)) // byte vector
@@ -174,19 +176,19 @@ extern obj_t anymap(obj_t sym, obj_t vec);                  // anymap
 #define vector_timestamp(len) (vector(TYPE_TIMESTAMP, len)) // char vector
 #define vector_guid(len)      (vector(TYPE_GUID,      len)) // GUID vector
          
-extern obj_t table(obj_t keys, obj_t vals); // table
-extern obj_t dict(obj_t keys,  obj_t vals); // dict
+obj_t table(obj_t keys, obj_t vals); // table
+obj_t dict(obj_t keys,  obj_t vals); // dict
       
 // Reference counting         
-extern obj_t clone(obj_t obj); // clone
-extern obj_t cow(obj_t   obj); // clone if refcount > 1
-extern u32_t rc(obj_t    obj); // get refcount
+obj_t clone(obj_t obj); // clone
+obj_t cow(obj_t   obj); // clone if refcount > 1
+u32_t rc(obj_t    obj); // get refcount
 
 // Errors
-extern obj_t error(i8_t code, str_t fmt, ...);       // Creates an error object
+obj_t error(i8_t code, str_t fmt, ...);       // Creates an error object
 
 // Destructor
-extern nil_t drop(obj_t obj);
+nil_t drop(obj_t obj);
 
 // Accessors
 #define as_string(obj)    ((str_t)__builtin_assume_aligned((obj + 1), sizeof(struct obj_t)))
@@ -200,58 +202,58 @@ extern nil_t drop(obj_t obj);
 #define as_list(obj)      ((obj_t *)(as_string(obj)))
 
 // Checkers
-extern bool_t is_null(obj_t obj);
-extern str_t typename(type_t type);
+bool_t is_null(obj_t obj);
+str_t typename(type_t type);
 #define is_error(obj)  ((obj)->type == TYPE_ERROR)
 #define is_atom(obj)   ((obj)->type < 0)
 #define is_vector(obj) ((obj)->type >= 0 && (obj)->type <= TYPE_CHAR)
 
 // Push a value to the end of a list
-extern obj_t push_raw(obj_t *obj, raw_t val); // push raw value into a list
-extern obj_t push_obj(obj_t *obj, obj_t val); // push object to a list
-extern obj_t push_sym(obj_t *obj, str_t str); // push interned string to a symbol vector
+obj_t push_raw(obj_t *obj, raw_t val); // push raw value into a list
+obj_t push_obj(obj_t *obj, obj_t val); // push object to a list
+obj_t push_sym(obj_t *obj, str_t str); // push interned string to a symbol vector
 
 // Pop a value from the end of a list
-extern obj_t pop_obj(obj_t *obj); // pop object from a list
+obj_t pop_obj(obj_t *obj); // pop object from a list
 
 // Insert a value into a list by an index (doesn't call a drop)
-extern obj_t ins_raw(obj_t *obj, i64_t idx, raw_t val); // write raw value into a list
-extern obj_t ins_obj(obj_t *obj, i64_t idx, obj_t val); // write object to a list
-extern obj_t ins_sym(obj_t *obj, i64_t idx, str_t str); // write interned string to a symbol vector
+obj_t ins_raw(obj_t *obj, i64_t idx, raw_t val); // write raw value into a list
+obj_t ins_obj(obj_t *obj, i64_t idx, obj_t val); // write object to a list
+obj_t ins_sym(obj_t *obj, i64_t idx, str_t str); // write interned string to a symbol vector
 
 // Read
-extern obj_t at_idx(obj_t obj, i64_t idx);              // read value from an obj at index
-extern obj_t at_ids(obj_t obj, i64_t ids[], u64_t len); // read values from an obj at indexes
-extern obj_t at_obj(obj_t obj, obj_t idx);              // read from obj indexed by obj
-extern str_t symtostr(i64_t id);                        // return interned string by interned id
+obj_t at_idx(obj_t obj, i64_t idx);              // read value from an obj at index
+obj_t at_ids(obj_t obj, i64_t ids[], u64_t len); // read values from an obj at indexes
+obj_t at_obj(obj_t obj, obj_t idx);              // read from obj indexed by obj
+str_t symtostr(i64_t id);                        // return interned string by interned id
 
 // Initialize obj with zeroed memory
-extern nil_t zero_obj(obj_t obj);
+nil_t zero_obj(obj_t obj);
 
 // Set
-extern obj_t set_idx(obj_t *obj, i64_t idx, obj_t val); // set obj at index
-extern obj_t set_obj(obj_t *obj, obj_t idx, obj_t val); // set obj indexed by obj
+obj_t set_idx(obj_t *obj, i64_t idx, obj_t val); // set obj at index
+obj_t set_obj(obj_t *obj, obj_t idx, obj_t val); // set obj indexed by obj
 
 // Resize
-extern obj_t resize(obj_t *obj, u64_t len);
+obj_t resize(obj_t *obj, u64_t len);
 
 // Search
-extern i64_t find_raw(obj_t obj, raw_t val); // find raw value in a list, return index (obj->len if not found)
-extern i64_t find_obj(obj_t obj, obj_t val); // find object in a list, return index (obj->len if not found)
-extern i64_t find_sym(obj_t obj, str_t str); // find interned string in a symbol vector, return index (obj->len if not found)
+i64_t find_raw(obj_t obj, raw_t val); // find raw value in a list, return index (obj->len if not found)
+i64_t find_obj(obj_t obj, obj_t val); // find object in a list, return index (obj->len if not found)
+i64_t find_sym(obj_t obj, str_t str); // find interned string in a symbol vector, return index (obj->len if not found)
 
 // Cast
-extern obj_t as(type_t type, obj_t obj);   // as object x o a type
+obj_t as(type_t type, obj_t obj);   // as object x o a type
 
 // Comparison
-extern i32_t objcmp(obj_t a, obj_t b);
+i32_t objcmp(obj_t a, obj_t b);
 
 // Serialization
-extern obj_t ser(obj_t obj);
-extern obj_t de(obj_t buf);
+obj_t ser(obj_t obj);
+obj_t de(obj_t buf);
 
 // Parse
-extern obj_t parse_str(i64_t fd, obj_t str, obj_t file);
+obj_t parse_str(i64_t fd, obj_t str, obj_t file);
 
 /* 
 * Evaluate into an instance, drived by handle fd:
@@ -260,9 +262,9 @@ extern obj_t parse_str(i64_t fd, obj_t str, obj_t file);
 * < 0: async evaluate string str into an instance, drived by handle -fd
 * Moves ownership of an obj, so don't call drop() on it after
 */
-extern obj_t eval_str(i64_t fd, obj_t str, obj_t file);
-extern obj_t eval_obj(i64_t fd, obj_t obj);
-extern obj_t try_obj(obj_t obj, obj_t catch);
+obj_t eval_str(i64_t fd, obj_t str, obj_t file);
+obj_t eval_obj(i64_t fd, obj_t obj);
+obj_t try_obj(obj_t obj, obj_t catch);
 
 #ifdef __cplusplus
 }
