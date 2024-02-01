@@ -21,12 +21,13 @@
  *   SOFTWARE.
  */
 
-#ifndef AMEND_H
-#define AMEND_H
+#ifndef UPDATE_H
+#define UPDATE_H
 
 #include "rayforce.h"
 
-obj_t ray_amend(obj_t *x, u64_t n);
-obj_t ray_dmend(obj_t *x, u64_t n);
+obj_t ray_update(obj_t *x, u64_t n);
+obj_t ray_upwidth(obj_t *x, u64_t n);
+obj_t ray_updepth(obj_t *x, u64_t n);
 
-#endif // AMEND_H
+#endif // UPDATE_H

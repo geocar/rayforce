@@ -794,9 +794,10 @@ obj_t set_ids(obj_t *obj, i64_t ids[], u64_t len, obj_t vals)
 obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
 {
     obj_t res;
-    i64_t i, id = NULL_I64, *ids = NULL;
+    u64_t i;
+    i64_t id = NULL_I64, *ids = NULL;
 
-dispatch:
+    // dispatch:
     switch (mtype2((*obj)->type, idx->type))
     {
     case mtype2(TYPE_I64, -TYPE_I64):

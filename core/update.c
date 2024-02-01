@@ -21,7 +21,7 @@
  *   SOFTWARE.
  */
 
-#include "amend.h"
+#include "update.h"
 #include "heap.h"
 #include "util.h"
 #include "runtime.h"
@@ -75,25 +75,22 @@ obj_t __commit(obj_t src, obj_t *out, obj_t obj)
 }
 
 /*
- * amend is a function that modifies an object in place.
+ * modifies an object in place (in a row).
  * It is a dyad that takes 4 arguments:
  * [0] - object to modify
  * [1] - indexes
  * [2] - function to apply
  * [3] - arguments to function
  */
-obj_t ray_amend(obj_t *x, u64_t n)
+obj_t __upwidth(obj_t src, obj_t idx, obj_t fun, obj_t val)
 {
     obj_t *out = NULL, obj, res;
 
-    if (n != 4)
-        throw(ERR_LENGTH, "amend: expected 4 arguments");
-
-    obj = __fetch(x[0], &out);
+    obj = __fetch(src, &out);
     if (is_error(obj))
         return obj;
 
-    res = __update(&obj, x[1], x[2], clone(x[3]));
+    res = __update(&obj, idx, fun, clone(val));
     if (is_error(res))
     {
         if (!out || (*out != obj))
@@ -102,13 +99,45 @@ obj_t ray_amend(obj_t *x, u64_t n)
         return res;
     }
 
-    return __commit(x[0], out, res);
+    return __commit(src, out, res);
 }
 
-obj_t ray_dmend(obj_t *x, u64_t n)
+obj_t ray_upwidth(obj_t *x, u64_t n)
 {
-    unused(x);
-    unused(n);
+    if (n != 4)
+        throw(ERR_LENGTH, "upwidth: expected 4 arguments");
 
-    throw(ERR_NOT_IMPLEMENTED, "ray_dmend");
+    return __upwidth(x[0], x[1], x[2], x[3]);
+}
+
+/*
+ * recursive for upwidth
+ */
+obj_t __updepth(obj_t src, obj_t idx, obj_t fun, obj_t val)
+{
+    obj_t *out = NULL, obj, res;
+
+    switch (idx->type)
+    {
+    case -TYPE_I64:
+        return __upwidth(src, idx, fun, val);
+    default:
+        throw(ERR_NOT_IMPLEMENTED, "updepth");
+    }
+}
+
+obj_t ray_updepth(obj_t *x, u64_t n)
+{
+    if (n != 4)
+        throw(ERR_LENGTH, "updepth: expected 4 arguments");
+
+    return __updepth(x[0], x[1], x[2], x[3]);
+}
+
+/*
+ * updates for tables
+ */
+obj_t ray_update(obj_t *x, u64_t n)
+{
+    throw(ERR_NOT_IMPLEMENTED, "update");
 }
