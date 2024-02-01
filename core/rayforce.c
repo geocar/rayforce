@@ -703,32 +703,6 @@ obj_t set_ids(obj_t *obj, i64_t ids[], u64_t len, obj_t vals)
 {
     u64_t i, l;
 
-    if (!is_vector(*obj))
-    {
-        drop(vals);
-        throw(ERR_TYPE, "set_ids: invalid type: '%s", typename((*obj)->type));
-    }
-
-    l = (*obj)->len;
-
-    if (is_vector(vals))
-    {
-        if (vals->len != len)
-        {
-            drop(vals);
-            throw(ERR_LENGTH, "set_ids: length mismatch: '%lld' != '%lld'", len, vals->len);
-        }
-    }
-
-    for (i = 0; i < len; i++)
-    {
-        if (ids[i] < 0 || ids[i] >= (i64_t)l)
-        {
-            drop(vals);
-            throw(ERR_TYPE, "set_ids: '%lld' is out of range '0..%lld'", ids[i], l - 1);
-        }
-    }
-
     switch (mtype2((*obj)->type, vals->type))
     {
     case mtype2(TYPE_I64, -TYPE_I64):
@@ -794,7 +768,7 @@ obj_t set_ids(obj_t *obj, i64_t ids[], u64_t len, obj_t vals)
 obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
 {
     obj_t res;
-    u64_t i;
+    u64_t i, n, l;
     i64_t id = NULL_I64, *ids = NULL;
 
     // dispatch:
@@ -807,6 +781,11 @@ obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
     case mtype2(TYPE_CHAR, -TYPE_I64):
     case mtype2(TYPE_LIST, -TYPE_I64):
     case mtype2(TYPE_GUID, -TYPE_I64):
+        if (idx->i64 < 0 || idx->i64 >= (i64_t)(*obj)->len)
+        {
+            drop(val);
+            throw(ERR_TYPE, "set_obj: '%lld' is out of range '0..%lld'", idx->i64, (*obj)->len - 1);
+        }
         return set_idx(obj, idx->i64, val);
     case mtype2(TYPE_I64, TYPE_I64):
     case mtype2(TYPE_SYMBOL, TYPE_I64):
@@ -815,7 +794,23 @@ obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
     case mtype2(TYPE_CHAR, TYPE_I64):
     case mtype2(TYPE_GUID, TYPE_I64):
     case mtype2(TYPE_LIST, TYPE_I64):
-        return set_ids(obj, as_i64(idx), idx->len, val);
+        if (is_vector(val) && idx->len != val->len)
+        {
+            drop(val);
+            throw(ERR_LENGTH, "set_ids: idx and vals length mismatch: '%lld' != '%lld'", idx->len, val->len);
+        }
+        ids = as_i64(idx);
+        n = idx->len;
+        l = (*obj)->len;
+        for (i = 0; i < n; i++)
+        {
+            if (ids[i] < 0 || ids[i] >= (i64_t)l)
+            {
+                drop(val);
+                throw(ERR_TYPE, "set_ids: '%lld' is out of range '0..%lld'", ids[i], l - 1);
+            }
+        }
+        return set_ids(obj, ids, n, val);
     default:
         if ((*obj)->type == TYPE_DICT)
         {
