@@ -223,6 +223,8 @@ u64_t ops_count(obj_t x)
         return enum_val(x)->len;
     case TYPE_ANYMAP:
         return anymap_val(x)->len;
+    case TYPE_FILTERMAP:
+        return as_list(x)[1]->len;
     case TYPE_GROUPMAP:
         return as_list(as_list(x)[1])[0]->i64;
     default:

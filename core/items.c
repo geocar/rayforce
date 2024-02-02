@@ -145,30 +145,6 @@ obj_t ray_at(obj_t x, obj_t y)
 
         return res;
 
-    case mtype2(TYPE_TABLE, TYPE_I64):
-        xl = as_list(x)[0]->len;
-        cols = vector(TYPE_LIST, xl);
-        for (i = 0; i < xl; i++)
-        {
-            c = ray_at(as_list(as_list(x)[1])[i], y);
-
-            if (is_atom(c))
-                c = ray_enlist(&c, 1);
-
-            if (is_error(c))
-            {
-                cols->len = i;
-                drop(cols);
-                return c;
-            }
-
-            ins_obj(&cols, i, c);
-        }
-
-        res = table(clone(as_list(x)[0]), cols);
-
-        return res;
-
     case mtype2(TYPE_TABLE, TYPE_SYMBOL):
         xl = as_list(x)[1]->len;
         yl = y->len;
