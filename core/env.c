@@ -227,6 +227,8 @@ nil_t init_typenames(obj_t typenames)
     regt(typenames,    TYPE_BINARY,     "Binary");
     regt(typenames,    TYPE_VARY,       "Vary");
     regt(typenames,    TYPE_LAMBDA,     "Lambda");
+    regt(typenames,    TYPE_FILTERMAP,  "Filtermap");
+    regt(typenames,    TYPE_GROUPMAP,   "Groupmap");
     regt(typenames,    TYPE_NULL,       "Null");
     regt(typenames,    TYPE_ERROR,      "Error");
 }

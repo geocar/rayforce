@@ -68,7 +68,7 @@ obj_t remap_filter(obj_t x, obj_t y)
     l = as_list(x)[1]->len;
     res = list(l);
     for (i = 0; i < l; i++)
-        as_list(res)[i] = filter_map(as_list(as_list(x)[1])[i], y);
+        as_list(res)[i] = filter_map(clone(as_list(as_list(x)[1])[i]), clone(y));
 
     return table(clone(as_list(x)[0]), res);
 }

@@ -36,7 +36,7 @@ obj_t filter_map(obj_t x, obj_t y)
 {
     obj_t res;
 
-    res = vn_list(2, clone(x), clone(y));
+    res = vn_list(2, x, y);
     res->type = TYPE_FILTERMAP;
     return res;
 }

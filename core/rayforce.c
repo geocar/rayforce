@@ -1357,6 +1357,10 @@ obj_t cow(obj_t obj)
         for (i = 0; i < l; i++)
             as_list(res)[i] = clone(as_list(obj)[i]);
         return res;
+    case TYPE_TABLE:
+        return table(clone(as_list(obj)[0]), clone(as_list(obj)[1]));
+    case TYPE_DICT:
+        return dict(clone(as_list(obj)[0]), clone(as_list(obj)[1]));
     default:
         throw(ERR_NOT_IMPLEMENTED, "cow: not implemented for type: '%s", typename(obj->type));
     }

@@ -27,6 +27,7 @@
 #include "runtime.h"
 #include "error.h"
 #include "eval.h"
+#include "filter.h"
 
 obj_t __fetch(obj_t x, obj_t **out)
 {
@@ -48,12 +49,18 @@ obj_t __fetch(obj_t x, obj_t **out)
 
 obj_t __update(obj_t *obj, obj_t idx, obj_t fun, obj_t val)
 {
+    obj_t fm;
+
     // switch (x[2]->type)
     // {
     //     case TYPE_DYAD:
     //         obj = call(x[2], obj, x[3]);
     //         break;
     // }
+
+    // remap table
+    if ((*obj)->type == TYPE_TABLE)
+        *obj = filter_map(*obj, clone(idx));
 
     return set_obj(obj, idx, val);
 }
