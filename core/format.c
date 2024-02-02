@@ -38,6 +38,7 @@
 #include "items.h"
 #include "io.h"
 #include "error.h"
+#include "filter.h"
 
 #define MAX_ROW_WIDTH 800
 #define FORMAT_TRAILER_SIZE 4
@@ -831,6 +832,18 @@ i64_t lambda_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, i64_t
     return n;
 }
 
+i64_t filtermap_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, i64_t limit, bool_t full, obj_t obj)
+{
+    i64_t n;
+    obj_t a;
+
+    a = filter_collect(obj);
+    n = obj_fmt_into(dst, len, offset, indent, limit, full, a);
+    drop(a);
+
+    return n;
+}
+
 i64_t obj_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, i64_t limit, bool_t full, obj_t obj)
 {
     switch (obj->type)
@@ -883,6 +896,8 @@ i64_t obj_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t indent, i64_t li
         return internal_fmt_into(dst, len, offset, limit, obj);
     case TYPE_LAMBDA:
         return lambda_fmt_into(dst, len, offset, indent, limit, obj);
+    case TYPE_FILTERMAP:
+        return filtermap_fmt_into(dst, len, offset, indent, limit, full, obj);
     case TYPE_NULL:
         return str_fmt_into(dst, len, offset, limit, "null");
     case TYPE_ERROR:

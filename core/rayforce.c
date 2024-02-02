@@ -481,6 +481,7 @@ obj_t ins_sym(obj_t *obj, i64_t idx, str_t str)
 
 obj_t at_idx(obj_t obj, i64_t idx)
 {
+    u64_t i, n, l;
     obj_t k, v, res;
     u8_t *buf;
 
@@ -560,6 +561,36 @@ obj_t at_idx(obj_t obj, i64_t idx)
 
         return NULL_OBJ;
 
+    case TYPE_TABLE:
+        n = as_list(obj)[0]->len;
+        v = list(n);
+        l = ops_count(obj);
+        if (idx < 0)
+            idx = obj->len + idx;
+        if (idx >= 0 && idx < (i64_t)l)
+        {
+            for (i = 0; i < n; i++)
+            {
+                k = at_idx(as_list(as_list(obj)[1])[i], idx);
+                if (is_error(k))
+                {
+                    v->len = i;
+                    drop(v);
+                    return k;
+                }
+                ins_obj(&v, i, k);
+            }
+            return dict(clone(as_list(obj)[0]), v);
+        }
+
+        for (i = 0; i < n; i++)
+        {
+            k = null(as_list(as_list(obj)[1])[i]->type);
+            ins_obj(&v, i, k);
+        }
+
+        return dict(clone(as_list(obj)[0]), v);
+
     default:
         return clone(obj);
     }
@@ -567,10 +598,10 @@ obj_t at_idx(obj_t obj, i64_t idx)
 
 obj_t at_ids(obj_t obj, i64_t ids[], u64_t len)
 {
-    u64_t i;
+    u64_t i, xl;
     i64_t *iinp, *iout;
     f64_t *finp, *fout;
-    obj_t k, v, res;
+    obj_t k, v, cols, res;
 
     switch (obj->type)
     {
@@ -624,6 +655,27 @@ obj_t at_ids(obj_t obj, i64_t ids[], u64_t len)
 
         drop(v);
         return res;
+    case TYPE_TABLE:
+        xl = as_list(obj)[0]->len;
+        cols = list(xl);
+        for (i = 0; i < xl; i++)
+        {
+            k = at_ids(as_list(as_list(obj)[1])[i], ids, len);
+
+            // if (is_atom(c))
+            //     c = ray_enlist(&c, 1);
+
+            if (is_error(k))
+            {
+                cols->len = i;
+                drop(cols);
+                return k;
+            }
+
+            ins_obj(&cols, i, k);
+        }
+
+        return table(clone(as_list(obj)[0]), cols);
     default:
         res = vector(TYPE_LIST, len);
         for (i = 0; i < len; i++)
@@ -635,7 +687,8 @@ obj_t at_ids(obj_t obj, i64_t ids[], u64_t len)
 
 obj_t at_obj(obj_t obj, obj_t idx)
 {
-    u64_t i;
+    u64_t i, n, l;
+    i64_t *ids;
 
     switch (mtype2(obj->type, idx->type))
     {
@@ -647,6 +700,7 @@ obj_t at_obj(obj_t obj, obj_t idx)
     case mtype2(TYPE_LIST, -TYPE_I64):
     case mtype2(TYPE_ENUM, -TYPE_I64):
     case mtype2(TYPE_ANYMAP, -TYPE_I64):
+    case mtype2(TYPE_TABLE, -TYPE_I64):
         return at_idx(obj, idx->i64);
     case mtype2(TYPE_I64, TYPE_I64):
     case mtype2(TYPE_SYMBOL, TYPE_I64):
@@ -655,6 +709,13 @@ obj_t at_obj(obj_t obj, obj_t idx)
     case mtype2(TYPE_GUID, TYPE_I64):
     case mtype2(TYPE_LIST, TYPE_I64):
     case mtype2(TYPE_ENUM, TYPE_I64):
+    case mtype2(TYPE_TABLE, TYPE_I64):
+        ids = as_i64(idx);
+        n = idx->len;
+        l = ops_count(obj);
+        for (i = 0; i < n; i++)
+            if (ids[i] < 0 || ids[i] >= (i64_t)l)
+                throw(ERR_TYPE, "at_obj: '%lld' is out of range '0..%lld'", ids[i], l - 1);
         return at_ids(obj, as_i64(idx), idx->len);
     default:
         if (obj->type == TYPE_DICT || obj->type == TYPE_TABLE)
@@ -798,17 +859,17 @@ obj_t set_obj(obj_t *obj, obj_t idx, obj_t val)
         if (is_vector(val) && idx->len != val->len)
         {
             drop(val);
-            throw(ERR_LENGTH, "set_ids: idx and vals length mismatch: '%lld' != '%lld'", idx->len, val->len);
+            throw(ERR_LENGTH, "set_obj: idx and vals length mismatch: '%lld' != '%lld'", idx->len, val->len);
         }
         ids = as_i64(idx);
         n = idx->len;
-        l = (*obj)->len;
+        l = ops_count(*obj);
         for (i = 0; i < n; i++)
         {
             if (ids[i] < 0 || ids[i] >= (i64_t)l)
             {
                 drop(val);
-                throw(ERR_TYPE, "set_ids: '%lld' is out of range '0..%lld'", ids[i], l - 1);
+                throw(ERR_TYPE, "set_obj: '%lld' is out of range '0..%lld'", ids[i], l - 1);
             }
         }
         return set_ids(obj, ids, n, val);
