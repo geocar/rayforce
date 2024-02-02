@@ -35,6 +35,7 @@
 #define KW_EMPTY_SYMBOL 0
 #define KW_FN 1
 #define KW_SELF 2
+#define KW_DO 3
 
 /*
  *  Environment

@@ -1119,7 +1119,7 @@ obj_t parse_do(parser_t *parser)
         if (car == NULL_OBJ)
             car = tok;
         else if (lst == NULL_OBJ)
-            lst = vn_list(3, env_get_internal_function("do"), car, tok);
+            lst = vn_list(3, env_get_internal_function_by_id(KW_DO), car, tok);
         else
             push_obj(&lst, tok);
     }

@@ -92,7 +92,7 @@ inline __attribute__((always_inline)) ctx_t *ctx_get()
     return &__INTERPRETER->ctxstack[__INTERPRETER->cp - 1];
 }
 
-inline __attribute__((always_inline)) ctx_t *ctx_clone(obj_t info)
+inline __attribute__((always_inline)) ctx_t *ctx_top(obj_t info)
 {
     ctx_t *ctx;
     i64_t sp;
@@ -353,7 +353,8 @@ __attribute__((hot)) obj_t eval(obj_t obj)
                     drop(stack_pop());
             }
 
-            return unwrap(res, (i64_t)obj);
+            // Special case for 'do' function (do not unwrap this one to prevent big stack trace for entire files)
+            return (car->i64 == (i64_t)ray_do) ? res : unwrap(res, (i64_t)obj);
 
         case TYPE_LAMBDA:
             lambda = as_lambda(car);
@@ -666,7 +667,7 @@ obj_t eval_str(i64_t fd, obj_t str, obj_t file)
         return parsed;
     }
 
-    ctx = ctx_clone(info);
+    ctx = ctx_top(info);
 
     res = (setjmp(ctx->jmp) == 0) ? eval(parsed) : stack_pop();
 
@@ -689,7 +690,7 @@ obj_t try_obj(obj_t obj, obj_t catch)
     obj_t res;
     bool_t sig;
 
-    ctx = ctx_clone(NULL_OBJ);
+    ctx = ctx_top(NULL_OBJ);
 
     switch (setjmp(ctx->jmp))
     {

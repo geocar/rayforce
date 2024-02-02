@@ -352,7 +352,7 @@ i64_t error_frame_fmt_into(str_t *dst, i64_t *len, i64_t *offset, i64_t limit, o
                 }
                 else if (line_number == span.end_line)
                 {
-                    n += str_fmt_into(dst, len, offset, MAX_ERROR_LEN, "%s      :%s", CYAN, RESET);
+                    n += str_fmt_into(dst, len, offset, MAX_ERROR_LEN, "\n%s      :%s", CYAN, RESET);
                     for (i = 0; i < span.end_column + 1; i++)
                         n += str_fmt_into(dst, len, offset, MAX_ERROR_LEN, " ");
 

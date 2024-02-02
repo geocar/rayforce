@@ -237,6 +237,7 @@ nil_t init_kw()
     assert(intern_symbol("", 0) == KW_EMPTY_SYMBOL);
     assert(intern_symbol("fn", 2) == KW_FN);
     assert(intern_symbol("self", 4) == KW_SELF);
+    assert(intern_symbol("do", 2) == KW_DO);
 }
 
 env_t create_env()
