@@ -188,9 +188,10 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "map",       TYPE_VARY,     FN_NONE,                   ray_map);
     regf(functions,  "fold",      TYPE_VARY,     FN_NONE,                   ray_fold);
     regf(functions,  "args",      TYPE_VARY,     FN_NONE,                   ray_args);
-    regf(functions,  "upwidth",   TYPE_VARY,     FN_NONE,                   ray_upwidth);
-    regf(functions,  "updepth",   TYPE_VARY,     FN_NONE,                   ray_updepth);
+    regf(functions,  "alter",     TYPE_VARY,     FN_NONE,                   ray_alter);
+    regf(functions,  "modify",    TYPE_VARY,     FN_NONE,                   ray_modify);
     regf(functions,  "update",    TYPE_VARY,     FN_NONE,                   ray_update);
+    regf(functions,  "upsert",    TYPE_VARY,     FN_NONE,                   ray_upsert);
     regf(functions,  "csv",       TYPE_VARY,     FN_NONE,                   ray_csv);
     regf(functions,  "lj",        TYPE_VARY,     FN_NONE,                   ray_lj);
     regf(functions,  "if",        TYPE_VARY,     FN_NONE | FN_SPECIAL_FORM, ray_cond);

@@ -57,7 +57,7 @@ obj_t __update(obj_t *obj, obj_t *x, u64_t n)
     if (x[1]->i64 == (i64_t)ray_set)
     {
         if (n != 4)
-            throw(ERR_LENGTH, "upwidth: set expected a value");
+            throw(ERR_LENGTH, "alter: set expected a value");
 
         return set_obj(obj, x[2], clone(x[3]));
     }
@@ -92,15 +92,15 @@ obj_t __commit(obj_t src, obj_t obj, obj_t *val)
     return obj;
 }
 
-obj_t ray_upwidth(obj_t *x, u64_t n)
+obj_t ray_alter(obj_t *x, u64_t n)
 {
     obj_t *val = NULL, v, obj, idx, res;
 
     if (n < 3)
-        throw(ERR_LENGTH, "upwidth: expected at least 3 arguments");
+        throw(ERR_LENGTH, "alter: expected at least 3 arguments");
 
     if (x[1]->type < TYPE_LAMBDA || x[1]->type > TYPE_VARY)
-        throw(ERR_TYPE, "upwidth: expected function as 3rd argument");
+        throw(ERR_TYPE, "alter: expected function as 3rd argument");
 
     obj = __fetch(x[0], &val);
 
@@ -120,9 +120,9 @@ obj_t ray_upwidth(obj_t *x, u64_t n)
 }
 
 /*
- * recursive for upwidth
+ * recursive for alter
  */
-obj_t __updepth(obj_t src, obj_t idx, obj_t fun, obj_t val)
+obj_t __modify(obj_t src, obj_t idx, obj_t fun, obj_t val)
 {
     u64_t i, l;
     obj_t *out = NULL, obj, res;
@@ -130,7 +130,7 @@ obj_t __updepth(obj_t src, obj_t idx, obj_t fun, obj_t val)
     switch (idx->type)
     {
     case -TYPE_I64:
-        // return __upwidth(src, idx, fun, val);
+        // return __alter(src, idx, fun, val);
         // case TYPE_I64:
         // if ()
         // l = idx->len;
@@ -140,20 +140,20 @@ obj_t __updepth(obj_t src, obj_t idx, obj_t fun, obj_t val)
         //     if ()
         // }
     default:
-        throw(ERR_NOT_IMPLEMENTED, "updepth");
+        throw(ERR_NOT_IMPLEMENTED, "modify");
     }
 }
 
-obj_t ray_updepth(obj_t *x, u64_t n)
+obj_t ray_modify(obj_t *x, u64_t n)
 {
     switch (n)
     {
     case 4:
-        return __updepth(x[0], x[1], x[2], x[3]);
+        return __modify(x[0], x[1], x[2], x[3]);
     case 3:
-        return __updepth(x[0], x[1], x[2], NULL_OBJ);
+        return __modify(x[0], x[1], x[2], NULL_OBJ);
     default:
-        throw(ERR_LENGTH, "updepth: expected 3 or 4 arguments");
+        throw(ERR_LENGTH, "modify: expected 3 or 4 arguments");
     }
 }
 
