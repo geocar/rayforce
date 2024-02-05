@@ -28,93 +28,95 @@
 #include "error.h"
 #include "eval.h"
 #include "filter.h"
+#include "binary.h"
+#include "unary.h"
+#include "vary.h"
+#include "iter.h"
 
-obj_t __fetch(obj_t x, obj_t **out)
+obj_t __fetch(obj_t obj, obj_t **val)
 {
-    u64_t i;
-    obj_t *val, *env;
-
-    switch (x->type)
+    if (obj->type == -TYPE_SYMBOL)
     {
-    case -TYPE_SYMBOL:
-        val = deref(x);
-        if (val == NULL)
+        *val = deref(obj);
+        if (*val == NULL)
             throw(ERR_NOT_FOUND, "fetch: symbol not found");
-        *out = val;
-        return cow(*val);
-    default:
-        return cow(x);
+
+        obj = cow(**val);
     }
+    else
+        obj = cow(obj);
+
+    return obj;
 }
 
-obj_t __update(obj_t *obj, obj_t idx, obj_t fun, obj_t val)
+obj_t __update(obj_t *obj, obj_t *x, u64_t n)
 {
-    obj_t fm;
+    obj_t v, idx, res;
 
-    // switch (x[2]->type)
-    // {
-    //     case TYPE_DYAD:
-    //         obj = call(x[2], obj, x[3]);
-    //         break;
-    // }
-
-    // remap table
-    if ((*obj)->type == TYPE_TABLE)
-        *obj = filter_map(*obj, clone(idx));
-
-    return set_obj(obj, idx, val);
-}
-
-obj_t __commit(obj_t src, obj_t *out, obj_t obj)
-{
-    if (src->type == -TYPE_SYMBOL)
+    // special case for set
+    if (x[1]->i64 == (i64_t)ray_set)
     {
-        if (out && (*out != obj))
-        {
-            drop(*out);
-            *out = obj;
-        }
+        if (n != 4)
+            throw(ERR_LENGTH, "upwidth: set expected a value");
 
+        return set_obj(obj, x[2], clone(x[3]));
+    }
+
+    // retrieve the object via indices
+    v = at_obj(*obj, x[2]);
+
+    if (is_error(v))
+        return v;
+
+    idx = x[2];
+    x[2] = v;
+    res = ray_map(x + 1, n - 1);
+    x[2] = idx;
+    drop(v);
+
+    if (is_error(res))
+        return res;
+
+    return set_obj(obj, idx, res);
+}
+
+obj_t __commit(obj_t src, obj_t obj, obj_t *val)
+{
+    if ((val != NULL) && (*val != obj))
+    {
+        drop(*val);
+        *val = obj;
         return clone(src);
     }
 
     return obj;
 }
 
-/*
- * modifies an object in place (in a row).
- * It is a dyad that takes 4 arguments:
- * [0] - object to modify
- * [1] - indexes
- * [2] - function to apply
- * [3] - arguments to function
- */
-obj_t __upwidth(obj_t src, obj_t idx, obj_t fun, obj_t val)
+obj_t ray_upwidth(obj_t *x, u64_t n)
 {
-    obj_t *out = NULL, obj, res;
+    obj_t *val = NULL, v, obj, idx, res;
 
-    obj = __fetch(src, &out);
+    if (n < 3)
+        throw(ERR_LENGTH, "upwidth: expected at least 3 arguments");
+
+    if (x[1]->type < TYPE_LAMBDA || x[1]->type > TYPE_VARY)
+        throw(ERR_TYPE, "upwidth: expected function as 3rd argument");
+
+    obj = __fetch(x[0], &val);
+
     if (is_error(obj))
         return obj;
 
-    res = __update(&obj, idx, fun, clone(val));
+    res = __update(&obj, x, n);
     if (is_error(res))
     {
-        if (!out || (*out != obj))
+        if (val && (*val != obj))
             drop(obj);
 
         return res;
     }
 
-    return __commit(src, out, res);
-}
-
-obj_t ray_upwidth(obj_t *x, u64_t n)
-{
-    if (n != 4)
-        throw(ERR_LENGTH, "upwidth: expected 4 arguments");
-
-    return __upwidth(x[0], x[1], x[2], x[3]);
+    return __commit(x[0], obj, val);
 }
 
 /*
@@ -128,7 +130,7 @@ obj_t __updepth(obj_t src, obj_t idx, obj_t fun, obj_t val)
     switch (idx->type)
     {
     case -TYPE_I64:
-        return __upwidth(src, idx, fun, val);
+        // return __upwidth(src, idx, fun, val);
         // case TYPE_I64:
         // if ()
         // l = idx->len;
@@ -144,10 +146,15 @@ obj_t __updepth(obj_t src, obj_t idx, obj_t fun, obj_t val)
 
 obj_t ray_updepth(obj_t *x, u64_t n)
 {
-    if (n != 4)
-        throw(ERR_LENGTH, "updepth: expected 4 arguments");
-
-    return __updepth(x[0], x[1], x[2], x[3]);
+    switch (n)
+    {
+    case 4:
+        return __updepth(x[0], x[1], x[2], x[3]);
+    case 3:
+        return __updepth(x[0], x[1], x[2], NULL_OBJ);
+    default:
+        throw(ERR_LENGTH, "updepth: expected 3 or 4 arguments");
+    }
 }
 
 /*

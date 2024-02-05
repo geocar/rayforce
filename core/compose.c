@@ -278,7 +278,7 @@ obj_t ray_guid(obj_t x)
 obj_t ray_list(obj_t *x, u64_t n)
 {
     u64_t i;
-    obj_t lst = vector(TYPE_LIST, n);
+    obj_t lst = list(n);
 
     for (i = 0; i < n; i++)
         as_list(lst)[i] = clone(x[i]);

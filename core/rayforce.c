@@ -424,7 +424,7 @@ obj_t ins_obj(obj_t *obj, i64_t idx, obj_t val)
     // we need to convert vector to list
     if ((*obj)->type - -val->type != 0 && (*obj)->type != TYPE_LIST)
     {
-        l = (*obj)->len;
+        l = ops_count(*obj);
         ret = list(l);
 
         for (i = 0; i < idx; i++)
