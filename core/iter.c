@@ -32,6 +32,43 @@
 #include "eval.h"
 #include "error.h"
 
+obj_t ray_apply(obj_t *x, u64_t n)
+{
+    u64_t i;
+    obj_t f;
+
+    if (n < 2)
+        return null(0);
+
+    f = x[0];
+    x++;
+    n--;
+
+    switch (f->type)
+    {
+    case TYPE_UNARY:
+        if (n != 1)
+            throw(ERR_LENGTH, "'apply': unary call with wrong arguments count");
+        return unary_call(FN_ATOMIC, (unary_f)f->i64, x[0]);
+    case TYPE_BINARY:
+        if (n != 2)
+            throw(ERR_LENGTH, "'apply': binary call with wrong arguments count");
+        return binary_call(FN_ATOMIC, (binary_f)f->i64, x[0], x[1]);
+    case TYPE_VARY:
+        return vary_call(FN_ATOMIC, (vary_f)f->i64, x, n);
+    case TYPE_LAMBDA:
+        if (n != as_lambda(f)->args->len)
+            throw(ERR_LENGTH, "'apply': lambda call with wrong arguments count");
+
+        for (i = 0; i < n; i++)
+            stack_push(clone(x[i]));
+
+        return call(f, n);
+    default:
+        throw(ERR_TYPE, "'map': unsupported function type: '%s", typename(f->type));
+    }
+}
+
 obj_t ray_map(obj_t *x, u64_t n)
 {
     u64_t i, j, l;

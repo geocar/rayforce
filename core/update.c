@@ -70,7 +70,7 @@ obj_t __update(obj_t *obj, obj_t *x, u64_t n)
 
     idx = x[2];
     x[2] = v;
-    res = ray_map(x + 1, n - 1);
+    res = ray_apply(x + 1, n - 1);
     x[2] = idx;
     drop(v);
 

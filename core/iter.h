@@ -26,6 +26,7 @@
 
 #include "rayforce.h"
 
+obj_t ray_apply(obj_t *x, u64_t n);
 obj_t ray_map(obj_t *x, u64_t n);
 obj_t ray_fold(obj_t *x, u64_t n);
 
