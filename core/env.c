@@ -185,6 +185,7 @@ nil_t init_functions(obj_t functions)
     regf(functions,  "format",    TYPE_VARY,     FN_NONE,                   ray_format);
     regf(functions,  "print",     TYPE_VARY,     FN_NONE,                   ray_print);
     regf(functions,  "println",   TYPE_VARY,     FN_NONE,                   ray_println);
+    regf(functions,  "apply",     TYPE_VARY,     FN_NONE,                   ray_apply);
     regf(functions,  "map",       TYPE_VARY,     FN_NONE,                   ray_map);
     regf(functions,  "fold",      TYPE_VARY,     FN_NONE,                   ray_fold);
     regf(functions,  "args",      TYPE_VARY,     FN_NONE,                   ray_args);
