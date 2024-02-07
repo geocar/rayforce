@@ -293,11 +293,24 @@ insert:
 
     case TYPE_TABLE:
         // Check columns
-        if (lst->len != as_list(obj)[0]->len)
+        l = as_list(lst)[0]->len;
+        if (l != as_list(obj)[0]->len)
         {
-            res = error(ERR_LENGTH, "insert: expected list of length %lld, got %lld", as_list(obj)[0]->len, lst->len);
+            res = error(ERR_LENGTH, "insert: expected 'Table with the same number of columns");
             uncow(obj, val, res);
         }
+
+        for (i = 0; i < l; i++)
+        {
+            if (as_symbol(as_list(lst)[0])[i] != as_symbol(as_list(obj)[0])[i])
+            {
+                res = error(ERR_TYPE, "insert: expected 'Table with the same columns");
+                uncow(obj, val, res);
+            }
+        }
+
+        lst = as_list(lst)[1];
+        goto insert;
 
     default:
         res = error(ERR_TYPE, "insert: unsupported type '%s' as 2nd argument", typename(lst->type));
