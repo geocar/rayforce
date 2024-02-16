@@ -73,11 +73,34 @@ obj_t remap_filter(obj_t x, obj_t y)
     return table(clone(as_list(x)[0]), res);
 }
 
+obj_t find_symbol(obj_t obj)
+{
+    u64_t i, l;
+    obj_t x;
+
+    switch (obj->type)
+    {
+    case -TYPE_SYMBOL:
+        return clone(obj);
+    case TYPE_LIST:
+        l = obj->len;
+        for (i = 0; i < l; i++)
+        {
+            x = find_symbol(as_list(obj)[i]);
+            if (x != NULL_OBJ)
+                return x;
+        }
+        return NULL_OBJ;
+    default:
+        return NULL_OBJ;
+    }
+}
+
 obj_t ray_select(obj_t obj)
 {
     u64_t i, l, tablen;
     obj_t keys = NULL_OBJ, vals = NULL_OBJ, filters = NULL_OBJ, groupby = NULL_OBJ,
-          bycol = NULL_OBJ, bysym = NULL_OBJ, tab, sym, prm, val;
+          bycol = NULL_OBJ, bysym = NULL_OBJ, byval = NULL_OBJ, tab, sym, prm, val;
 
     if (obj->type != TYPE_DICT)
         throw(ERR_LENGTH, "'select' takes dict of params");
@@ -132,31 +155,36 @@ obj_t ray_select(obj_t obj)
     prm = get_param(obj, "by");
     if (prm != NULL_OBJ)
     {
+        bysym = find_symbol(prm);
         groupby = eval(prm);
-        if (prm->type == -TYPE_SYMBOL)
-            bysym = prm;
-        else
-        {
+        drop(prm);
+
+        if (bysym == NULL_OBJ)
             bysym = symbol("x");
-            drop(prm);
-        }
+        else
+            byval = eval(bysym);
 
         unmount_env(tablen);
 
         if (is_error(groupby))
         {
+            drop(bysym);
+            drop(byval);
+            drop(filters);
             drop(tab);
             return groupby;
         }
 
-        prm = group_map(&bycol, groupby, tab, filters);
+        prm = group_map(&bycol, groupby, tab, filters, byval);
+        drop(byval);
 
         if (is_error(prm))
         {
-            drop(tab);
             drop(filters);
             drop(groupby);
             drop(bysym);
+            drop(bycol);
+            drop(tab);
             return prm;
         }
 
@@ -400,14 +428,9 @@ obj_t ray_update(obj_t obj)
     prm = get_param(obj, "by");
     if (prm != NULL_OBJ)
     {
+        bysym = find_symbol(prm);
         groupby = eval(prm);
-        if (prm->type == -TYPE_SYMBOL)
-            bysym = prm;
-        else
-        {
-            bysym = symbol("x");
-            drop(prm);
-        }
+        drop(prm);
 
         unmount_env(tablen);
 
@@ -417,38 +440,43 @@ obj_t ray_update(obj_t obj)
             return groupby;
         }
 
-        prm = group_map(&bycol, groupby, tab, filters);
+        if (bysym == NULL_OBJ)
+            bysym = symbol("x");
+        else
+            bycol = eval(bysym);
 
-        if (is_error(prm))
-        {
-            drop(tab);
-            drop(filters);
-            drop(groupby);
-            drop(bysym);
-            return prm;
-        }
-        return prm;
-        mount_env(prm);
+        //     prm = group_map(&bycol, groupby, tab, filters);
 
-        drop(prm);
-        drop(filters);
-        drop(groupby);
+        //     if (is_error(prm))
+        //     {
+        //         drop(tab);
+        //         drop(filters);
+        //         drop(groupby);
+        //         drop(bysym);
+        //         return prm;
+        //     }
+        //     return prm;
+        //     mount_env(prm);
 
-        if (is_error(bycol))
-        {
-            drop(tab);
-            return bycol;
-        }
-    }
-    else if (filters != NULL_OBJ)
-    {
-        // Unmount table columns from a local env
-        unmount_env(tablen);
-        // Create filtermaps over table
-        val = remap_filter(tab, filters);
-        drop(filters);
-        mount_env(val);
-        drop(val);
+        //     drop(prm);
+        //     drop(filters);
+        //     drop(groupby);
+
+        //     if (is_error(bycol))
+        //     {
+        //         drop(tab);
+        //         return bycol;
+        //     }
+        // }
+        // else if (filters != NULL_OBJ)
+        // {
+        //     // Unmount table columns from a local env
+        //     unmount_env(tablen);
+        //     // Create filtermaps over table
+        //     val = remap_filter(tab, filters);
+        //     drop(filters);
+        //     mount_env(val);
+        //     drop(val);
     }
 
     return NULL;

@@ -66,7 +66,7 @@ obj_t __group(obj_t x, obj_t y, obj_t z)
     }
 }
 
-obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
+obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z, obj_t k)
 {
     u64_t l;
     i64_t *ids;
@@ -121,7 +121,7 @@ obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z)
 
     res = __group(y, bins, z);
 
-    v = aggr_first(x, bins, z);
+    v = (k == NULL_OBJ) ? aggr_first(x, bins, z) : aggr_first(k, bins, z);
     if (is_error(v))
     {
         drop(res);

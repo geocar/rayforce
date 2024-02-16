@@ -26,7 +26,7 @@
 
 #include "rayforce.h"
 
-obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z);
+obj_t group_map(obj_t *aggr, obj_t x, obj_t y, obj_t z, obj_t k);
 obj_t group_collect(obj_t x);
 nil_t group_fill_counts(obj_t grp);
 

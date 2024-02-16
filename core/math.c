@@ -1224,10 +1224,12 @@ obj_t ray_xbar(obj_t x, obj_t y)
     switch (mtype2(x->type, y->type))
     {
     case mtype2(-TYPE_I64, -TYPE_I64):
+    case mtype2(-TYPE_TIMESTAMP, -TYPE_I64):
         return i64(xbari64(x->i64, y->i64));
     case mtype2(-TYPE_F64, -TYPE_I64):
         return f64(xbarf64(x->i64, y->f64));
     case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_TIMESTAMP, -TYPE_I64):
         l = x->len;
         xivals = as_i64(x);
         res = vector_i64(l);
@@ -1241,7 +1243,7 @@ obj_t ray_xbar(obj_t x, obj_t y)
         xfvals = as_f64(x);
         res = vector_f64(l);
         for (i = 0; i < l; i++)
-            as_f64(res)[i] = xbarf64(xfvals[i], y->f64);
+            as_f64(res)[i] = xbarf64(xfvals[i], y->i64);
 
         return res;
 
