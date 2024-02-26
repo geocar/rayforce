@@ -41,6 +41,7 @@
 #include "heap.h"
 #include "io.h"
 #include "error.h"
+#include "eval.h"
 
 __thread i32_t __EVENT_FD; // eventfd to notify epoll loop of shutdown
 __thread u8_t __STDIN_BUF[BUF_SIZE + 1];

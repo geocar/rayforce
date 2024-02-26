@@ -617,9 +617,26 @@ obj_t parse_str(i64_t fd, obj_t str, obj_t file)
 
 obj_t eval_obj(i64_t fd, obj_t obj)
 {
+    obj_t res;
+    ctx_t *ctx;
+    i64_t sp;
+
     // eval onto self host
     if (fd == 0)
-        return eval(obj);
+    {
+
+        ctx = ctx_top(NULL_OBJ);
+        res = (setjmp(ctx->jmp) == 0) ? eval(obj) : stack_pop();
+        ctx_pop();
+        drop(ctx->lambda);
+
+        // cleanup stack frame
+        sp = ctx->sp;
+        while (__INTERPRETER->sp > sp)
+            drop(stack_pop());
+
+        return res;
+    }
 
     throw(ERR_NOT_IMPLEMENTED, "eval: not implemented");
 
