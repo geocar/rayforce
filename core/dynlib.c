@@ -29,6 +29,7 @@
 #include <dlfcn.h>
 #endif
 
+#include "util.h"
 #include "error.h"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
