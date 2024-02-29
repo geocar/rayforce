@@ -124,9 +124,9 @@ obj_t io_write(i64_t fd, u8_t msg_type, obj_t obj)
     {
     case 0:
         if (obj->type == TYPE_CHAR)
-            return eval_str(0, obj, NULL);
+            return eval_str(obj, NULL);
         else
-            return eval_obj(0, obj);
+            return eval_obj(obj);
     case 1:
         fmt = obj_fmt(obj);
         fprintf(stdout, "%s\n", fmt);
@@ -519,12 +519,12 @@ obj_t ray_eval(obj_t x)
     if (!x || x->type != TYPE_CHAR)
         throw(ERR_TYPE, "eval: expected string");
 
-    return eval_str(0, x, NULL);
+    return eval_str(x, NULL_OBJ);
 }
 
 obj_t ray_exec(obj_t x)
 {
-    return eval_obj(0, x);
+    return eval_obj(x);
 }
 
 obj_t ray_load(obj_t x)
@@ -538,7 +538,7 @@ obj_t ray_load(obj_t x)
     if (is_error(file))
         return file;
 
-    res = eval_str(0, file, x);
+    res = eval_str(file, x);
     drop(file);
 
     return res;

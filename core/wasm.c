@@ -36,10 +36,11 @@
 #include "heap.h"
 #include "runtime.h"
 
-// Use EM_JS to define JavaScript functions to be called from C
-EM_JS(nil_t, js_printf, (str_t text), {
-    Module.printf(UTF8ToString(text));
-});
+#define LOGO "\
+  RayforceDB: %d.%d %s\n\
+  WASM target\n\
+  Documentation: https://rayforcedb.com/\n\
+  Github: https://github.com/singaraiona/rayforce\n"
 
 poll_t poll_init(i64_t port)
 {
@@ -92,11 +93,6 @@ obj_t ipc_send_async(poll_t poll, i64_t id, obj_t msg)
     return NULL_OBJ;
 }
 
-nil_t printjs(str_t str)
-{
-    js_printf(str);
-}
-
 // Define the wasm_repl function to be called from JavaScript
 EMSCRIPTEN_KEEPALIVE nil_t wasm_repl(str_t input)
 {
@@ -110,12 +106,30 @@ EMSCRIPTEN_KEEPALIVE nil_t wasm_repl(str_t input)
     if (n == 0)
         return;
 
-    src = string_from_str(input, n);
-    res = eval_str(0, src, poll->replfile);
-    drop(src);
+    // src = string_from_str(input, n);
+    // res = eval_str(src, poll->replfile);
+    // drop(src);
 
-    fmt = obj_fmt(res);
-    js_printf(fmt);
-    heap_free(fmt);
-    drop(res);
+    // fmt = obj_fmt(res);
+    // js_printf(fmt);
+    // heap_free(fmt);
+    // drop(res);
+}
+
+// nil_t print_logo(nil_t)
+// {
+//     str_t logo = str_fmt(0, LOGO, RAYFORCE_MAJOR_VERSION, RAYFORCE_MINOR_VERSION, __DATE__);
+//     str_t fmt = str_fmt(0, "%s%s%s", BOLD, logo, RESET);
+//     printjs(fmt);
+//     heap_free(logo);
+//     heap_free(fmt);
+// }
+
+EMSCRIPTEN_KEEPALIVE i32_t main(i32_t argc, str_t argv[])
+{
+    atexit(runtime_cleanup);
+    runtime_init(argc, argv);
+    // print_logo();
+
+    return runtime_run();
 }

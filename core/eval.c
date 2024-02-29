@@ -615,63 +615,27 @@ obj_t parse_str(i64_t fd, obj_t str, obj_t file)
     return res;
 }
 
-obj_t eval_obj(i64_t fd, obj_t obj)
+obj_t eval_obj(obj_t obj)
 {
     obj_t res;
     ctx_t *ctx;
     i64_t sp;
 
-    // eval onto self host
-    if (fd == 0)
-    {
+    ctx = ctx_top(NULL_OBJ);
+    res = (setjmp(ctx->jmp) == 0) ? eval(obj) : stack_pop();
+    ctx_pop();
+    drop(ctx->lambda);
 
-        ctx = ctx_top(NULL_OBJ);
-        res = (setjmp(ctx->jmp) == 0) ? eval(obj) : stack_pop();
-        ctx_pop();
-        drop(ctx->lambda);
+    // cleanup stack frame
+    sp = ctx->sp;
+    while (__INTERPRETER->sp > sp)
+        drop(stack_pop());
 
-        // cleanup stack frame
-        sp = ctx->sp;
-        while (__INTERPRETER->sp > sp)
-            drop(stack_pop());
-
-        return res;
-    }
-
-    throw(ERR_NOT_IMPLEMENTED, "eval: not implemented");
-
-    // sync request
-    if (fd > 0)
-    {
-        // v = ser(y);
-        // r = sock_send(x->i64, as_u8(v), v->len);
-        // drop(v);
-
-        // if (r == -1)
-        //     throw(ERR_IO, "write: failed to write to socket: %s", get_os_error());
-
-        // if (sock_recv(x->i64, (u8_t *)&header, sizeof(header_t)) == -1)
-        //     throw(ERR_IO, "write: failed to read from socket: %s", get_os_error());
-
-        // buf = heap_alloc(header.size + sizeof(header_t));
-        // memcpy(buf, &header, sizeof(header_t));
-
-        // if (sock_recv(x->i64, buf + sizeof(header_t), header.size) == -1)
-        // {
-        //     heap_free(buf);
-        //     throw(ERR_IO, "write: failed to read from socket: %s", get_os_error());
-        // }
-
-        // v = de_raw(buf, header.size + sizeof(header_t));
-        // heap_free(buf);
-
-        // return v;
-    }
+    return res;
 }
 
-obj_t eval_str(i64_t fd, obj_t str, obj_t file)
+obj_t eval_str(obj_t str, obj_t file)
 {
-    unused(fd);
     obj_t parsed, res, info;
     ctx_t *ctx;
     i64_t sp;

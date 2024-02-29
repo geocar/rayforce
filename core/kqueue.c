@@ -370,11 +370,11 @@ nil_t process_request(poll_t poll, selector_t selector)
         v = res;
     else if (res->type == TYPE_CHAR)
     {
-        v = eval_str(0, res, poll->ipcfile);
+        v = eval_str(res, poll->ipcfile);
         drop(res);
     }
     else
-        v = eval_obj(0, res);
+        v = eval_obj(res);
 
     // sync request
     if (selector->rx.msgtype == MSG_TYPE_SYNC)
@@ -419,7 +419,7 @@ i64_t poll_run(poll_t poll)
                 if (len > 1)
                 {
                     str = string_from_str((str_t)__STDIN_BUF, len - 1);
-                    res = eval_str(0, str, poll->replfile);
+                    res = eval_str(str, poll->replfile);
                     drop(str);
                     io_write(STDOUT_FILENO, MSG_TYPE_RESP, res);
                     drop(res);

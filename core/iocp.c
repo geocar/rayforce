@@ -510,11 +510,11 @@ nil_t process_request(poll_t poll, selector_t selector)
         v = res;
     if (res->type == TYPE_CHAR)
     {
-        v = eval_str(0, poll->ipcfile, res);
+        v = eval_str(poll->ipcfile, res);
         drop(res);
     }
     else
-        v = eval_obj(0, res);
+        v = eval_obj(res);
 
     // sync request
     if (selector->rx.msgtype == MSG_TYPE_SYNC)
@@ -572,7 +572,7 @@ i64_t poll_run(poll_t poll)
                         break;
                     }
                     str = string_from_str(__STDIN_BUF, size);
-                    res = eval_str(0, str, poll->replfile);
+                    res = eval_str(str, poll->replfile);
                     drop(str);
                     io_write(STDOUT_FILENO, MSG_TYPE_RESP, res);
                     drop(res);
