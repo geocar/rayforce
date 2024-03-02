@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #if defined(_WIN32) || defined(__CYGWIN__)
+#include <windows.h>
 #else
 #include "dynlib.h"
 #include <dlfcn.h>
@@ -36,10 +37,35 @@
 
 obj_p dynlib_loadfn(str_p path, str_p func, i64_t nargs)
 {
-    unused(path);
-    unused(func);
-    unused(nargs);
-    throw(ERR_SYS, "Loading functions from shared libraries is not supported on this platform");
+    HMODULE handle;
+    FARPROC dsym;
+    obj_p fn;
+
+    handle = LoadLibrary(path);
+    if (!handle)
+        throw(ERR_SYS, "Failed to load shared library: %d", GetLastError());
+
+    dsym = GetProcAddress(handle, func);
+    if (!dsym)
+        throw(ERR_SYS, "Failed to load symbol from shared library: %d", GetLastError());
+
+    switch (nargs)
+    {
+    case 1:
+        fn = atom(-TYPE_UNARY);
+        break;
+    case 2:
+        fn = atom(-TYPE_BINARY);
+        break;
+    default:
+        fn = atom(-TYPE_VARY);
+        break;
+    }
+
+    fn->i64 = (i64_t)dsym;
+    fn->attrs = FN_NONE;
+
+    return fn;
 }
 
 #else

@@ -44,6 +44,7 @@
 #include "io.h"
 #include "error.h"
 #include "sys.h"
+#include "eval.h"
 
 // Definitions and globals
 #define STDIN_WAKER_ID ~0ull
@@ -136,6 +137,7 @@ i64_t poll_accept(poll_p poll)
     GUID GuidAcceptEx = WSAID_ACCEPTEX;
     DWORD dwBytes;
     SOCKET sock_fd = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+    b8_t success;
 
     if (sock_fd == INVALID_SOCKET)
         return -1;
@@ -155,10 +157,10 @@ i64_t poll_accept(poll_p poll)
         return -1;
     }
 
-    b8 success = lpfnAcceptEx(poll->ipc_fd, sock_fd,
-                              __LISTENER->buf, 0,
-                              sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16,
-                              &__LISTENER->dwBytes, &__LISTENER->overlapped);
+    success = lpfnAcceptEx(poll->ipc_fd, sock_fd,
+                           __LISTENER->buf, 0,
+                           sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16,
+                           &__LISTENER->dwBytes, &__LISTENER->overlapped);
     if (!success)
     {
         code = WSAGetLastError();
@@ -537,7 +539,7 @@ i64_t poll_run(poll_p poll)
     HANDLE hPollFd = (HANDLE)poll->poll_fd;
     SOCKET hAccepted;
     OVERLAPPED_ENTRY events[MAX_EVENTS];
-    b8 success;
+    b8_t success;
     i64_t key, poll_result, idx;
     obj_p str, res;
     str_p fmt;
