@@ -1,0 +1,65 @@
+# DB(s) Benchmark
+
+[H2OAI Bench](https://h2oai.github.io/db-benchmark)
+
+Dataset: G1_1e7_1e2_0_0.csv (10 million rows)
+
+## DuckDB (multithread turned on)
+
+Q1: select id1, sum(v1) AS v1 from t group by id1; --> 63ms
+Q2: select id1, id2, sum(v1) AS v1 from t group by id1, id2; --> 153ms
+Q3: select id3, sum(v1) AS v1, mean(v3) AS v3 from t group by id3; --> 360ms
+Q4: select id4, mean(v1) AS v1, mean(v2) AS v2, mean(v3) AS v3 from t group by id4; --> 23ms
+Q5: select id6, sum(v1) AS v1, sum(v2) AS v2, sum(v3) AS v3 from t group by id6; --> 322ms
+Q6: select id3, max(v1)-min(v2) AS range_v1_v2 from t group by id3; --> 330ms
+Q7: select id1, id2, id3, id4, id5, id6, sum(v3) AS v3 count(*) AS count from t group by id1, id2, id3, id4, id5, id6; --> 878ms
+
+## DuckDB (multithread turned off)
+
+Q1: select id1, sum(v1) AS v1 from t group by id1; --> 347ms
+Q2: select id1, id2, sum(v1) AS v1 from t group by id1, id2; --> 690ms
+Q3: select id3, sum(v1) AS v1, mean(v3) AS v3 from t group by id3; --> 601ms
+Q4: select id4, mean(v1) AS v1, mean(v2) AS v2, mean(v3) AS v3 from t group by id4; --> 108ms
+Q5: select id6, sum(v1) AS v1, sum(v2) AS v2, sum(v3) AS v3 from t group by id6; --> 440ms
+Q6: select id3, max(v1)-min(v2) AS range_v1_v2 from t group by id3; --> 528ms
+Q7: select id1, id2, id3, id4, id5, id6, sum(v3) AS v3 count(*) AS count from t group by id1, id2, id3, id4, id5, id6; --> 3269ms
+
+## KDB+ (4.1)
+
+Q1: \t select v1: sum v1 by id1 from t --> 59ms
+Q2: \t select v1: sum v1 by id1, id2 from t --> 143ms
+Q3: \t select v1: sum v1, v3: avg v3 by id3 from t --> 166ms
+Q4: \t select v1: avg v1, v2: avg v2, v3: avg v3 by id4 from t --> 99ms
+Q5: \t select v1: sum v1, v2: sum v2, v3: sum v3 by id6 from t --> 156ms
+Q6: \t select range_v1_v2: (max v1) - (min v2) by id3 from t --> 551ms
+Q7: \t select v3: sum v3, cnt: count i by id1, id2, id3, id4, id5, id6 from t --> 4497ms
+
+## Rayforce
+
+Q1: \t (select {v1: (sum v1) from: t by: id1}) --> 60ms
+Q2: \t (select {v1: (sum v1) from: t by: id1, id2}) --> 74ms
+Q3: \t (select {v1: (sum v1) v3: (avg v3) from: t by: id3}) --> 118ms
+Q4: \t (select {v1: (avg v1) v2: (avg v2) v3: (avg v3) from: t by: id4}) --> 72ms
+Q5: \t (select {v1: (sum v1) v2: (sum v2) v3: (sum v3) from: t by: id6}) --> 122ms
+Q6: \t (select {range_v1_v2: (- (max v1) (min v2)) from: t by: id3}) --> 104ms
+Q7: \t (select {v3: (sum v3) count: (count v3) from: t by: id1, id2, id3, id4, id5, id6}) --> 1394ms
+
+## ThePlatform
+
+Q1: \t 0N#.?[t;();`id1!`id1;`v1!(sum;`v1)] --> 213ms
+Q2: \t 0N#.?[t;();`id1`id2!`id1`id2;`v1!(sum;`v1)] --> 723ms
+Q3: \t 0N#.?[t;();`id3!`id3;`v2`v3!((sum;`v2);(avg;`v3))] --> 507ms
+Q4: \t 0N#.?[t;();`id4!`id4;`v1`v2`v3!((avg;`v1);(avg;`v2);(avg;`v3))] --> 285ms
+Q5: \t 0N#.?[t;();`id6!`id6;`v1`v2`v3!((sum;`v1);(sum;`v2);(sum;`v3))] --> 488ms
+Q6: \t 0N#.?[t;();`id3!`id3;`range_v1_v2:((max;`v1)-min;`v2)] --> N/A
+Q7: \t 0N#.?[t;();`id1`id2`id3`id4`id5`id6!`id1`id2`id3`id4`id5`id6;`v3`count!((sum;`v3);(count;`v3))] --> 15712ms
+
+## Results
+
+| DB                              | Q1  | Q2  | Q3  | Q4  | Q5  | Q6  | Q7    |
+| ------------------------------- | --- | --- | --- | --- | --- | --- | ----- |
+| DuckDB (multithread turned on)  | 63  | 153 | 360 | 23  | 322 | 330 | 878   |
+| DuckDB (multithread turned off) | 347 | 690 | 601 | 108 | 440 | 528 | 3269  |
+| KDB+ (4.1)                      | 59  | 143 | 166 | 99  | 156 | 551 | 4497  |
+| Rayforce                        | 60  | 74  | 118 | 72  | 122 | 104 | 1394  |
+| ThePlatform                     | 213 | 723 | 507 | 285 | 488 | N/A | 15712 |
