@@ -37,6 +37,7 @@
 #include "../core/util.h"
 #include "../core/parse.h"
 #include "../core/runtime.h"
+#include "../core/eval.h"
 
 typedef enum test_status_t
 {
@@ -110,6 +111,7 @@ nil_t teardown()
 // Include tests files
 #include "heap.c"
 #include "core.c"
+#include "lang.c"
 
 // Add tests here
 test_entry_t tests[] = {
@@ -120,6 +122,7 @@ test_entry_t tests[] = {
     // {"test_large_number_of_allocations", test_large_number_of_allocations},
     {"test_varying_sizes", test_varying_sizes},
     {"test_str_match", test_str_match},
+    {"test_lang_basic", test_lang_basic},
 };
 // ---
 
