@@ -100,5 +100,9 @@ test_result_t test_lang_query()
     TEST_ASSERT_EQ("(select {from: t by: Symbol where: (== Price 99)})",
                    "(table [Symbol OrderId Price Size Tape Timestamp]"
                    "(list [] [] [] [] (list) []))");
+    TEST_ASSERT_EQ("(select {s: (sum Price) from: t by: Symbol})",
+                   "(table [Symbol s]"
+                   "(list [apll good msfk ibmd amznt fbad baba]"
+                   "[7.00 9.00 11.00 3.00 4.00 5.00 6.00]))");
     PASS();
 }
