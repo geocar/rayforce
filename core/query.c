@@ -321,8 +321,6 @@ obj_p ray_select(obj_p obj)
         drop_obj(val);
     }
 
-    // TODO !!!! Handle case when filters are 0-length list
-
     // Find all mappings (non-keyword fields)
     keys = get_fields(obj);
     l = keys->len;

@@ -51,6 +51,9 @@ obj_p group_bins(obj_p obj, obj_p tab, obj_p filter)
     if (l > ops_count(tab))
         throw(ERR_LENGTH, "'group index': groups count: %lld can't be greater than source length: %lld", l, ops_count(tab));
 
+    if (l == 0)
+        return vn_list(3, i64(0), vector_i64(0), NULL_OBJ);
+
     switch (obj->type)
     {
     case TYPE_B8:

@@ -88,7 +88,6 @@ test_result_t test_lang_query()
                    "(as 'Timestamp (til n)))))"
                    "null",
                    "null");
-
     TEST_ASSERT_EQ("(select {from: t by: Symbol})",
                    "(table [Symbol OrderId Price Size Tape Timestamp]"
                    "(list [apll good msfk ibmd amznt fbad baba]"
@@ -98,5 +97,8 @@ test_result_t test_lang_query()
     TEST_ASSERT_EQ("(select {from: t by: Symbol where: (== Price 3)})",
                    "(table [Symbol OrderId Price Size Tape Timestamp]"
                    "(list [ibmd] (at ids 3) [3.00] [1] (list \"3\") [2000.01.01D00:00:00.000000003]))");
+    TEST_ASSERT_EQ("(select {from: t by: Symbol where: (== Price 99)})",
+                   "(table [Symbol OrderId Price Size Tape Timestamp]"
+                   "(list [] [] [] [] (list) []))");
     PASS();
 }
