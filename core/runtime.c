@@ -116,7 +116,7 @@ i32_t runtime_init(i32_t argc, str_p argv[])
     obj_p arg, res;
     str_p fmt;
 
-    heap_init();
+    heap_init(0, NUM_16_BLOCKS);
 
     __RUNTIME = (runtime_p)mmap_malloc(sizeof(struct runtime_t));
     __RUNTIME->symbols = symbols_new();

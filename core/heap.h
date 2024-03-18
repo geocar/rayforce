@@ -52,6 +52,7 @@ typedef struct memstat_t
 
 typedef struct heap_t
 {
+    u64_t id;
     nil_t *blocks16;                      // pool of 16 bytes blocks
     nil_t *freelist16;                    // blocks of 16 bytes
     node_t *freelist[MAX_POOL_ORDER + 2]; // free list of blocks by order
@@ -59,12 +60,13 @@ typedef struct heap_t
     memstat_t memstat;
 } __attribute__((aligned(PAGE_SIZE))) * heap_p;
 
+heap_p heap_init(u64_t id, u64_t small_blocks);
 nil_t *heap_alloc(u64_t size);
 nil_t *heap_realloc(nil_t *block, u64_t size);
 nil_t heap_free(nil_t *block);
-heap_p heap_init(nil_t);
 heap_p heap_get(nil_t);
 i64_t heap_gc(nil_t);
+nil_t heap_merge(heap_p heap);
 nil_t heap_cleanup(nil_t);
 memstat_t heap_memstat(nil_t);
 

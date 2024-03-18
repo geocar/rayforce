@@ -1713,3 +1713,8 @@ str_p strof_obj(obj_p obj)
 {
     return obj_fmt(obj);
 }
+
+nil_t rc_sync(b8_t on)
+{
+    __RC_SYNC = on;
+}

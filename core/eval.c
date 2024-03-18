@@ -62,7 +62,6 @@ nil_t error_add_loc(obj_p err, i64_t id, ctx_t *ctx)
 interpreter_p interpreter_new(nil_t)
 {
     interpreter_p interpreter;
-    obj_p f;
 
     interpreter = (interpreter_p)mmap_malloc(sizeof(struct interpreter_t));
     interpreter->sp = 0;
@@ -73,9 +72,7 @@ interpreter_p interpreter_new(nil_t)
     __INTERPRETER = interpreter;
 
     // push top-level context
-    f = lambda(vector_symbol(0), NULL_OBJ, NULL_OBJ);
-    as_lambda(f)->name = symbol("top-level");
-    ctx_push(f);
+    ctx_push(NULL_OBJ);
 
     return interpreter;
 }

@@ -96,19 +96,35 @@ obj_p ray_memstat(obj_p *x, u64_t n)
     return dict(keys, vals);
 }
 
+obj_p ee(raw_p x, u64_t n)
+{
+    obj_p o = (obj_p)x;
+    return ray_do(&o, n);
+}
+
 obj_p ray_turn(obj_p obj)
 {
+    u64_t i, l;
     pool_p pool = runtime_get()->pool;
-    result_p res;
+    task_p tasks = pool->shared->tasks;
+
+    l = pool->executors_count;
+
+    for (i = 0; i < l; i++)
+    {
+        tasks[i].fn = ee;
+        tasks[i].arg = clone_obj(obj);
+        tasks[i].len = 1;
+    }
 
     pool_run(pool);
 
-    res = pool_wait(pool);
+    pool_wait(pool);
 
-    printf("All threads finished\n");
-    fflush(stdout);
+    for (i = 0; i < l; i++)
+        drop_obj(tasks[i].arg);
 
-    return clone_obj(obj);
+    return pool_collect(pool, i64(9876));
 }
 
 // clang-format off

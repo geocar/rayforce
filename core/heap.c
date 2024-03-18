@@ -53,9 +53,9 @@ nil_t heap_free(nil_t *block) { free(block); }
 nil_t *heap_realloc(nil_t *ptr, u64_t new_size) { return realloc(ptr, new_size); }
 i64_t heap_gc(nil_t) { return 0; }
 nil_t heap_cleanup(nil_t) {}
-heap_p heap_init(nil_t) { return NULL; }
+nil_t heap_merge(heap_p) {}
+heap_p heap_init(u64_t, u64_t) { return NULL; }
 memstat_t heap_memstat(nil_t) { return (memstat_t){0}; }
-
 #else
 
 nil_t heap_print_blocks(nil_t)
@@ -63,6 +63,7 @@ nil_t heap_print_blocks(nil_t)
     u64_t i = 0;
     node_t *node;
 
+    printf("-- HEAP[%lld]: BLOCKS:\n", __HEAP->id);
     for (; i <= MAX_POOL_ORDER; i++)
     {
         node = __HEAP->freelist[i];
@@ -94,28 +95,34 @@ nil_t *heap_add_pool(u64_t order)
     return (nil_t *)node;
 }
 
-heap_p heap_init(nil_t)
+heap_p heap_init(u64_t id, u64_t small_blocks)
 {
     i32_t i;
     nil_t *block16;
 
     __HEAP = (heap_p)mmap_malloc(sizeof(struct heap_t));
+    __HEAP->id = id;
     __HEAP->avail = 0;
-    __HEAP->blocks16 = mmap_malloc(NUM_16_BLOCKS * 16);
     __HEAP->freelist16 = NULL;
-    __HEAP->memstat.system = NUM_16_BLOCKS * 16;
-    __HEAP->memstat.heap = NUM_16_BLOCKS * 16;
+    __HEAP->blocks16 = NULL;
 
-    // fill linked list of 16 bytes blocks
-    for (i = NUM_16_BLOCKS - 1; i >= 0; i--)
+    if (small_blocks)
     {
-        block16 = (nil_t *)((str_p)__HEAP->blocks16 + i * 16);
-        *(nil_t **)block16 = __HEAP->freelist16;
-        __HEAP->freelist16 = block16;
-    }
+        __HEAP->blocks16 = mmap_malloc(NUM_16_BLOCKS * 16);
+        __HEAP->memstat.system = NUM_16_BLOCKS * 16;
+        __HEAP->memstat.heap = NUM_16_BLOCKS * 16;
 
-    __HEAP_16_BLOCKS_START = __HEAP->blocks16;
-    __HEAP_16_BLOCKS_END = (nil_t *)((str_p)__HEAP->blocks16 + NUM_16_BLOCKS * 16);
+        // fill linked list of 16 bytes blocks
+        for (i = NUM_16_BLOCKS - 1; i >= 0; i--)
+        {
+            block16 = (nil_t *)((str_p)__HEAP->blocks16 + i * 16);
+            *(nil_t **)block16 = __HEAP->freelist16;
+            __HEAP->freelist16 = block16;
+        }
+
+        __HEAP_16_BLOCKS_START = __HEAP->blocks16;
+        __HEAP_16_BLOCKS_END = (nil_t *)((str_p)__HEAP->blocks16 + NUM_16_BLOCKS * 16);
+    }
 
     return __HEAP;
 }
@@ -126,15 +133,18 @@ nil_t heap_cleanup(nil_t)
     node_t *node, *next;
 
     // check if all small blocks are freed
-    for (i = 0; i < NUM_16_BLOCKS; i++)
+    if (__HEAP->blocks16)
     {
-        if (__HEAP->freelist16 == NULL)
+        for (i = 0; i < NUM_16_BLOCKS; i++)
         {
-            debug("blocks16 leak: %p", __HEAP->blocks16);
-            return;
-        }
+            if (__HEAP->freelist16 == NULL)
+            {
+                debug("-- HEAP[%lld]: blocks16 leak: %p", __HEAP->id, __HEAP->blocks16);
+                return;
+            }
 
-        __HEAP->freelist16 = *(nil_t **)__HEAP->freelist16;
+            __HEAP->freelist16 = *(nil_t **)__HEAP->freelist16;
+        }
     }
 
     // All the nodes remains are pools, so just munmap them
@@ -147,7 +157,8 @@ nil_t heap_cleanup(nil_t)
             order = blockorder(node->base);
             if (order != i)
             {
-                debug("order: %lld node: %p\n", i, (raw_p)node);
+                debug("-- HEAP[%lld]: node leak order: %lld node: %p\n", __HEAP->id,
+                      i, (raw_p)node);
                 return;
             }
 
@@ -431,6 +442,28 @@ i64_t heap_gc(nil_t)
     }
 
     return total;
+}
+
+nil_t heap_merge(heap_p heap)
+{
+    u64_t i;
+    node_t *node;
+
+    for (i = 0; i <= MAX_POOL_ORDER; i++)
+    {
+        if (heap->freelist[i] == NULL)
+            continue;
+
+        node = heap->freelist[i];
+        heap->freelist[i] = NULL;
+        heap->avail &= ~blocksize(i);
+        node->next = __HEAP->freelist[i];
+
+        __HEAP->freelist[i] = node;
+        __HEAP->avail |= blocksize(i);
+        __HEAP->memstat.heap += heap->memstat.heap;
+        __HEAP->memstat.system += heap->memstat.system;
+    }
 }
 
 memstat_t heap_memstat(nil_t)

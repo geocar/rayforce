@@ -225,6 +225,9 @@ extern obj_p set_idx(obj_p *obj, i64_t idx, obj_p val);               // set obj
 extern obj_p set_ids(obj_p *obj, i64_t ids[], u64_t len, obj_p vals); // set obj at indexes
 extern obj_p set_obj(obj_p *obj, obj_p idx, obj_p val);               // set obj indexed by obj
 
+// Sync
+extern nil_t rc_sync(b8_t on); // turn on/off reference counting synchronization
+
 // Resize
 extern obj_p resize_obj(obj_p *obj, u64_t len);
 
