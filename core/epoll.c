@@ -116,7 +116,7 @@ poll_p poll_init(i64_t port)
         }
     }
 
-    poll = (poll_p)heap_alloc(sizeof(struct poll_t));
+    poll = (poll_p)mmap_malloc(sizeof(struct poll_t));
     poll->code = NULL_I64;
     poll->poll_fd = epoll_fd;
     poll->ipc_fd = listen_fd;
@@ -151,7 +151,7 @@ nil_t poll_cleanup(poll_p poll)
 
     close(__EVENT_FD);
     close(poll->poll_fd);
-    heap_free(poll);
+    mmap_free(poll, sizeof(struct poll_t));
 }
 
 i64_t poll_register(poll_p poll, i64_t fd, u8_t version)

@@ -41,14 +41,12 @@ typedef struct memstat_t
 
 typedef struct block_t
 {
-    u8_t mmod;      //
-    u8_t used : 1;  // used flag
-    u8_t order : 7; // block order
-                    // untouched fields (used directly by obj_t)
-    i8_t type;      // type
-    u8_t attrs;     // attributes
-    u32_t rc;       // reference count
-    u64_t pad;      // padding
+    u8_t used;  // block is used
+    u8_t order; // block order
+    i8_t type;  // type
+    u8_t attrs; // attributes
+    u32_t rc;   // reference count
+    u64_t pad;  // padding
     struct block_t *next;
     struct block_t *prev;
 } *block_p;

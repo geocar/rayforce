@@ -29,7 +29,7 @@
 
 obj_p error_obj(i8_t code, obj_p msg)
 {
-    obj_p obj = (obj_p)heap_alloc(sizeof(struct obj_t) + sizeof(ray_error_t));
+    obj_p obj = heap_alloc(sizeof(ray_error_t));
     ray_error_t *e = (ray_error_t *)obj->arr;
 
     e->code = code;
