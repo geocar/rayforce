@@ -31,6 +31,8 @@
 #define MAX_ORDER 25                                  // 2^25 = 32MB
 #define MAX_POOL_ORDER 36                             // 2^36 = 64GB
 #define POOL_SIZE (1024 * 1024 * (1ull << MAX_ORDER)) // 32TB
+#define obj2raw(o) ((raw_p)(o)->arr)
+#define raw2obj(r) (((obj_p)(r)) - 1)
 
 typedef struct memstat_t
 {
@@ -62,14 +64,15 @@ typedef struct heap_t
 } *heap_p;
 
 heap_p heap_init(u64_t id);
-raw_p heap_alloc(u64_t size);
-raw_p heap_realloc(raw_p ptr, u64_t size);
-nil_t heap_free(raw_p ptr);
+obj_p heap_alloc(u64_t size);
+obj_p heap_realloc(obj_p obj, u64_t size);
+nil_t heap_free(obj_p obj);
 i64_t heap_gc(nil_t);
 nil_t heap_borrow(heap_p heap);
 nil_t heap_merge(heap_p heap);
 nil_t heap_cleanup(nil_t);
 memstat_t heap_memstat(nil_t);
 nil_t heap_print_blocks(heap_p heap);
+nil_t objcpy(obj_p dst, obj_p src, u64_t size);
 
 #endif // HEAP_H

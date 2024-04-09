@@ -116,7 +116,7 @@ poll_p poll_init(i64_t port)
         }
     }
 
-    poll = (poll_p)mmap_malloc(sizeof(struct poll_t));
+    poll = (poll_p)mmap_alloc(sizeof(struct poll_t));
     poll->code = NULL_I64;
     poll->poll_fd = epoll_fd;
     poll->ipc_fd = listen_fd;

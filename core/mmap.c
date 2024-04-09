@@ -41,7 +41,7 @@ raw_p mmap_stack(u64_t size)
     return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 }
 
-raw_p mmap_malloc(u64_t size)
+raw_p mmap_alloc(u64_t size)
 {
     return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 }
@@ -98,7 +98,7 @@ raw_p mmap_commit(raw_p addr, u64_t size)
     return ptr;
 }
 
-raw_p mmap_malloc(u64_t size)
+raw_p mmap_alloc(u64_t size)
 {
     raw_p ptr;
 
@@ -140,7 +140,7 @@ raw_p mmap_stack(u64_t size)
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 }
 
-raw_p mmap_malloc(u64_t size)
+raw_p mmap_alloc(u64_t size)
 {
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 }

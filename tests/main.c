@@ -64,18 +64,18 @@ typedef struct test_entry_t
 // Setup and Teardown functions
 nil_t setup()
 {
-    // #ifdef STOP_ON_FAIL
-    //     runtime_init(1, NULL);
-    // #else
-    //     runtime_init(0, NULL);
-    // #endif
-    heap_init(0);
+#ifdef STOP_ON_FAIL
+    runtime_init(1, NULL);
+#else
+    runtime_init(0, NULL);
+#endif
+    // heap_init(0);
 }
 
 nil_t teardown()
 {
-    // runtime_cleanup();
-    heap_cleanup();
+    runtime_cleanup();
+    // heap_cleanup();
 }
 
 #define PASS() \

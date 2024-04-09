@@ -76,7 +76,7 @@ nil_t zero_obj(obj_p obj)
 
 obj_p atom(i8_t type)
 {
-    obj_p a = (obj_p)heap_alloc(sizeof(struct obj_t));
+    obj_p a = heap_alloc(sizeof(struct obj_t));
 
     if (!a)
         panic("oom");
@@ -251,7 +251,7 @@ obj_p vector(i8_t type, u64_t len)
     else
         t = TYPE_LIST;
 
-    vec = (obj_p)heap_alloc(sizeof(struct obj_t) + len * size_of_type(t));
+    vec = heap_alloc(sizeof(struct obj_t) + len * size_of_type(t));
 
     if (!vec)
         panic("oom");
@@ -309,7 +309,7 @@ obj_p vn_list(u64_t len, ...)
     obj_p l;
     va_list args;
 
-    l = (obj_p)heap_alloc(sizeof(struct obj_t) + sizeof(obj_p) * len);
+    l = heap_alloc(sizeof(struct obj_t) + sizeof(obj_p) * len);
 
     l->mmod = MMOD_INTERNAL;
     l->type = TYPE_LIST;

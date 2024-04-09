@@ -115,7 +115,7 @@ i32_t runtime_init(i32_t argc, str_p argv[])
 
     heap_init(0);
 
-    __RUNTIME = (runtime_p)mmap_malloc(sizeof(struct runtime_t));
+    __RUNTIME = (runtime_p)mmap_alloc(sizeof(struct runtime_t));
     __RUNTIME->symbols = symbols_new();
     __RUNTIME->env = create_env();
     __RUNTIME->addr = (sock_addr_t){0};

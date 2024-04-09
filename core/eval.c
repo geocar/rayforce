@@ -66,7 +66,7 @@ interpreter_p interpreter_new(nil_t)
 {
     interpreter_p interpreter;
 
-    interpreter = (interpreter_p)mmap_malloc(sizeof(struct interpreter_t));
+    interpreter = (interpreter_p)mmap_alloc(sizeof(struct interpreter_t));
     interpreter->sp = 0;
     interpreter->stack = (obj_p *)mmap_stack(sizeof(obj_p) * EVAL_STACK_SIZE);
     interpreter->cp = 0;
