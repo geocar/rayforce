@@ -64,8 +64,15 @@
 i64_t str_vfmt_into(obj_p *dst, i64_t *offset, i64_t limit, str_p fmt, va_list vargs)
 {
     str_p s;
-    i64_t n = 0, size = limit > 0 ? limit : MAX_ROW_WIDTH, len;
+    i64_t n = 0, o = *offset, size = limit > 0 ? limit : MAX_ROW_WIDTH, len;
     va_list args;
+
+    if (*dst == NULL_OBJ)
+    {
+        *dst = string(size);
+        if (*dst == NULL_OBJ)
+            panic("str_vfmt_into: OOM");
+    }
 
     len = (*dst)->len;
 
@@ -80,7 +87,7 @@ i64_t str_vfmt_into(obj_p *dst, i64_t *offset, i64_t limit, str_p fmt, va_list v
         }
     }
 
-    while (1)
+    while (B8_TRUE)
     {
         s = as_string(*dst);
         va_copy(args, vargs); // Make a copy of args to use with vsnprintf
@@ -96,13 +103,15 @@ i64_t str_vfmt_into(obj_p *dst, i64_t *offset, i64_t limit, str_p fmt, va_list v
         if (n < size)
         {
             *offset += n;
+            resize_obj(dst, o + n);
             return n; // n fits into buffer, return n
         }
 
         if (limit > 0)
         {
-            *offset += size - 1; // Increase offset by size, but take care of the null-terminator
-            return n;            // Return truncated size
+            *offset += size - 1;    // Increase offset by size, but take care of the null-terminator
+            resize_obj(dst, o + n); // Resize the buffer to fit the trailer
+            return n;               // Return truncated size
         }
 
         // Expand the buffer for the next iteration
@@ -819,13 +828,15 @@ i64_t table_fmt_into(obj_p *dst, i64_t *offset, i64_t indent, b8_t full, obj_p o
         for (i = 0; i < table_width; i++)
         {
             n = as_i64(column_widths)[i] - 1;
-            p = as_string(formatted_columns[i][j]);
-            n = n - formatted_columns[i][j]->len;
-            str_fmt_into(dst, offset, formatted_columns[i][j]->len, " %s", p);
+            s = formatted_columns[i][j];
+            p = as_string(s);
+            n = n - s->len;
+            debug("N: %lld SLEN: %lld", n, s->len);
+            str_fmt_into(dst, offset, s->len, " %s", p);
             str_fmt_into_n(dst, offset, 0, n, " ");
             str_fmt_into(dst, offset, 0, "|");
             // Free formatted column
-            heap_free_raw(s);
+            heap_free_obj(s);
         }
     }
 
@@ -923,7 +934,7 @@ i64_t obj_fmt_into(obj_p *dst, i64_t *offset, i64_t indent, i64_t limit, b8_t fu
 
 obj_p obj_fmt(obj_p obj)
 {
-    obj_p dst = string(0);
+    obj_p dst = NULL_OBJ;
     i64_t offset = 0, limit = MAX_ROW_WIDTH;
 
     obj_fmt_into(&dst, &offset, 0, limit, B8_TRUE, obj);
