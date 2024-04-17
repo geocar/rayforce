@@ -81,6 +81,8 @@ block_p heap_add_pool(u64_t order)
     debug_assert(block != NULL, "Failed to add pool");
     debug_assert((u64_t)block % PAGE_SIZE == 0, "Pool is not page aligned");
 
+    debug("-- HEAP[%lld]: add pool order: %lld block: %p size: %lld", __HEAP->id, order, block, size);
+
     if (block == NULL)
         return NULL;
 
@@ -323,37 +325,24 @@ nil_t heap_free_raw(raw_p ptr)
 
 i64_t heap_gc(nil_t)
 {
-    // u64_t i, size, avail_mask = __HEAP->avail, order, total = 0;
-    // block_p block, next;
+    u64_t size, total = 0;
+    block_p block, next;
 
-    // while (avail_mask != 0)
-    // {
-    //     i = __builtin_ctzll(avail_mask);
-    //     size = bsizeof(i);
-    //     avail_mask &= ~size;
+    block = __HEAP->freelist[MAX_ORDER];
+    size = bsizeof(MAX_ORDER);
 
-    //     block = __HEAP->freelist[i];
-    //     while (block)
-    //     {
-    //         next = block->next;
-    //         order = block->pool_order;
-    //         if (order == i)
-    //         {
-    //             remove_block(block, i);
-    //             mmap_free(block, size);
+    while (block)
+    {
+        next = block->next;
+        mmap_free(block, size);
+        total += size;
+        block = next;
+    }
 
-    //             __HEAP->memstat.heap -= size;
-    //             __HEAP->memstat.system -= size;
-    //             total += size;
-    //         }
+    __HEAP->freelist[MAX_ORDER] = NULL;
+    __HEAP->avail &= ~size;
 
-    //         block = next;
-    //     }
-    // }
-
-    // return total;
-
-    return 0;
+    return total;
 }
 
 nil_t heap_borrow(heap_p heap)
