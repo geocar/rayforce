@@ -495,7 +495,7 @@ obj_p parse_string(parser_t *parser)
     str_p pos = parser->current + 1; // skip '"'
     i32_t len = 0;
     obj_p str, err;
-    c8_t nl = '\0', lf = '\n', cr = '\r', tb = '\t';
+    c8_t lf = '\n', cr = '\r', tb = '\t';
 
     str = string(0);
 
@@ -550,8 +550,6 @@ obj_p parse_string(parser_t *parser)
     shift(parser, len + 2);
     span_extend(parser, &span);
     nfo_insert(parser->nfo, (i64_t)str, span);
-
-    push_raw(&str, &nl);
 
     return str;
 }

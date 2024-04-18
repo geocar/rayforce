@@ -237,15 +237,6 @@ __attribute__((hot)) obj_p heap_realloc_obj(obj_p obj, u64_t new_size)
     obj_p new_obj;
     u64_t i, old_size, cap, order;
 
-    if (obj == NULL)
-        return heap_alloc_obj(new_size);
-
-    if (new_size == 0)
-    {
-        heap_free_obj(obj);
-        return NULL;
-    }
-
     old_size = bsizeof(obj->order);
     block = (block_p)obj;
     cap = blocksize(new_size);

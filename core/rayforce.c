@@ -81,7 +81,6 @@ obj_p atom(i8_t type)
     if (!a)
         panic("oom");
 
-    a->mmod = MMOD_INTERNAL;
     a->type = -type;
     a->rc = 1;
     a->attrs = 0;
@@ -251,7 +250,6 @@ obj_p vector(i8_t type, u64_t len)
     if (!vec)
         panic("oom");
 
-    vec->mmod = MMOD_INTERNAL;
     vec->type = t;
     vec->rc = 1;
     vec->len = len;
@@ -303,7 +301,6 @@ obj_p vn_list(u64_t len, ...)
 
     l = heap_alloc_obj(sizeof(obj_p) * len);
 
-    l->mmod = MMOD_INTERNAL;
     l->type = TYPE_LIST;
     l->rc = 1;
     l->len = len;
@@ -380,7 +377,6 @@ obj_p resize_obj(obj_p *obj, u64_t len)
     {
         new_obj = heap_alloc_obj(new_size);
         memcpy(new_obj->arr, (*obj)->arr, (*obj)->len * size);
-        new_obj->mmod = MMOD_INTERNAL;
         new_obj->type = (*obj)->type;
         new_obj->rc = 1;
         drop_obj(*obj);
@@ -407,7 +403,6 @@ obj_p push_raw(obj_p *obj, raw_p val)
     {
         new_obj = heap_alloc_obj(req);
         memcpy(new_obj->arr, (*obj)->arr, off);
-        new_obj->mmod = MMOD_INTERNAL;
         new_obj->type = (*obj)->type;
         new_obj->rc = 1;
         drop_obj(*obj);

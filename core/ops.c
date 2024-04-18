@@ -160,6 +160,7 @@ u64_t ops_count(obj_p x)
         return 0;
     case TYPE_B8:
     case TYPE_U8:
+    case TYPE_C8:
     case TYPE_I64:
     case TYPE_F64:
     case TYPE_SYMBOL:
@@ -167,8 +168,6 @@ u64_t ops_count(obj_p x)
     case TYPE_GUID:
     case TYPE_LIST:
         return x->len;
-    case TYPE_C8:
-        return x->len ? x->len - 1 : x->len;
     case TYPE_TABLE:
         return as_list(x)[1]->len ? ops_count(as_list(as_list(x)[1])[0]) : 0;
     case TYPE_DICT:

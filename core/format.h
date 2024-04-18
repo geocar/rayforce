@@ -54,7 +54,5 @@ obj_p obj_stringify(obj_p obj);
 obj_p obj_fmt(obj_p obj);
 i64_t obj_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj);
 obj_p obj_fmt_n(obj_p *obj, u64_t n);
-i64_t objprint(obj_p str);
-i64_t objprintln(obj_p str);
 
 #endif // FORMAT_H
