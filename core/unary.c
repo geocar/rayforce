@@ -136,7 +136,7 @@ obj_p unary_call(u8_t attrs, unary_f f, obj_p x)
 obj_p ray_get(obj_p x)
 {
     i64_t fd;
-    obj_p res, col, keys, vals, val, s, v, id, *sym;
+    obj_p res, col, keys, vals, val, s, v, id, *sym, path;
     u64_t i, l, size;
 
     switch (x->type)
@@ -152,10 +152,10 @@ obj_p ray_get(obj_p x)
             throw(ERR_LENGTH, "get: empty string path");
 
         // get splayed table
-        if (x->len > 1 && as_string(x)[x->len - 2] == '/')
+        if (x->len > 1 && as_string(x)[x->len - 1] == '/')
         {
             // first try to read columns schema
-            s = string_from_str(".d", 2);
+            s = cstring_from_str(".d", 2);
             col = ray_concat(x, s);
             keys = ray_get(col);
             drop_obj(s);
@@ -197,7 +197,7 @@ obj_p ray_get(obj_p x)
             }
 
             // read symbol data (if any)
-            s = string_from_str("sym", 3);
+            s = cstring_from_str("sym", 3);
             col = ray_concat(x, s);
             v = ray_get(col);
 
@@ -218,18 +218,27 @@ obj_p ray_get(obj_p x)
         // get other obj
         else
         {
-            fd = fs_fopen(as_string(x), ATTR_RDWR);
+            path = cstring_from_obj(x);
+            fd = fs_fopen(as_string(path), ATTR_RDWR);
 
             if (fd == -1)
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+            {
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
+                drop_obj(path);
+                return res;
+            }
 
             size = fs_fsize(fd);
 
             if (size < sizeof(struct obj_t))
             {
+                res = error(ERR_LENGTH, "get: file '%s': invalid size: %d", as_string(path), size);
+                drop_obj(path);
                 fs_fclose(fd);
-                throw(ERR_LENGTH, "get: file '%s': invalid size: %d", as_string(x), size);
+                return res;
             }
+
+            drop_obj(path);
 
             res = (obj_p)mmap_file(fd, size);
 
@@ -254,7 +263,7 @@ obj_p ray_get(obj_p x)
             // anymap needs additional nested mapping of dependencies
             if (res->type == TYPE_ANYMAP)
             {
-                s = string_from_str("#", 1);
+                s = cstring_from_str("#", 1);
                 col = ray_concat(x, s);
                 keys = ray_get(col);
                 drop_obj(s);

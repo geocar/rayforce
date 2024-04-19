@@ -377,6 +377,7 @@ obj_p __ray_set(obj_p x, obj_p y)
     u64_t i, l, sz, size;
     u8_t *b, mmod;
     obj_p res, col, s, p, k, v, e, cols, sym, path, buf;
+    c8_t objbuf[PAGE_SIZE] = {0};
 
     switch (x->type)
     {
@@ -399,7 +400,6 @@ obj_p __ray_set(obj_p x, obj_p y)
         {
         case TYPE_SYMBOL:
             path = cstring_from_obj(x);
-
             fd = fs_fopen(as_string(path), ATTR_WRONLY | ATTR_CREAT);
 
             if (fd == -1)
@@ -433,11 +433,11 @@ obj_p __ray_set(obj_p x, obj_p y)
 
             return clone_obj(x);
         case TYPE_TABLE:
-            if (x->len < 2 || as_string(x)[x->len - 2] != '/')
+            if (x->len < 2 || as_string(x)[x->len - 1] != '/')
                 throw(ERR_TYPE, "set: table path must be a directory");
 
             // save columns schema
-            s = string_from_str(".d", 2);
+            s = cstring_from_str(".d", 2);
             col = ray_concat(x, s);
             res = __ray_set(col, as_list(y)[0]);
 
@@ -464,7 +464,7 @@ obj_p __ray_set(obj_p x, obj_p y)
 
             if (sym->len > 0)
             {
-                s = string_from_str("sym", 3);
+                s = cstring_from_str("sym", 3);
                 col = ray_concat(x, s);
                 res = __ray_set(col, sym);
 
@@ -530,10 +530,15 @@ obj_p __ray_set(obj_p x, obj_p y)
             return clone_obj(x);
 
         case TYPE_ENUM:
-            fd = fs_fopen(as_string(x), ATTR_WRONLY | ATTR_CREAT);
+            path = cstring_from_obj(x);
+            fd = fs_fopen(as_string(path), ATTR_WRONLY | ATTR_CREAT);
 
             if (fd == -1)
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+            {
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
+                drop_obj(path);
+                return res;
+            }
 
             if (is_external_compound(y))
             {
@@ -543,51 +548,61 @@ obj_p __ray_set(obj_p x, obj_p y)
                 fs_fclose(fd);
 
                 if (c == -1)
-                    return sys_error(ERROR_TYPE_SYS, as_string(x));
+                {
+                    res = sys_error(ERROR_TYPE_SYS, as_string(path));
+                    drop_obj(path);
+                    return res;
+                }
+
+                drop_obj(path);
 
                 return clone_obj(x);
             }
 
-            p = (obj_p)heap_alloc_raw(PAGE_SIZE);
-
-            memset((str_p)p, 0, PAGE_SIZE);
-
-            strcpy(as_string(p), strof_sym(as_list(y)[0]->i64));
-
+            memset(objbuf, 0, PAGE_SIZE);
+            p = (obj_p)objbuf;
+            strncpy(as_string(p), strof_sym(as_list(y)[0]->i64), PAGE_SIZE - sizeof(struct obj_t));
             p->mmod = MMOD_EXTERNAL_COMPOUND;
 
-            c = fs_fwrite(fd, (str_p)p, PAGE_SIZE);
+            c = fs_fwrite(fd, objbuf, PAGE_SIZE);
             if (c == -1)
             {
-                heap_free_raw(p);
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
                 fs_fclose(fd);
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+                drop_obj(path);
+                return res;
             }
 
             p->type = TYPE_ENUM;
             p->len = as_list(y)[1]->len;
 
-            c = fs_fwrite(fd, (str_p)p, sizeof(struct obj_t));
+            c = fs_fwrite(fd, objbuf, sizeof(struct obj_t));
             if (c == -1)
             {
-                heap_free_raw(p);
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
                 fs_fclose(fd);
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+                drop_obj(path);
+                return res;
             }
 
             size = as_list(y)[1]->len * sizeof(i64_t);
 
             c = fs_fwrite(fd, as_string(as_list(y)[1]), size);
-            heap_free_raw(p);
             fs_fclose(fd);
 
             if (c == -1)
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+            {
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
+                drop_obj(path);
+                return res;
+            }
+
+            drop_obj(path);
 
             return clone_obj(x);
 
         case TYPE_LIST:
-            s = string_from_str("#", 1);
+            s = cstring_from_str("#", 1);
             col = ray_concat(x, s);
             drop_obj(s);
 
@@ -628,47 +643,56 @@ obj_p __ray_set(obj_p x, obj_p y)
             drop_obj(res);
 
             // save anymap
-            fd = fs_fopen(as_string(x), ATTR_WRONLY | ATTR_CREAT);
+            path = cstring_from_obj(x);
+            fd = fs_fopen(as_string(path), ATTR_WRONLY | ATTR_CREAT);
 
             if (fd == -1)
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+            {
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
+                drop_obj(path);
+                return res;
+            }
 
-            p = (obj_p)heap_alloc_raw(PAGE_SIZE);
-
-            memset((str_p)p, 0, PAGE_SIZE);
+            memset(objbuf, 0, PAGE_SIZE);
+            p = (obj_p)objbuf;
 
             p->mmod = MMOD_EXTERNAL_COMPOUND;
 
-            c = fs_fwrite(fd, (str_p)p, PAGE_SIZE);
+            c = fs_fwrite(fd, objbuf, PAGE_SIZE);
             if (c == -1)
             {
-                heap_free_raw(p);
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
                 fs_fclose(fd);
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+                drop_obj(path);
+                return res;
             }
 
             p->type = TYPE_ANYMAP;
             p->len = y->len;
 
-            c = fs_fwrite(fd, (str_p)p, sizeof(struct obj_t));
+            c = fs_fwrite(fd, objbuf, sizeof(struct obj_t));
             if (c == -1)
             {
-                heap_free_raw(p);
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
                 fs_fclose(fd);
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+                drop_obj(path);
+                return res;
             }
 
             size = k->len * sizeof(i64_t);
 
             c = fs_fwrite(fd, as_string(k), size);
-            heap_free_raw(p);
-            heap_free_raw(k);
+            drop_obj(k);
             fs_fclose(fd);
 
             if (c == -1)
-                return sys_error(ERROR_TYPE_SYS, as_string(x));
+            {
+                res = sys_error(ERROR_TYPE_SYS, as_string(path));
+                drop_obj(path);
+                return res;
+            }
 
-            // --
+            drop_obj(path);
 
             return clone_obj(x);
 
