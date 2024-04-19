@@ -228,7 +228,7 @@ i64_t b8_fmt_into(obj_p *dst, b8_t val)
     if (val)
         return str_fmt_into(dst, 5, "true");
 
-    return str_fmt_into(dst, 5, "false");
+    return str_fmt_into(dst, 6, "false");
 }
 
 i64_t byte_fmt_into(obj_p *dst, u8_t val)

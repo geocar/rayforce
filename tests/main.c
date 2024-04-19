@@ -131,11 +131,11 @@ nil_t on_fail(str_p msg)
 
 // Include tests files
 #include "heap.c"
-// #include "hash.c"
-// #include "string.c"
-// #include "env.c"
-// #include "sort.c"
-// #include "lang.c"
+#include "hash.c"
+#include "string.c"
+#include "env.c"
+#include "sort.c"
+#include "lang.c"
 
 // Add tests here
 test_entry_t tests[] = {
@@ -151,15 +151,15 @@ test_entry_t tests[] = {
     {"test_realloc", test_realloc},
     {"test_realloc_same_size", test_realloc_same_size},
     {"test_alloc_dealloc_stress", test_alloc_dealloc_stress},
-    // {"test_hash", test_hash},
-    // {"test_env", test_env},
-    // {"test_sort_asc", test_sort_asc},
-    // {"test_sort_desc", test_sort_desc},
-    // {"test_str_match", test_str_match},
-    // {"test_lang_basic", test_lang_basic},
-    // {"test_lang_math", test_lang_math},
-    // {"test_lang_query", test_lang_query},
-    // {"test_lang_update", test_lang_update},
+    {"test_hash", test_hash},
+    {"test_env", test_env},
+    {"test_sort_asc", test_sort_asc},
+    {"test_sort_desc", test_sort_desc},
+    {"test_str_match", test_str_match},
+    {"test_lang_basic", test_lang_basic},
+    {"test_lang_math", test_lang_math},
+    {"test_lang_query", test_lang_query},
+    {"test_lang_update", test_lang_update},
 };
 // ---
 

@@ -561,7 +561,7 @@ obj_p parse_symbol(parser_t *parser)
     span_t span = span_start(parser);
     i64_t id;
 
-    if (strncmp(parser->current, "B8_TRUE", 4) == 0)
+    if (strncmp(parser->current, "true", 4) == 0)
     {
         shift(parser, 4);
         span_extend(parser, &span);
@@ -571,7 +571,7 @@ obj_p parse_symbol(parser_t *parser)
         return res;
     }
 
-    if (strncmp(parser->current, "B8_FALSE", 5) == 0)
+    if (strncmp(parser->current, "false", 5) == 0)
     {
         shift(parser, 5);
         span_extend(parser, &span);

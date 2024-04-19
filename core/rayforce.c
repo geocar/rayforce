@@ -1681,7 +1681,7 @@ obj_p eval_str(str_p str)
 {
     obj_p s, res;
 
-    s = string_from_str(str, strlen(str));
+    s = cstring_from_str(str, strlen(str));
     res = ray_eval_str(s, NULL_OBJ);
     drop_obj(s);
 

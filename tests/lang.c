@@ -21,18 +21,19 @@
  *   SOFTWARE.
  */
 
-#define TEST_ASSERT_EQ(lhs, rhs)                                                                         \
-    {                                                                                                    \
-        obj_p le = eval_str(lhs);                                                                        \
-        obj_p re = eval_str(rhs);                                                                        \
-        obj_p lns = obj_fmt(le);                                                                         \
-        obj_p rns = obj_fmt(re);                                                                         \
-        TEST_ASSERT(ray_eq(lns, rns) == 0, str_fmt(-1, "Expected %s, got %s\n -- at: %s:%d",             \
-                                                   as_string(rns), as_string(lns), __FILE__, __LINE__)); \
-        drop_obj(le);                                                                                    \
-        drop_obj(re);                                                                                    \
-        heap_free_obj(lns);                                                                              \
-        heap_free_obj(rns);                                                                              \
+#define TEST_ASSERT_EQ(lhs, rhs)                                                                                           \
+    {                                                                                                                      \
+        obj_p le = eval_str(lhs);                                                                                          \
+        obj_p re = eval_str(rhs);                                                                                          \
+        obj_p lns = obj_fmt(le);                                                                                           \
+        obj_p rns = obj_fmt(re);                                                                                           \
+        obj_p fmt = str_fmt(-1, "Expected %s, got %s\n -- at: %s:%d", as_string(rns), as_string(lns), __FILE__, __LINE__); \
+        TEST_ASSERT(string_cmp(lns, rns) == 0, as_string(fmt));                                                            \
+        drop_obj(fmt);                                                                                                     \
+        drop_obj(re);                                                                                                      \
+        drop_obj(le);                                                                                                      \
+        heap_free_obj(lns);                                                                                                \
+        heap_free_obj(rns);                                                                                                \
     }
 
 test_result_t test_lang_basic()

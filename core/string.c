@@ -293,3 +293,11 @@ obj_p vn_string(str_p fmt, ...)
 
     return res;
 }
+
+i64_t string_cmp(obj_p lhs, obj_p rhs)
+{
+    if (lhs->len != rhs->len)
+        return lhs->len - rhs->len;
+
+    return strncmp(as_string(lhs), as_string(rhs), lhs->len);
+}

@@ -39,5 +39,6 @@ str_p str_dup(str_p str);
 u64_t str_cpy(str_p dst, str_p src);
 u64_t str_len(str_p s, u64_t n);
 obj_p vn_vstring(str_p fmt, va_list args);
+i64_t string_cmp(obj_p lhs, obj_p rhs);
 
 #endif // STRING_H
