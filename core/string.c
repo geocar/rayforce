@@ -54,7 +54,8 @@ obj_p cstring_from_str(str_p str, i64_t len)
     else
     {
         s = string(len + 1);
-        strncpy(as_string(s), str, len + 1);
+        memcpy(as_string(s), str, len);
+        as_string(s)[len] = '\0';
         return s;
     }
 
@@ -276,7 +277,7 @@ obj_p vn_vstring(str_p fmt, va_list args)
 {
     obj_p res = NULL_OBJ;
 
-    str_vfmt_into(&res, 0, fmt, args);
+    str_vfmt_into(&res, -1, fmt, args);
 
     return res;
 }
