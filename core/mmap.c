@@ -74,30 +74,6 @@ raw_p mmap_stack(u64_t size)
     return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NORESERVE | MAP_STACK | MAP_LOCKED, -1, 0);
 }
 
-raw_p mmap_reserve(u64_t size)
-{
-    raw_p ptr = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-    if (ptr == MAP_FAILED)
-    {
-        perror("mmap");
-        return NULL;
-    }
-
-    return ptr;
-}
-
-raw_p mmap_commit(raw_p addr, u64_t size)
-{
-    raw_p ptr = mmap(addr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-    if (ptr == MAP_FAILED)
-    {
-        perror("mmap");
-        return NULL;
-    }
-
-    return ptr;
-}
-
 raw_p mmap_alloc(u64_t size)
 {
     raw_p ptr;

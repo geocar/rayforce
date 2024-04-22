@@ -149,7 +149,7 @@ raw_p __attribute__((hot)) heap_alloc(u64_t size)
     // add a new pool and split as well
     if (i == 0)
     {
-        if (order >= MAX_ORDER)
+        if (order >= MAX_BLOCK_ORDER)
         {
             size = bsizeof(order);
             block = heap_add_pool(size);
@@ -164,12 +164,12 @@ raw_p __attribute__((hot)) heap_alloc(u64_t size)
             return block2raw(block);
         }
 
-        block = heap_add_pool(bsizeof(MAX_ORDER));
+        block = heap_add_pool(bsizeof(MAX_BLOCK_ORDER));
 
         if (block == NULL)
             return NULL;
 
-        i = MAX_ORDER;
+        i = MAX_BLOCK_ORDER;
         heap_insert_block(block, i);
     }
     else
@@ -206,10 +206,7 @@ __attribute__((hot)) nil_t heap_free(raw_p ptr)
     {
         // check if we are at the root block (no buddies left)
         if (block->pool_order == order)
-        {
-
             return heap_insert_block(block, order);
-        }
 
         // calculate buddy
         buddy = buddyof(block, order);
@@ -271,7 +268,7 @@ i64_t heap_gc(nil_t)
     u64_t i, size, total = 0;
     block_p block, next;
 
-    for (i = MIN_ORDER; i <= MAX_POOL_ORDER; i++)
+    for (i = MAX_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
     {
         block = __HEAP->freelist[i];
         size = bsizeof(i);
@@ -279,16 +276,16 @@ i64_t heap_gc(nil_t)
         while (block)
         {
             next = block->next;
-            if (i == MAX_ORDER)
+
+            if (i == block->pool_order)
+            {
+                heap_remove_block(block, i);
                 heap_remove_pool(block, size);
-            else
-                mmap_free(block, size);
-            total += size;
+                total += size;
+            }
+
             block = next;
         }
-
-        __HEAP->freelist[i] = NULL;
-        __HEAP->avail &= ~size;
     }
 
     return total;
@@ -360,7 +357,7 @@ memstat_t heap_memstat(nil_t)
     __HEAP->memstat.free = 0;
 
     // calculate free blocks
-    for (i = MIN_ORDER; i <= MAX_POOL_ORDER; i++)
+    for (i = MIN_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
     {
         block = __HEAP->freelist[i];
         while (block)
@@ -379,7 +376,7 @@ nil_t heap_cleanup(nil_t)
     block_p block, next;
 
     // All the nodes remains are pools, so just munmap them
-    for (i = 0; i <= MAX_POOL_ORDER; i++)
+    for (i = MIN_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
     {
         block = __HEAP->freelist[i];
         while (block)
