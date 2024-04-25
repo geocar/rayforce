@@ -370,7 +370,7 @@ obj_p parse_csv_batch(raw_p x, u64_t n)
 
 obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t total_lines, obj_p cols, c8_t sep)
 {
-    obj_p v, res = NULL_OBJ;
+    obj_p res = NULL_OBJ;
     i64_t i, batch, batch_size, num_batches, lines_per_batch, start_line, end_line, lines_in_batch;
     str_p batch_start, batch_end;
     pool_p pool = runtime_get()->pool;
@@ -378,8 +378,8 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t
     num_batches = pool_executors_count(pool) + 1; // Number of batches is equal to the number of executors plus the main thread
 
     // TODO: Uncomment to enable parallel batch processing
-    // if (num_batches == 1 || total_lines <= num_batches)
-    return parse_csv_range(types, num_types, buf, size, total_lines, 0, cols, sep);
+    if (num_batches == 1 || total_lines <= num_batches)
+        return parse_csv_range(types, num_types, buf, size, total_lines, 0, cols, sep);
 
     csv_parse_ctx_t ctx[num_batches];
     lines_per_batch = (total_lines + num_batches - 1) / num_batches; // Calculate lines per batch
@@ -428,23 +428,16 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t
         ctx[batch].start_line = start_line;
         ctx[batch].cols = cols;
         ctx[batch].sep = sep;
+
+        pool_add_task(pool, batch, parse_csv_batch, &ctx[batch], 1);
     }
 
-    // // Prepare tasks for executors
-    // for (batch = 0; batch < num_batches - 1; batch++)
-    //     pool_run(pool, batch, parse_csv_batch, &ctx[batch], 1);
+    res = pool_run(pool, num_batches);
 
-    // v = parse_csv_batch(&ctx[batch], 1);
+    if (is_error(res))
+        return res;
 
-    // for (batch = 0; batch < num_batches - 1; batch++)
-    //     pool_wait(pool, batch);
-
-    // res = pool_collect(pool, v);
-
-    // if (is_error(res))
-    //     return res;
-
-    // drop_obj(res);
+    drop_obj(res);
 
     return NULL_OBJ; // Success
 }

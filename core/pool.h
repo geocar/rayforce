@@ -52,6 +52,7 @@ typedef struct pool_t
     u64_t executors_count;    // Number of executors
     mpmc_p task_queue;        // Pool's task queue
     mpmc_p result_queue;      // Pool's result queue
+    heap_p heap;              // Main heap
     executor_t executors[];   // Array of executors
 } *pool_p;
 

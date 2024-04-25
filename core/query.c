@@ -364,46 +364,59 @@ obj_p ray_select(obj_p obj)
     if (l)
     {
         pool = runtime_get()->pool;
-        pool_prepare(pool);
 
-        for (i = 0; i < l; i++)
+        // single-threaded
+        if (!pool)
         {
-            sym = at_idx(keys, i);
-            prm = at_obj(obj, sym);
-            drop_obj(sym);
+            vals = list(l);
 
-            pool_add_task(pool, i, eval_field, prm, 1);
+            for (i = 0; i < l; i++)
+            {
+                sym = at_idx(keys, i);
+                prm = at_obj(obj, sym);
+                drop_obj(sym);
 
-            // val = eval_field(prm, 1);
+                val = eval_field(prm, 1);
 
-            // if (is_error(val))
-            // {
-            //     vals->len = i;
-            //     drop_obj(vals);
-            //     drop_obj(tab);
-            //     drop_obj(keys);
-            //     drop_obj(gkeys);
-            //     drop_obj(gcol);
-            //     return val;
-            // }
+                if (is_error(val))
+                {
+                    vals->len = i;
+                    drop_obj(vals);
+                    drop_obj(tab);
+                    drop_obj(keys);
+                    drop_obj(gkeys);
+                    drop_obj(gcol);
+                    return val;
+                }
 
-            // if (is_error(val))
-            // {
-            //     vals->len = i;
-            //     drop_obj(vals);
-            //     drop_obj(tab);
-            //     drop_obj(keys);
-            //     drop_obj(gkeys);
-            //     drop_obj(gcol);
-            //     return val;
-            // }
+                if (is_error(val))
+                {
+                    vals->len = i;
+                    drop_obj(vals);
+                    drop_obj(tab);
+                    drop_obj(keys);
+                    drop_obj(gkeys);
+                    drop_obj(gcol);
+                    return val;
+                }
 
-            // as_list(vals)[i] = val;
+                as_list(vals)[i] = val;
+            }
         }
+        else
+        {
+            pool_prepare(pool);
 
-        vals = pool_run(pool, l);
+            for (i = 0; i < l; i++)
+            {
+                sym = at_idx(keys, i);
+                prm = at_obj(obj, sym);
+                drop_obj(sym);
+                pool_add_task(pool, i, eval_field, prm, 1);
+            }
 
-        return vals;
+            vals = pool_run(pool, l);
+        }
     }
     else
     {

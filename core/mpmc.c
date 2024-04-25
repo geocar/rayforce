@@ -31,6 +31,24 @@
 #include "heap.h"
 #include "string.h"
 
+#define BACKOFF_SPIN_LIMIT 8
+
+static inline void cpu_relax()
+{
+    __asm__ volatile("pause" ::: "memory");
+}
+
+nil_t backoff_spin(u64_t *rounds)
+{
+    u64_t i;
+    printf("SPIN!!!\n");
+    for (i = 0; i < (1 << *rounds); i++)
+        cpu_relax();
+
+    if (*rounds <= BACKOFF_SPIN_LIMIT)
+        (*rounds)++;
+}
+
 mpmc_p mpmc_create(u64_t size)
 {
     size = next_power_of_two_u64(size);
@@ -73,6 +91,7 @@ i64_t mpmc_push(mpmc_p queue, mpmc_data_t data)
 {
     cell_p cell;
     i64_t pos, seq, dif;
+    u64_t rounds = 0;
 
     pos = __atomic_load_n(&queue->tail, __ATOMIC_RELAXED);
 
@@ -90,7 +109,10 @@ i64_t mpmc_push(mpmc_p queue, mpmc_data_t data)
         else if (dif < 0)
             return -1;
         else
+        {
+            backoff_spin(&rounds);
             pos = __atomic_load_n(&queue->tail, __ATOMIC_RELAXED);
+        }
     }
 
     cell->data = data;
@@ -104,6 +126,7 @@ mpmc_data_t mpmc_pop(mpmc_p queue)
     cell_p cell;
     mpmc_data_t data = {.id = -1, {0}};
     i64_t pos, seq, dif;
+    u64_t rounds = 0;
 
     pos = __atomic_load_n(&queue->head, __ATOMIC_RELAXED);
 
@@ -120,7 +143,10 @@ mpmc_data_t mpmc_pop(mpmc_p queue)
         else if (dif < 0)
             return data;
         else
+        {
+            backoff_spin(&rounds);
             pos = __atomic_load_n(&queue->head, __ATOMIC_RELAXED);
+        }
     }
 
     data = cell->data;

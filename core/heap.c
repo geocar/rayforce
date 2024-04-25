@@ -69,6 +69,40 @@ heap_p heap_init(u64_t id)
     return __HEAP;
 }
 
+nil_t heap_destroy(nil_t)
+{
+    u64_t i;
+    block_p block, next;
+
+    // All the nodes remains are pools, so just munmap them
+    for (i = MIN_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
+    {
+        block = __HEAP->freelist[i];
+
+        while (block)
+        {
+            next = block->next;
+            if (i != block->pool_order)
+            {
+                debug("%s-- HEAP[%lld]: leak order: %lld block: %p%s", RED, __HEAP->id, i, block, RESET);
+                return;
+            }
+
+            mmap_free(block, bsizeof(i));
+            block = next;
+        }
+    }
+
+    mmap_free(__HEAP, sizeof(struct heap_t));
+
+    __HEAP = NULL;
+}
+
+heap_p heap_get(nil_t)
+{
+    return __HEAP;
+}
+
 block_p heap_add_pool(u64_t size)
 {
     block_p block = (block_p)mmap_alloc(size);
@@ -329,35 +363,34 @@ i64_t heap_gc(nil_t)
     return total;
 }
 
-nil_t heap_borrow(heap_p heap)
+nil_t heap_borrow(heap_p from, heap_p to)
 {
     u64_t i;
 
-    for (i = MIN_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
+    for (i = MAX_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
     {
-        // Only borrow if the source heap has a freelist[i] and it has more than one node
-        if (__HEAP->freelist[i] == NULL || __HEAP->freelist[i]->next == NULL)
+        // Only borrow if the source heap has a freelist[i] and it has more than one node and it is the pool (not a splitted block)
+        if (from->freelist[i] == NULL || from->freelist[i]->next == NULL || from->freelist[i]->pool_order != i)
             continue;
 
-        heap->freelist[i] = __HEAP->freelist[i];
-        __HEAP->freelist[i] = __HEAP->freelist[i]->next;
-        __HEAP->freelist[i]->prev = NULL;
+        to->freelist[i] = from->freelist[i];
+        from->freelist[i] = from->freelist[i]->next;
+        from->freelist[i]->prev = NULL;
 
-        heap->freelist[i]->next = NULL;
-        heap->freelist[i]->prev = NULL;
-        heap->avail |= bsizeof(i);
+        to->freelist[i]->next = NULL;
+        to->freelist[i]->prev = NULL;
+        to->avail |= bsizeof(i);
     }
 }
 
-nil_t heap_merge(heap_p heap)
+nil_t heap_merge(heap_p from, heap_p to)
 {
     u64_t i;
     block_p block, prev;
 
     for (i = MIN_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
     {
-        block = heap->freelist[i];
-        heap->freelist[i] = NULL;
+        block = from->freelist[i];
 
         while (block)
         {
@@ -365,16 +398,18 @@ nil_t heap_merge(heap_p heap)
             block = block->next;
             heap_free(block2raw(prev));
         }
+
+        from->freelist[i] = NULL;
     }
 
     // Update memory statistics
-    __HEAP->memstat.heap += heap->memstat.heap;
-    __HEAP->memstat.system += heap->memstat.system;
+    to->memstat.heap += from->memstat.heap;
+    to->memstat.system += from->memstat.system;
 
     // Clear borrowed heap
-    heap->memstat.heap = 0;
-    heap->memstat.system = 0;
-    heap->avail = 0;
+    from->memstat.heap = 0;
+    from->memstat.system = 0;
+    from->avail = 0;
 }
 
 memstat_t heap_memstat(nil_t)
@@ -396,35 +431,6 @@ memstat_t heap_memstat(nil_t)
     }
 
     return __HEAP->memstat;
-}
-
-nil_t heap_destroy(nil_t)
-{
-    u64_t i;
-    block_p block, next;
-
-    // All the nodes remains are pools, so just munmap them
-    for (i = MIN_BLOCK_ORDER; i <= MAX_POOL_ORDER; i++)
-    {
-        block = __HEAP->freelist[i];
-
-        while (block)
-        {
-            next = block->next;
-            if (i != block->pool_order)
-            {
-                debug("%s-- HEAP[%lld]: leak order: %lld block: %p%s", RED, __HEAP->id, i, block, RESET);
-                return;
-            }
-
-            mmap_free(block, bsizeof(i));
-            block = next;
-        }
-    }
-
-    mmap_free(__HEAP, sizeof(struct heap_t));
-
-    __HEAP = NULL;
 }
 
 nil_t heap_print_blocks(heap_p heap)

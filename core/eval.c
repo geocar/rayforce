@@ -76,7 +76,6 @@ interpreter_p interpreter_new(nil_t)
 
     __INTERPRETER = interpreter;
 
-    // push top-level context
     f = lambda(NULL_OBJ, NULL_OBJ, NULL_OBJ);
     as_lambda(f)->name = symbol("top-level");
     ctx_push(f);
@@ -651,7 +650,21 @@ nil_t interpreter_env_set(interpreter_p interpreter, obj_p env)
     lambda = ctx->lambda;
 
     l = as_lambda(lambda)->args->len;
-    interpreter->stack[ctx->sp + l] = clone_obj(env);
+    interpreter->stack[ctx->sp + l] = env;
+}
+
+nil_t interpreter_env_unset(interpreter_p interpreter)
+{
+    obj_p lambda, env;
+    u64_t l;
+    ctx_p ctx;
+
+    ctx = ctx_get();
+    lambda = ctx->lambda;
+
+    l = as_lambda(lambda)->args->len;
+    env = interpreter->stack[ctx->sp + l];
+    drop_obj(env);
 }
 
 obj_p *deref(obj_p sym)

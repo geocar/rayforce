@@ -71,6 +71,10 @@ raw_p executor_run(raw_p arg)
     }
 
     interpreter_destroy();
+
+    // merge all our blocks to the main heap
+    heap_merge(executor->heap, executor->pool->heap);
+
     heap_destroy();
 
     return NULL;
@@ -86,6 +90,7 @@ pool_p pool_new(u64_t executors_count)
     pool->done_count = 0;
     pool->task_queue = mpmc_create(MPMC_SIZE);
     pool->result_queue = mpmc_create(MPMC_SIZE);
+    pool->heap = heap_get();
 
     pthread_mutex_init(&pool->mutex, NULL);
     pthread_cond_init(&pool->done_task, NULL);
@@ -94,6 +99,7 @@ pool_p pool_new(u64_t executors_count)
     {
         pool->executors[i].id = i;
         pool->executors[i].stop = B8_FALSE;
+        pool->executors[i].pool = pool;
         pthread_create(&pool->executors[i].handle, NULL, executor_run, &pool->executors[i]);
     }
 
@@ -136,13 +142,12 @@ nil_t pool_prepare(pool_p pool)
     u64_t i, n;
     obj_p env = interpreter_env_get();
 
-    debug_obj(env);
     n = pool->executors_count;
     pool->done_count = 0;
 
     for (i = 0; i < n; i++)
     {
-        heap_borrow(pool->executors[i].heap);
+        heap_borrow(pool->heap, pool->executors[i].heap);
         interpreter_env_set(pool->executors[i].interpreter, env);
     }
 }
@@ -191,15 +196,24 @@ obj_p pool_run(pool_p pool, u64_t tasks_count)
     while (pool->done_count < tasks_count)
         pthread_cond_wait(&pool->done_task, &pool->mutex);
 
+    // merge heaps
+    for (i = 0; i < pool->executors_count; i++)
+    {
+        // interpreter_env_unset(pool->executors[i].interpreter);
+        // heap_merge(pool->executors[i].heap, pool->heap);
+    }
+
     pthread_mutex_unlock(&pool->mutex);
 
     // collect results
     res = vector(TYPE_LIST, tasks_count);
 
-    for (i = 0; i < tasks_count; i++)
+    for (i = 0; i < tasks_count;)
     {
         data = mpmc_pop(pool->result_queue);
-        ins_obj(&res, data.id, data.out.result);
+        if (data.id == -1)
+            continue;
+        ins_obj(&res, i++, data.out.result);
     }
 
     return res;
