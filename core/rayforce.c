@@ -60,7 +60,7 @@ i32_t ray_init()
 
 nil_t ray_clean()
 {
-    runtime_cleanup();
+    runtime_destroy();
 }
 
 u8_t version(nil_t)

@@ -38,6 +38,8 @@
 #include "group.h"
 #include "filter.h"
 #include "update.h"
+#include "pool.h"
+#include "runtime.h"
 
 obj_p get_fields(obj_p obj)
 {
@@ -205,11 +207,44 @@ obj_p get_gvals(obj_p obj)
     }
 }
 
+obj_p eval_field(raw_p x, u64_t n)
+{
+    unused(n);
+    obj_p val, res;
+
+    val = (obj_p)x;
+    res = eval(val);
+    drop_obj(val);
+
+    // Materialize fields
+    if (res->type == TYPE_GROUPMAP)
+    {
+        val = group_collect(res);
+        drop_obj(res);
+        res = val;
+    }
+    else if (res->type == TYPE_FILTERMAP)
+    {
+        val = filter_collect(res);
+        drop_obj(res);
+        res = val;
+    }
+    else if (res->type == TYPE_ENUM)
+    {
+        val = ray_value(res);
+        drop_obj(res);
+        res = val;
+    }
+
+    return res;
+}
+
 obj_p ray_select(obj_p obj)
 {
     u64_t i, l, tablen;
     obj_p keys = NULL_OBJ, vals = NULL_OBJ, filters = NULL_OBJ, groupby = NULL_OBJ,
           gcol = NULL_OBJ, gkeys = NULL_OBJ, gvals = NULL_OBJ, tab, sym, prm, val;
+    pool_p pool;
 
     if (obj->type != TYPE_DICT)
         throw(ERR_LENGTH, "'select' takes dict of params");
@@ -328,59 +363,47 @@ obj_p ray_select(obj_p obj)
     // Apply mappings
     if (l)
     {
-        vals = list(l);
+        pool = runtime_get()->pool;
+        pool_prepare(pool);
+
         for (i = 0; i < l; i++)
         {
             sym = at_idx(keys, i);
             prm = at_obj(obj, sym);
             drop_obj(sym);
-            val = eval(prm);
-            drop_obj(prm);
 
-            if (is_error(val))
-            {
-                vals->len = i;
-                drop_obj(vals);
-                drop_obj(tab);
-                drop_obj(keys);
-                drop_obj(gkeys);
-                drop_obj(gcol);
-                return val;
-            }
+            pool_add_task(pool, i, eval_field, prm, 1);
 
-            // Materialize fields
-            if (val->type == TYPE_GROUPMAP)
-            {
-                prm = group_collect(val);
-                drop_obj(val);
-                val = prm;
-            }
-            else if (val->type == TYPE_FILTERMAP)
-            {
-                prm = filter_collect(val);
-                drop_obj(val);
-                val = prm;
-            }
-            else if (val->type == TYPE_ENUM)
-            {
-                prm = ray_value(val);
-                drop_obj(val);
-                val = prm;
-            }
+            // val = eval_field(prm, 1);
 
-            if (is_error(val))
-            {
-                vals->len = i;
-                drop_obj(vals);
-                drop_obj(tab);
-                drop_obj(keys);
-                drop_obj(gkeys);
-                drop_obj(gcol);
-                return val;
-            }
+            // if (is_error(val))
+            // {
+            //     vals->len = i;
+            //     drop_obj(vals);
+            //     drop_obj(tab);
+            //     drop_obj(keys);
+            //     drop_obj(gkeys);
+            //     drop_obj(gcol);
+            //     return val;
+            // }
 
-            as_list(vals)[i] = val;
+            // if (is_error(val))
+            // {
+            //     vals->len = i;
+            //     drop_obj(vals);
+            //     drop_obj(tab);
+            //     drop_obj(keys);
+            //     drop_obj(gkeys);
+            //     drop_obj(gcol);
+            //     return val;
+            // }
+
+            // as_list(vals)[i] = val;
         }
+
+        vals = pool_run(pool, l);
+
+        return vals;
     }
     else
     {

@@ -24,45 +24,42 @@
 #ifndef POOL_H
 #define POOL_H
 
-#include <pthread.h>
 #include "rayforce.h"
+#include <pthread.h>
 #include "heap.h"
+#include "eval.h"
+#include "mpmc.h"
 
-typedef obj_p (*task_fn)(raw_p, u64_t);
-
-typedef struct
-{
-    task_fn fn;
-    raw_p arg;
-    u64_t len;
-    obj_p result;
-} task_t;
+typedef struct pool_t *pool_p;
 
 typedef struct
 {
     u64_t id;
-    pthread_mutex_t mutex;    // Mutex for condition variable
-    pthread_cond_t has_task;  // Condition variable for task
-    pthread_cond_t done_task; // Condition variable for task completion
-    b8_t stop;                // Stop flag
-    b8_t done;                // Done flag
-    task_t task;              // Executor's task
-    heap_p heap;              // Executor's heap
-    pthread_t handle;         // Executor's thread handle
+    pthread_mutex_t mutex;     // Mutex for condition variable
+    pthread_cond_t has_task;   // Condition variable for task
+    b8_t stop;                 // Stop flag
+    heap_p heap;               // Executor's heap
+    interpreter_p interpreter; // Executor's interpreter
+    pool_p pool;               // Executor's pool
+    pthread_t handle;          // Executor's thread handle
 } executor_t;
 
 typedef struct pool_t
 {
-    u64_t executors_count;  // Number of executors
-    executor_t executors[]; // Array of executors
+    pthread_mutex_t mutex;    // Mutex for condition variable
+    pthread_cond_t done_task; // Condition variable for signal task done
+    u64_t done_count;         // Number of done tasks
+    u64_t executors_count;    // Number of executors
+    mpmc_p task_queue;        // Pool's task queue
+    mpmc_p result_queue;      // Pool's result queue
+    executor_t executors[];   // Array of executors
 } *pool_p;
 
 pool_p pool_new(u64_t executors_count);
-nil_t pool_free(pool_p pool);
-nil_t pool_run(pool_p pool, u64_t executor_id, task_fn fn, raw_p arg, u64_t len);
-nil_t pool_wait(pool_p pool, u64_t executor_id);
-obj_p pool_collect(pool_p pool, obj_p x);
+nil_t pool_destroy(pool_p pool);
 u64_t pool_executors_count(pool_p pool);
-nil_t pool_stop(pool_p pool);
+nil_t pool_prepare(pool_p pool);
+nil_t pool_add_task(pool_p pool, u64_t id, task_fn fn, raw_p arg, u64_t len);
+obj_p pool_run(pool_p pool, u64_t tasks_count);
 
 #endif // POOL_H

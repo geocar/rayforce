@@ -430,21 +430,21 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t
         ctx[batch].sep = sep;
     }
 
-    // Prepare tasks for executors
-    for (batch = 0; batch < num_batches - 1; batch++)
-        pool_run(pool, batch, parse_csv_batch, &ctx[batch], 1);
+    // // Prepare tasks for executors
+    // for (batch = 0; batch < num_batches - 1; batch++)
+    //     pool_run(pool, batch, parse_csv_batch, &ctx[batch], 1);
 
-    v = parse_csv_batch(&ctx[batch], 1);
+    // v = parse_csv_batch(&ctx[batch], 1);
 
-    for (batch = 0; batch < num_batches - 1; batch++)
-        pool_wait(pool, batch);
+    // for (batch = 0; batch < num_batches - 1; batch++)
+    //     pool_wait(pool, batch);
 
-    res = pool_collect(pool, v);
+    // res = pool_collect(pool, v);
 
-    if (is_error(res))
-        return res;
+    // if (is_error(res))
+    //     return res;
 
-    drop_obj(res);
+    // drop_obj(res);
 
     return NULL_OBJ; // Success
 }

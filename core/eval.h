@@ -53,7 +53,7 @@ typedef struct interpreter_t
 extern __thread interpreter_p __INTERPRETER;
 
 interpreter_p interpreter_new(nil_t);
-nil_t interpreter_free(nil_t);
+nil_t interpreter_destroy(nil_t);
 obj_p call(obj_p obj, u64_t arity);
 obj_p *deref(obj_p sym);
 obj_p amend(obj_p sym, obj_p val);
@@ -65,6 +65,8 @@ obj_p ray_eval_str(obj_p str, obj_p file);
 obj_p ray_raise(obj_p obj);
 obj_p try_eval(obj_p obj, obj_p ctch);
 obj_p ray_return(obj_p *x, u64_t n);
+obj_p interpreter_env_get(nil_t);
+nil_t interpreter_env_set(interpreter_p interpreter, obj_p env);
 nil_t error_add_loc(obj_p err, i64_t id, ctx_p ctx);
 
 inline __attribute__((always_inline)) nil_t stack_push(obj_p val)

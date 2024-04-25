@@ -51,7 +51,7 @@ nil_t heap_free(raw_p ptr) { free(ptr); }
 raw_p heap_realloc(raw_p ptr, u64_t size) { return realloc(ptr, size); }
 nil_t heap_unmap(raw_p ptr, u64_t size) { mmap_free(ptr, size); }
 i64_t heap_gc(nil_t) { return 0; }
-nil_t heap_cleanup(nil_t) {}
+nil_t heap_destroy(nil_t) {}
 nil_t heap_borrow(heap_p heap) { unused(heap); }
 nil_t heap_merge(heap_p heap) { unused(heap); }
 memstat_t heap_memstat(nil_t) { return (memstat_t){0}; }
@@ -398,7 +398,7 @@ memstat_t heap_memstat(nil_t)
     return __HEAP->memstat;
 }
 
-nil_t heap_cleanup(nil_t)
+nil_t heap_destroy(nil_t)
 {
     u64_t i;
     block_p block, next;

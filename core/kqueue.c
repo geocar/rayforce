@@ -122,7 +122,7 @@ poll_p poll_init(i64_t port)
     return poll;
 }
 
-nil_t poll_cleanup(poll_p poll)
+nil_t poll_destroy(poll_p poll)
 {
     i64_t i, l;
 
@@ -197,7 +197,7 @@ nil_t poll_deregister(poll_p poll, i64_t id)
 
     heap_free(selector->rx.buf);
     heap_free(selector->tx.buf);
-    queue_free(&selector->tx.queue);
+    queue_free(selector->tx.queue);
     heap_free(selector);
 }
 
@@ -317,9 +317,9 @@ send:
     selector->tx.size = 0;
     selector->tx.bytes_transfered = 0;
 
-    v = queue_pop(&selector->tx.queue);
+    v = queue_pop(selector->tx.queue);
 
-    if (v != NULL_OBJ)
+    if (v != NULL)
     {
         obj = (obj_p)((i64_t)v & ~(3ll << 61));
         msg_type = (((i64_t)v & (3ll << 61)) >> 61);
@@ -378,7 +378,7 @@ nil_t process_request(poll_p poll, selector_p selector)
     // sync request
     if (selector->rx.msgtype == MSG_TYPE_SYNC)
     {
-        queue_push(&selector->tx.queue, (nil_t *)((i64_t)v | ((i64_t)MSG_TYPE_RESP << 61)));
+        queue_push(selector->tx.queue, (nil_t *)((i64_t)v | ((i64_t)MSG_TYPE_RESP << 61)));
         poll_result = _send(poll, selector);
 
         if (poll_result == POLL_ERROR)
@@ -503,7 +503,7 @@ obj_p ipc_send_sync(poll_p poll, i64_t id, obj_p msg)
 
     selector = (selector_p)idx;
 
-    queue_push(&selector->tx.queue, (nil_t *)((i64_t)msg | ((i64_t)MSG_TYPE_SYNC << 61)));
+    queue_push(selector->tx.queue, (nil_t *)((i64_t)msg | ((i64_t)MSG_TYPE_SYNC << 61)));
 
     while (B8_TRUE)
     {
@@ -590,7 +590,7 @@ obj_p ipc_send_async(poll_p poll, i64_t id, obj_p msg)
     if (selector == NULL)
         throw(ERR_IO, "ipc_send_async: invalid socket fd: %lld", id);
 
-    queue_push(&selector->tx.queue, (nil_t *)msg);
+    queue_push(selector->tx.queue, (nil_t *)msg);
 
     if (_send(poll, selector) == POLL_ERROR)
         throw(ERR_IO, "ipc_send_async: error sending message");

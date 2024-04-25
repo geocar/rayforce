@@ -50,7 +50,7 @@ poll_p poll_init(i64_t port)
     return poll;
 }
 
-nil_t poll_cleanup(poll_p poll)
+nil_t poll_destroy(poll_p poll)
 {
     heap_free(poll);
 }

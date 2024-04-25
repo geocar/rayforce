@@ -32,11 +32,11 @@ typedef struct queue_t
     i64_t head;
     i64_t tail;
     raw_p *data;
-} queue_t;
+} *queue_p;
 
-queue_t queue_new(i64_t size);
-nil_t queue_free(queue_t *queue);
-nil_t queue_push(queue_t *queue, nil_t *val);
-nil_t *queue_pop(queue_t *queue);
+queue_p queue_new(i64_t size);
+nil_t queue_free(queue_p queue);
+nil_t queue_push(queue_p queue, raw_p val);
+raw_p queue_pop(queue_p queue);
 
 #endif // QUEUE_H

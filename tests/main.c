@@ -75,8 +75,8 @@ nil_t setup()
 
 nil_t teardown()
 {
-    runtime_cleanup();
-    // heap_cleanup();
+    runtime_destroy();
+    // heap_destroy();
 }
 
 #define PASS() \

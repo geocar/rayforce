@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2023 Anton Kundenko <singaraiona@gmail.com>
+ *   Copyright (c) 2024 Anton Kundenko <singaraiona@gmail.com>
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,40 +21,62 @@
  *   SOFTWARE.
  */
 
-#ifndef RUNTIME_H
-#define RUNTIME_H
+#ifndef MPMC_H
+#define MPMC_H
 
 #include "rayforce.h"
-#include "symbols.h"
-#include "heap.h"
-#include "env.h"
-#include "eval.h"
-#include "poll.h"
-#include "sock.h"
-#include "pool.h"
-#include "sys.h"
 
-/*
- * Runtime structure.
- */
-typedef struct runtime_t
+#define CACHELINE_SIZE 64
+
+typedef c8_t cachepad_t[CACHELINE_SIZE];
+typedef obj_p (*task_fn)(raw_p, u64_t);
+
+typedef struct
 {
-    obj_p args;          // Command line arguments.
-    sys_info_t sys_info; // System information.
-    env_t env;           // Environment.
-    symbols_p symbols;   // vector_symbols pool.
-    poll_p poll;         // I/O event loop handle.
-    obj_p fds;           // File descriptors.
-    sock_addr_t addr;    // Socket address that a process listen.
-    pool_p pool;         // Executors pool.
-} *runtime_p;
+    task_fn fn;
+    raw_p arg;
+    u64_t len;
+} mpmc_data_in_t;
 
-extern runtime_p __RUNTIME;
+typedef struct
+{
+    task_fn fn;
+    raw_p arg;
+    u64_t len;
+    obj_p result;
+} mpmc_data_out_t;
 
-i32_t runtime_init(i32_t argc, str_p argv[]);
-i32_t runtime_run(nil_t);
-nil_t runtime_destroy(nil_t);
-obj_p runtime_get_arg(lit_p key);
-inline __attribute__((always_inline)) runtime_p runtime_get(nil_t) { return __RUNTIME; }
+typedef struct
+{
+    i64_t id;
+    union
+    {
+        mpmc_data_in_t in;
+        mpmc_data_out_t out;
+    };
+} mpmc_data_t;
 
-#endif // RUNTIME_H
+typedef struct cell_t
+{
+    u64_t seq;
+    mpmc_data_t data;
+} *cell_p;
+
+typedef struct mpmc_t
+{
+    cachepad_t pad0;
+    cell_p buf;
+    i64_t mask;
+    cachepad_t pad1;
+    i64_t tail;
+    cachepad_t pad2;
+    i64_t head;
+    cachepad_t pad3;
+} *mpmc_p;
+
+mpmc_p mpmc_create(u64_t size);
+nil_t mpmc_destroy(mpmc_p queue);
+i64_t mpmc_push(mpmc_p queue, mpmc_data_t data);
+mpmc_data_t mpmc_pop(mpmc_p queue);
+
+#endif // MPMC_H

@@ -26,22 +26,25 @@
 #include "util.h"
 #include "ops.h"
 
-queue_t queue_new(i64_t size)
+queue_p queue_new(i64_t size)
 {
-    return (queue_t){
-        .size = size,
-        .head = 0,
-        .tail = 0,
-        .data = (raw_p *)heap_alloc(size * sizeof(raw_p)),
-    };
+    queue_p queue = (queue_p)heap_alloc(sizeof(struct queue_t));
+
+    queue->size = size;
+    queue->head = 0;
+    queue->tail = 0;
+    queue->data = (raw_p *)heap_alloc(size * sizeof(raw_p));
+
+    return queue;
 }
 
-nil_t queue_free(queue_t *queue)
+nil_t queue_free(queue_p queue)
 {
     heap_free(queue->data);
+    heap_free(queue);
 }
 
-nil_t queue_push(queue_t *queue, raw_p val)
+nil_t queue_push(queue_p queue, raw_p val)
 {
     if (queue->tail - queue->head == queue->size)
     {
@@ -53,12 +56,12 @@ nil_t queue_push(queue_t *queue, raw_p val)
     queue->tail++;
 }
 
-raw_p queue_pop(queue_t *queue)
+raw_p queue_pop(queue_p queue)
 {
     raw_p v;
 
     if (queue->head == queue->tail)
-        return NULL_OBJ;
+        return NULL;
 
     v = queue->data[queue->head % queue->size];
     queue->head++;

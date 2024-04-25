@@ -84,7 +84,7 @@ interpreter_p interpreter_new(nil_t)
     return interpreter;
 }
 
-nil_t interpreter_free(nil_t)
+nil_t interpreter_destroy(nil_t)
 {
     // cleanup stack (if any)
     while (__INTERPRETER->sp)
@@ -624,6 +624,34 @@ obj_p try_obj(obj_p obj, obj_p ctch)
     }
 
     return res;
+}
+
+obj_p interpreter_env_get(nil_t)
+{
+    obj_p lambda, env;
+    u64_t l;
+    ctx_p ctx;
+
+    ctx = ctx_get();
+    lambda = ctx->lambda;
+
+    l = as_lambda(lambda)->args->len;
+    env = __INTERPRETER->stack[ctx->sp + l];
+
+    return clone_obj(env);
+}
+
+nil_t interpreter_env_set(interpreter_p interpreter, obj_p env)
+{
+    obj_p lambda;
+    u64_t l;
+    ctx_p ctx;
+
+    ctx = ctx_get();
+    lambda = ctx->lambda;
+
+    l = as_lambda(lambda)->args->len;
+    interpreter->stack[ctx->sp + l] = clone_obj(env);
 }
 
 obj_p *deref(obj_p sym)

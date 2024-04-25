@@ -22,17 +22,23 @@
  */
 
 #include "pool.h"
-#include "heap.h"
 #include "util.h"
 #include "runtime.h"
-#include "eval.h"
+
+#define MPMC_SIZE 1024
 
 raw_p executor_run(raw_p arg)
 {
     executor_t *executor = (executor_t *)arg;
+    mpmc_data_t data;
+    obj_p res;
 
     executor->heap = heap_init(executor->id + 1);
-    interpreter_new();
+    executor->interpreter = interpreter_new();
+    rc_sync(B8_TRUE);
+
+    pthread_mutex_init(&executor->mutex, NULL);
+    pthread_cond_init(&executor->has_task, NULL);
 
     for (;;)
     {
@@ -47,19 +53,25 @@ raw_p executor_run(raw_p arg)
 
         pthread_mutex_unlock(&executor->mutex);
 
-        // execute task
-        rc_sync(B8_TRUE);
-        executor->task.result = executor->task.fn(executor->task.arg, executor->task.len);
-        rc_sync(B8_FALSE);
+        data = mpmc_pop(executor->pool->task_queue);
 
-        pthread_mutex_lock(&executor->mutex);
-        executor->done = B8_TRUE;
-        pthread_cond_signal(&executor->done_task);
-        pthread_mutex_unlock(&executor->mutex);
+        // Nothing to do
+        if (data.id == -1)
+            continue;
+
+        // execute task
+        res = data.in.fn(data.in.arg, data.in.len);
+        mpmc_push(executor->pool->result_queue,
+                  (mpmc_data_t){data.id, .out = {data.in.fn, data.in.arg, data.in.len, res}});
+
+        pthread_mutex_lock(&executor->pool->mutex);
+        executor->pool->done_count++;
+        pthread_cond_signal(&executor->pool->done_task);
+        pthread_mutex_unlock(&executor->pool->mutex);
     }
 
-    interpreter_free();
-    heap_cleanup();
+    interpreter_destroy();
+    heap_destroy();
 
     return NULL;
 }
@@ -67,109 +79,28 @@ raw_p executor_run(raw_p arg)
 pool_p pool_new(u64_t executors_count)
 {
     u64_t i;
-    pool_p pool = (pool_p)heap_mmap(sizeof(struct pool_t) + (sizeof(executor_t) * executors_count));
+    pool_p pool;
+
+    pool = (pool_p)heap_mmap(sizeof(struct pool_t) + (sizeof(executor_t) * executors_count));
     pool->executors_count = executors_count;
+    pool->done_count = 0;
+    pool->task_queue = mpmc_create(MPMC_SIZE);
+    pool->result_queue = mpmc_create(MPMC_SIZE);
+
+    pthread_mutex_init(&pool->mutex, NULL);
+    pthread_cond_init(&pool->done_task, NULL);
 
     for (i = 0; i < executors_count; i++)
     {
         pool->executors[i].id = i;
-        pthread_mutex_init(&pool->executors[i].mutex, NULL);
-        pthread_cond_init(&pool->executors[i].has_task, NULL);
-        pthread_cond_init(&pool->executors[i].done_task, NULL);
         pool->executors[i].stop = B8_FALSE;
-        pool->executors[i].done = B8_FALSE;
-        pool->executors[i].task.fn = NULL;
-        pool->executors[i].task.arg = NULL;
-        pool->executors[i].task.len = 0;
-        pool->executors[i].task.result = NULL_OBJ;
         pthread_create(&pool->executors[i].handle, NULL, executor_run, &pool->executors[i]);
     }
 
     return pool;
 }
 
-nil_t pool_run(pool_p pool, u64_t executor_id, task_fn fn, raw_p arg, u64_t len)
-{
-    executor_t *executor = &pool->executors[executor_id];
-
-    pthread_mutex_lock(&executor->mutex);
-
-    // borrow heap
-    heap_borrow(executor->heap);
-
-    executor->task.fn = fn;
-    executor->task.arg = arg;
-    executor->task.len = len;
-    executor->task.result = NULL_OBJ;
-    executor->done = B8_FALSE;
-
-    pthread_cond_signal(&executor->has_task);
-    pthread_mutex_unlock(&executor->mutex);
-}
-
-nil_t pool_wait(pool_p pool, u64_t executor_id)
-{
-    executor_t *executor = &pool->executors[executor_id];
-
-    pthread_mutex_lock(&executor->mutex);
-
-    while (!executor->done)
-        pthread_cond_wait(&executor->done_task, &executor->mutex);
-
-    // merge heap
-    heap_merge(executor->heap);
-
-    pthread_mutex_unlock(&executor->mutex);
-}
-
-obj_p pool_collect(pool_p pool, obj_p x)
-{
-    u64_t i;
-    obj_p v, lst;
-    u64_t n = pool->executors_count;
-
-    if (is_error(x))
-    {
-        for (i = 0; i < n; i++)
-            drop_obj(pool->executors[i].task.result);
-
-        return x;
-    }
-
-    lst = vector(x->type, n + 1);
-
-    for (i = 0; i < n; i++)
-    {
-        v = pool->executors[i].task.result;
-        if (is_error(v))
-        {
-            v = clone_obj(v);
-            lst->len = i;
-            drop_obj(lst);
-
-            for (i = 0; i < n; i++)
-                drop_obj(pool->executors[i].task.result);
-
-            return v;
-        }
-
-        ins_obj(&lst, i, v);
-    }
-
-    ins_obj(&lst, n, x);
-
-    return lst;
-}
-
-u64_t pool_executors_count(pool_p pool)
-{
-    if (pool)
-        return pool->executors_count;
-    else
-        return 0;
-}
-
-nil_t pool_stop(pool_p pool)
+nil_t pool_destroy(pool_p pool)
 {
     u64_t i;
 
@@ -179,16 +110,105 @@ nil_t pool_stop(pool_p pool)
         pool->executors[i].stop = B8_TRUE;
         pthread_cond_signal(&pool->executors[i].has_task);
         pthread_mutex_unlock(&pool->executors[i].mutex);
+
         if (pthread_join(pool->executors[i].handle, NULL) != 0)
-            printf("Failed to join thread %lld\n", i);
+            printf("Pool destroy: failed to join thread %lld\n", i);
+
         pthread_mutex_destroy(&pool->executors[i].mutex);
         pthread_cond_destroy(&pool->executors[i].has_task);
-        pthread_cond_destroy(&pool->executors[i].done_task);
+        pthread_cond_destroy(&pool->done_task);
+    }
+
+    pthread_mutex_destroy(&pool->mutex);
+    pthread_cond_destroy(&pool->done_task);
+
+    mpmc_destroy(pool->task_queue);
+    mpmc_destroy(pool->result_queue);
+
+    heap_unmap(pool, sizeof(struct pool_t) + sizeof(executor_t) * pool->executors_count);
+}
+
+nil_t pool_prepare(pool_p pool)
+{
+    if (!pool)
+        return;
+
+    u64_t i, n;
+    obj_p env = interpreter_env_get();
+
+    debug_obj(env);
+    n = pool->executors_count;
+    pool->done_count = 0;
+
+    for (i = 0; i < n; i++)
+    {
+        heap_borrow(pool->executors[i].heap);
+        interpreter_env_set(pool->executors[i].interpreter, env);
     }
 }
 
-nil_t pool_free(pool_p pool)
+nil_t pool_add_task(pool_p pool, u64_t id, task_fn fn, raw_p arg, u64_t len)
 {
-    pool_stop(pool);
-    heap_unmap(pool, sizeof(struct pool_t) + sizeof(executor_t) * pool->executors_count);
+    mpmc_push(pool->task_queue, (mpmc_data_t){id, .in = {fn, arg, len}});
+}
+
+obj_p pool_run(pool_p pool, u64_t tasks_count)
+{
+    u64_t i;
+    obj_p res;
+    mpmc_data_t data;
+    executor_t *executor;
+
+    // wake up all executors
+    for (i = 0; i < pool->executors_count; i++)
+    {
+        executor = &pool->executors[i];
+        pthread_mutex_lock(&executor->mutex);
+        pthread_cond_signal(&executor->has_task);
+        pthread_mutex_unlock(&executor->mutex);
+    }
+
+    // process tasks on self too
+    for (;;)
+    {
+        data = mpmc_pop(pool->task_queue);
+
+        // Nothing to do
+        if (data.id == -1)
+            break;
+
+        // execute task
+        res = data.in.fn(data.in.arg, data.in.len);
+        mpmc_push(pool->result_queue, (mpmc_data_t){data.id, .out = {data.in.fn, data.in.arg, data.in.len, res}});
+        pthread_mutex_lock(&pool->mutex);
+        pool->done_count++;
+        pthread_mutex_unlock(&pool->mutex);
+    }
+
+    pthread_mutex_lock(&pool->mutex);
+
+    // wait for all tasks to be done
+    while (pool->done_count < tasks_count)
+        pthread_cond_wait(&pool->done_task, &pool->mutex);
+
+    pthread_mutex_unlock(&pool->mutex);
+
+    // collect results
+    res = vector(TYPE_LIST, tasks_count);
+
+    for (i = 0; i < tasks_count; i++)
+    {
+        data = mpmc_pop(pool->result_queue);
+        ins_obj(&res, data.id, data.out.result);
+    }
+
+    return res;
+}
+
+u64_t pool_executors_count(pool_p pool)
+{
+    if (pool)
+        return pool->executors_count;
+    else
+        return 0;
 }

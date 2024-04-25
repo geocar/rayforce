@@ -109,7 +109,7 @@ typedef struct selector_t
         i64_t bytes_transfered;
         i64_t size;
         u8_t *buf;
-        queue_t queue; // queue for async messages waiting to be sent
+        queue_p queue; // queue for async messages waiting to be sent
     } tx;
 
 } *selector_p;
@@ -128,7 +128,7 @@ typedef struct poll_t
 } *poll_p;
 
 poll_p poll_init(i64_t port);
-nil_t poll_cleanup(poll_p poll);
+nil_t poll_destroy(poll_p poll);
 i64_t poll_run(poll_p poll);
 i64_t poll_register(poll_p poll, i64_t fd, u8_t version);
 nil_t poll_deregister(poll_p poll, i64_t id);

@@ -51,7 +51,7 @@ i32_t main(i32_t argc, str_p argv[])
   info = &runtime_get()->sys_info;
   print_logo(info);
   code = runtime_run();
-  runtime_cleanup();
+  runtime_destroy();
 
   return code;
 }

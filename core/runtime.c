@@ -190,20 +190,20 @@ i32_t runtime_run(nil_t)
     return 0;
 }
 
-nil_t runtime_cleanup(nil_t)
+nil_t runtime_destroy(nil_t)
 {
     drop_obj(__RUNTIME->args);
     if (__RUNTIME->poll)
-        poll_cleanup(__RUNTIME->poll);
+        poll_destroy(__RUNTIME->poll);
     symbols_free(__RUNTIME->symbols);
     heap_unmap(__RUNTIME->symbols, sizeof(struct symbols_t));
     free_env(&__RUNTIME->env);
     drop_obj(__RUNTIME->fds);
-    interpreter_free();
+    interpreter_destroy();
     if (__RUNTIME->pool)
-        pool_free(__RUNTIME->pool);
+        pool_destroy(__RUNTIME->pool);
     heap_unmap(__RUNTIME, sizeof(struct runtime_t));
-    heap_cleanup();
+    heap_destroy();
     __RUNTIME = NULL;
 }
 
