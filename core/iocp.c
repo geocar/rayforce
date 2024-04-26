@@ -571,7 +571,7 @@ i64_t poll_run(poll_p poll)
                         poll->code = 0;
                         break;
                     }
-                    str = string_from_str(__STDIN_BUF, size);
+                    str = cstring_from_str(__STDIN_BUF, size);
                     res = ray_eval_str(str, poll->replfile);
                     drop_obj(str);
                     io_write(STDOUT_FILENO, MSG_TYPE_RESP, res);

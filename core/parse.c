@@ -1058,8 +1058,8 @@ obj_p parser_advance(parser_t *parser)
     if (((*parser->current) == '-' && is_digit(*(parser->current + 1))) || is_digit(*parser->current))
         return parse_number(parser);
 
-    if (is_alpha(*parser->current) || is_op(*parser->current))
-        return parse_symbol(parser);
+    if ((*parser->current) == '\\')
+        return parse_command(parser);
 
     if ((*parser->current) == '\'')
         return parse_char(parser);
@@ -1067,8 +1067,8 @@ obj_p parser_advance(parser_t *parser)
     if ((*parser->current) == '"')
         return parse_string(parser);
 
-    if ((*parser->current) == '\\')
-        return parse_command(parser);
+    if (is_alpha(*parser->current) || is_op(*parser->current))
+        return parse_symbol(parser);
 
     if (at_term(*parser->current))
     {

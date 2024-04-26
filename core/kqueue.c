@@ -417,7 +417,7 @@ i64_t poll_run(poll_p poll)
                 len = read(STDIN_FILENO, __STDIN_BUF, BUF_SIZE);
                 if (len > 1)
                 {
-                    str = string_from_str((str_p)__STDIN_BUF, len - 1);
+                    str = cstring_from_str((str_p)__STDIN_BUF, len - 1);
                     res = ray_eval_str(str, poll->replfile);
                     drop_obj(str);
                     io_write(STDOUT_FILENO, MSG_TYPE_RESP, res);
