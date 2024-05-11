@@ -104,7 +104,7 @@ nil_t list_examples(obj_p *dst)
     DIR *dir;
     struct dirent *entry;
 
-    str_fmt_into(dst, -1, "\n-- Here is the list of examples:\n");
+    str_fmt_into(dst, -1, "\n  -- Here is the list of examples:\n");
 
     // Attempt to open the directory
     dir = opendir("examples/");
@@ -116,13 +116,13 @@ nil_t list_examples(obj_p *dst)
     {
         if (strncmp(entry->d_name, ".", 1) == 0 || strncmp(entry->d_name, "..", 2) == 0)
             continue;
-        str_fmt_into(dst, -1, "|- %s\n", entry->d_name);
+        str_fmt_into(dst, -1, "  |- %s\n", entry->d_name);
     }
 
     // Close the directory
     closedir(dir);
 
-    str_fmt_into(dst, -1, "-- To try an example, type: (load \"examples/<example_name>)\"\n");
+    str_fmt_into(dst, -1, "  -- To try an example, type: (load \"examples/<example_name>)\"\n");
 
     return;
 }

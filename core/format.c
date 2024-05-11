@@ -51,9 +51,9 @@
 #define NO_LIMIT -1
 
 const lit_p unicode_glyphs[] = {"│", "─", "┌", "┐", "└", "┘", "├", "┤", "┬", "┴", "┼", "↪", "∶",
-                                "‾", "•", "╭", "╰", "╮", "╯", "…"};
+                                "‾", "•", "╭", "╰", "╮", "╯", "┆", "…"};
 const lit_p ascii_glyphs[] = {"|", "-", "+", "+", "+", "+", "+", "+", "+", "+", "+", ">", ":",
-                              "~", "*", "|", "|", "|", "|", "."};
+                              "~", "*", "|", "|", "|", "|", ":", "."};
 
 static b8_t __USE_UNICODE = B8_TRUE;
 
@@ -78,7 +78,8 @@ typedef enum
     GLYPH_BL_CURLY,
     GLYPH_TR_CURLY,
     GLYPH_BR_CURLY,
-    GLYPH_DOTS
+    GLYPH_VDOTS,
+    GLYPH_HDOTS,
 } glyph_t;
 
 #define maxn(n, e)         \
@@ -271,7 +272,7 @@ i64_t glyph_fmt_into(obj_p *dst, glyph_t glyph, b8_t unicode)
 
     switch (glyph)
     {
-    case GLYPH_DOTS:
+    case GLYPH_HDOTS:
         return str_fmt_into(dst, 4, "...");
     default:
         return str_fmt_into(dst, 2, "%s", ascii_glyphs[glyph]);
@@ -883,31 +884,35 @@ i64_t dict_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj)
 
 i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
 {
-    i64_t *header = as_symbol(as_list(obj)[0]);
+    i64_t *header, i, j, n, m, l, table_width, table_height, total_width, rows, cols;
     obj_p s, column, columns = as_list(obj)[1], column_widths,
-                     formatted_columns[TABLE_MAX_WIDTH][TABLE_MAX_HEIGHT] = {{NULL_OBJ}};
+                     footer, formatted_columns[TABLE_MAX_WIDTH][TABLE_MAX_HEIGHT] = {{NULL_OBJ}};
     str_p p;
-    i64_t i, j, n, m, l, table_width, table_height;
     b8_t unicode = __USE_UNICODE;
+
+    header = as_symbol(as_list(obj)[0]);
+    total_width = 0;
 
     if (!full)
     {
         n = str_fmt_into(dst, 8, "(table ");
         n += obj_fmt_into(dst, indent, MAX_ROW_WIDTH, B8_FALSE, as_list(obj)[0]);
-        n += glyph_fmt_into(dst, GLYPH_DOTS, unicode);
+        n += glyph_fmt_into(dst, GLYPH_HDOTS, unicode);
         n += str_fmt_into(dst, 2, ")");
 
         return n;
     }
 
-    table_width = (as_list(obj)[0])->len;
+    cols = (as_list(obj)[0])->len;
+    table_width = cols;
     if (table_width == 0)
         return str_fmt_into(dst, 7, "@table");
 
     if (table_width > TABLE_MAX_WIDTH)
         table_width = TABLE_MAX_WIDTH;
 
-    table_height = ops_count(obj);
+    rows = ops_count(obj);
+    table_height = rows;
     if (table_height > TABLE_MAX_HEIGHT)
         table_height = TABLE_MAX_HEIGHT;
 
@@ -919,8 +924,8 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
         // First check the column name
         l = strlen(strof_sym(header[i]));
 
-        // Then traverse column until maximum height limit
-        for (j = 0; j < table_height; j++)
+        // Then traverse first n elements of column
+        for (j = 0; j < table_height / 2; j++)
         {
             column = as_list(columns)[i];
             s = NULL_OBJ;
@@ -929,7 +934,42 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
             maxn(l, m);
         }
 
+        // Traverse the rest of the column
+        for (; j < table_height; j++)
+        {
+            column = as_list(columns)[i];
+            s = NULL_OBJ;
+            if (table_height == rows)
+                m = raw_fmt_into(&s, 0, 38, column, j);
+            else
+                m = raw_fmt_into(&s, 0, 38, column, rows - table_height + j - 1);
+            formatted_columns[i][j] = s;
+            maxn(l, m);
+        }
+
         as_i64(column_widths)[i] = l + 2; // Add 2 for padding
+        total_width += as_i64(column_widths)[i];
+    }
+
+    total_width += table_width - 1;
+
+    // calculate width of the footer
+    footer = str_fmt(NO_LIMIT, " %lld rows (%lld shown) %lld columns (%lld shown)", rows, table_height, cols, table_width);
+
+    if (total_width < (i64_t)footer->len)
+    {
+        as_i64(column_widths)[table_width - 1] += (i64_t)footer->len - total_width;
+        total_width = (i64_t)footer->len;
+
+        for (i = 0; i < table_width - 1; i++)
+        {
+            // Adjust width to '...' if it's less than 4
+            if (as_i64(column_widths)[i] < 4)
+            {
+                total_width += 4 - as_i64(column_widths)[i];
+                as_i64(column_widths)[i] = 4;
+            }
+        }
     }
 
     // Top border of the table
@@ -976,6 +1016,27 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
     {
         n += str_fmt_into(dst, 2, "\n");
         n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
+
+        // Indicate missing rows
+        if (j == table_height / 2 && table_height != rows)
+        {
+            n += glyph_fmt_into(dst, GLYPH_VDOTS, unicode);
+            for (i = 0; i < table_width; i++)
+            {
+                n += str_fmt_into(dst, 2, " ");
+                l = n;
+                n += glyph_fmt_into(dst, GLYPH_HDOTS, unicode);
+                l = n - l;
+                if (unicode)
+                    m = as_i64(column_widths)[i] - l + 1;
+                else
+                    m = as_i64(column_widths)[i] - l - 1;
+                n += str_fmt_into_n(dst, NO_LIMIT, m, " ");
+                n += glyph_fmt_into(dst, GLYPH_VDOTS, unicode);
+            }
+            n += str_fmt_into(dst, 2, "\n");
+        }
+
         n += glyph_fmt_into(dst, GLYPH_VLINE, unicode);
 
         for (i = 0; i < table_width; i++)
@@ -994,7 +1055,7 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
     // Bottom border of the table
     n += str_fmt_into(dst, 2, "\n");
     n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
-    n += glyph_fmt_into(dst, GLYPH_BL_CORNER, unicode);
+    n += glyph_fmt_into(dst, GLYPH_L_TEE, unicode);
     for (i = 0; i < table_width; i++)
     {
         for (j = 0; j < as_i64(column_widths)[i]; j++)
@@ -1002,16 +1063,40 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
         if (i < table_width - 1)
             n += glyph_fmt_into(dst, GLYPH_B_TEE, unicode);
         else
-            n += glyph_fmt_into(dst, GLYPH_BR_CORNER, unicode);
+            n += glyph_fmt_into(dst, GLYPH_R_TEE, unicode);
     }
 
     drop_obj(column_widths);
 
-    if ((table_height > 0) && ((u64_t)table_height < as_list(columns)[0]->len))
+    // Draw missing rows
+    if ((table_height > 0) && (table_height < cols))
     {
         n += str_fmt_into(dst, 2, "\n");
-        n += glyph_fmt_into(dst, GLYPH_DOTS, unicode);
+        n += glyph_fmt_into(dst, GLYPH_HDOTS, unicode);
     }
+
+    // Draw info footer
+    n += str_fmt_into(dst, 2, "\n");
+    n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
+    n += glyph_fmt_into(dst, GLYPH_VLINE, unicode);
+    m = n;
+    n += str_fmt_into(dst, NO_LIMIT, "%.*s", (i32_t)footer->len, as_string(footer));
+    drop_obj(footer);
+    m = n - m;
+
+    for (i = 0; i < total_width - m; i++)
+        n += str_fmt_into(dst, 2, " ");
+
+    n += glyph_fmt_into(dst, GLYPH_VLINE, unicode);
+    n += str_fmt_into(dst, 2, "\n");
+
+    m = n;
+    n += glyph_fmt_into(dst, GLYPH_BL_CORNER, unicode);
+    m = n - m;
+    for (i = 0; i < total_width; i++)
+        n += glyph_fmt_into(dst, GLYPH_HLINE, unicode);
+
+    n += glyph_fmt_into(dst, GLYPH_BR_CORNER, unicode);
 
     return n;
 }

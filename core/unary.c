@@ -323,3 +323,13 @@ obj_p ray_bins(obj_p x)
 
     return res;
 }
+
+obj_p ray_graphic_format(obj_p x)
+{
+    if (x->type != -TYPE_B8)
+        return error(ERR_TYPE, "graphic_format: expected bool, got: '%s'", type_name(x->type));
+
+    use_unicode(x->b8);
+
+    return null(0);
+}

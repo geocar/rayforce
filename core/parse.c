@@ -39,9 +39,10 @@
 #include "error.h"
 
 #define COMMANDS_LIST "\
-  \\?  - Displays help.\n\
-  \\t  - Measures the execution time of an expression.\n\
-  \\\\  - Exits the application."
+  :?  - Displays help.\n\
+  :t  - Measures the execution time of an expression.\n\
+  :g  - Use rich graphic formatting.\n\
+  :q  - Exits the application."
 
 span_t span_start(parser_t *parser)
 {
@@ -954,7 +955,7 @@ obj_p parse_command(parser_t *parser)
     obj_p v, err;
     span_t span = span_start(parser);
 
-    shift(parser, 1); // skip '\'
+    shift(parser, 1); // skip ':'
 
     if ((*parser->current) == '?')
     {
@@ -971,14 +972,23 @@ obj_p parse_command(parser_t *parser)
 
         return vn_list(2, env_get_internal_function("time"), v);
     }
-    if ((*parser->current) == '\\')
+    if ((*parser->current) == 'q')
     {
         shift(parser, 1);
         return vn_list(1, env_get_internal_function("exit"));
     }
+    if ((*parser->current) == 'g')
+    {
+        shift(parser, 1);
+        v = parse_do(parser);
+        if (is_error(v))
+            return v;
+
+        return vn_list(2, env_get_internal_function("graphic"), v);
+    }
 
     nfo_insert(parser->nfo, parser->count, span);
-    err = parse_error(parser, parser->count++, str_fmt(-1, "Invalid command. Type '\\?' for commands list."));
+    err = parse_error(parser, parser->count++, str_fmt(-1, "Invalid command. Type ':?' for commands list."));
     return err;
 }
 
@@ -1057,9 +1067,6 @@ obj_p parser_advance(parser_t *parser)
 
     if (((*parser->current) == '-' && is_digit(*(parser->current + 1))) || is_digit(*parser->current))
         return parse_number(parser);
-
-    if ((*parser->current) == '\\')
-        return parse_command(parser);
 
     if ((*parser->current) == '\'')
         return parse_char(parser);
@@ -1140,6 +1147,9 @@ obj_p parse(lit_p input, obj_p nfo)
         .column = 0,
         .replace_symbols = B8_TRUE,
     };
+
+    if (*parser.current == ':')
+        return parse_command(&parser);
 
     res = parse_do(&parser);
 

@@ -142,6 +142,7 @@ nil_t init_functions(obj_p functions)
     regf(functions,  "time",      TYPE_UNARY,    FN_NONE | FN_SPECIAL_FORM, ray_time);
     regf(functions,  "bins",      TYPE_UNARY,    FN_NONE,                   ray_bins);
     regf(functions,  "update",    TYPE_UNARY,    FN_NONE,                   ray_update);
+    regf(functions,  "graphic",   TYPE_UNARY,    FN_NONE,                   ray_graphic_format);
     
     // Binary           
     regf(functions,  "try",       TYPE_BINARY,   FN_NONE | FN_SPECIAL_FORM, try_obj);
