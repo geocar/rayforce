@@ -1068,13 +1068,6 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj)
 
     drop_obj(column_widths);
 
-    // Draw missing rows
-    if ((table_height > 0) && (table_height < cols))
-    {
-        n += str_fmt_into(dst, 2, "\n");
-        n += glyph_fmt_into(dst, GLYPH_HDOTS, unicode);
-    }
-
     // Draw info footer
     n += str_fmt_into(dst, 2, "\n");
     n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
