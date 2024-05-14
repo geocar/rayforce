@@ -414,15 +414,5 @@ i64_t hash_cmp_guid(i64_t a, i64_t b, raw_p seed)
 {
     unused(seed);
     guid_t *g1 = (guid_t *)a, *g2 = (guid_t *)b;
-    i64_t i;
-
-    for (i = 0; i < 16; i++)
-    {
-        if (g1->buf[i] < g2->buf[i])
-            return -1;
-        if (g1->buf[i] > g2->buf[i])
-            return 1;
-    }
-
-    return 0;
+    return memcmp(g1->buf, g2->buf, sizeof(guid_t));
 }
