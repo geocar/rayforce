@@ -425,14 +425,13 @@ nil_t heap_merge(heap_p heap)
     heap->avail = 0;
 }
 
-str_p heap_intern(lit_p s, u64_t len)
+str_p heap_intern(u64_t len)
 {
     str_p str;
 
     // add node if there is no space left
-    if (((u64_t)__HEAP->string_curr + len + 1) >= (u64_t)__HEAP->string_node)
+    if (((u64_t)__HEAP->string_curr + len) >= (u64_t)__HEAP->string_node)
     {
-        debug("-- HEAP[%lld]: adding string node", __HEAP->id);
         if (mmap_commit(__HEAP->string_node, STRING_NODE_SIZE) != 0)
         {
             perror("mmap_commit");
@@ -442,21 +441,22 @@ str_p heap_intern(lit_p s, u64_t len)
         __HEAP->string_node += STRING_NODE_SIZE;
     }
 
-    str = __HEAP->string_curr;
-
     // Additional check before memcpy to prevent out of bounds write
-    if (__HEAP->string_curr + len + 1 > __HEAP->string_pool + STRING_POOL_SIZE)
+    if (__HEAP->string_curr + len > __HEAP->string_pool + STRING_POOL_SIZE)
     {
         fprintf(stderr, "Error: Out of bounds write attempt\n");
         return NULL;
     }
 
-    memcpy(str, s, len);
-    str[len] = '\0';
-
-    __HEAP->string_curr += len + 1;
+    str = __HEAP->string_curr;
+    __HEAP->string_curr += len;
 
     return str;
+}
+
+nil_t heap_untern(u64_t len)
+{
+    __HEAP->string_curr -= len;
 }
 
 memstat_t heap_memstat(nil_t)

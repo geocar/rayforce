@@ -81,7 +81,8 @@ nil_t heap_unmap(raw_p ptr, u64_t size);
 i64_t heap_gc(nil_t);
 nil_t heap_borrow(heap_p heap);
 nil_t heap_merge(heap_p heap);
-str_p heap_intern(lit_p s, u64_t len);
+str_p heap_intern(u64_t len);
+nil_t heap_untern(u64_t len);
 memstat_t heap_memstat(nil_t);
 nil_t heap_print_blocks(heap_p heap);
 

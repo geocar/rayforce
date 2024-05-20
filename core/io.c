@@ -378,8 +378,8 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t
     num_batches = pool_executors_count(pool) + 1; // Number of batches is equal to the number of executors plus the main thread
 
     // TODO: Uncomment to enable parallel batch processing
-    // if (num_batches == 1 || total_lines <= num_batches)
-    return parse_csv_range(types, num_types, buf, size, total_lines, 0, cols, sep);
+    if (num_batches == 1 || total_lines <= num_batches)
+        return parse_csv_range(types, num_types, buf, size, total_lines, 0, cols, sep);
 
     csv_parse_ctx_t ctx[num_batches];
     lines_per_batch = (total_lines + num_batches - 1) / num_batches; // Calculate lines per batch

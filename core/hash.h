@@ -57,6 +57,7 @@ i64_t ht_bk_insert_par(ht_bk_p ht, i64_t key, i64_t val);
 i64_t ht_bk_insert_with(ht_bk_p ht, i64_t key, i64_t val,
                         hash_f hash, cmp_f cmp, raw_p seed);
 i64_t ht_bk_insert_str(ht_bk_p ht, lit_p str, u64_t len, i64_t id, str_p *key);
+i64_t ht_bk_insert_str_par(ht_bk_p ht, lit_p str, u64_t len, i64_t id, str_p *key);
 i64_t ht_bk_get(ht_bk_p ht, i64_t key);
 
 // Knuth's multiplicative hash

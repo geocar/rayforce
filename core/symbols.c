@@ -32,6 +32,7 @@
 #include "util.h"
 #include "runtime.h"
 #include "ops.h"
+#include "atomic.h"
 
 #define SYMBOLS_HT_SIZE 1024 * 1024
 
@@ -61,9 +62,9 @@ i64_t symbols_intern(lit_p s, u64_t len)
     symbols_p symbols = runtime_get()->symbols;
 
     // insert new symbol
-    new_id = symbols->count;
+    new_id = __atomic_load_n(&symbols->count, __ATOMIC_RELAXED);
 
-    id = ht_bk_insert_str(symbols->str_to_id, s, len, new_id, &str);
+    id = ht_bk_insert_str_par(symbols->str_to_id, s, len, new_id, &str);
 
     // Already exists
     if (new_id != id)
@@ -72,7 +73,9 @@ i64_t symbols_intern(lit_p s, u64_t len)
     // insert id into id_to_str
     ht_bk_insert_par(symbols->id_to_str, new_id, (i64_t)str);
 
-    return symbols->count++;
+    __atomic_fetch_add(&symbols->count, 1, __ATOMIC_RELAXED);
+
+    return new_id;
 }
 
 str_p symbols_strof(i64_t key)

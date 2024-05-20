@@ -32,6 +32,7 @@
 #include "util.h"
 #include "eval.h"
 #include "error.h"
+#include "atomic.h"
 
 /*
  * Simplefied version of murmurhash
@@ -407,52 +408,6 @@ i64_t ht_bk_insert(ht_bk_p ht, i64_t key, i64_t val)
     return val;
 }
 
-i64_t ht_bk_insert_par(ht_bk_p ht, i64_t key, i64_t val)
-{
-    i64_t index;
-    bucket_p bucket;
-
-    index = key % ht->size;
-
-    bucket = ht->table[index];
-
-    if (bucket == NULL)
-    {
-        bucket = (bucket_p)heap_alloc(sizeof(struct bucket_t));
-        if (bucket == NULL)
-            return NULL_I64;
-
-        bucket->key = key;
-        bucket->val = val;
-        bucket->next = NULL;
-        ht->table[index] = bucket;
-        ht->count++;
-
-        return val;
-    }
-
-    while (bucket != NULL)
-    {
-        if (bucket->key == key)
-            return bucket->val;
-
-        bucket = bucket->next;
-    }
-
-    // Key does not exist, insert a new bucket
-    bucket = (bucket_p)heap_alloc(sizeof(struct bucket_t));
-    if (bucket == NULL)
-        return NULL_I64;
-
-    bucket->key = key;
-    bucket->val = val;
-    bucket->next = ht->table[index];
-    ht->table[index] = bucket;
-    ht->count++;
-
-    return val;
-}
-
 i64_t ht_bk_insert_with(ht_bk_p ht, i64_t key, i64_t val, hash_f hash, cmp_f cmp, raw_p seed)
 {
     i64_t index;
@@ -499,6 +454,96 @@ i64_t ht_bk_insert_with(ht_bk_p ht, i64_t key, i64_t val, hash_f hash, cmp_f cmp
     return val;
 }
 
+i64_t ht_bk_insert_par(ht_bk_p ht, i64_t key, i64_t val)
+{
+    i64_t index;
+    bucket_p new_bucket, current_bucket, b;
+
+    // if ((atomic_load(&ht->count) + 1) > (ht->size * 0.75)) {
+    //     ht_bk_rehash(&ht, ht->size * 2);
+    // }
+
+    index = key % ht->size;
+
+    new_bucket = (bucket_p)heap_alloc(sizeof(struct bucket_t));
+    if (new_bucket == NULL)
+        return NULL_I64;
+
+    new_bucket->key = key;
+    new_bucket->val = val;
+
+    for (;;)
+    {
+        current_bucket = __atomic_load_n(&ht->table[index], __ATOMIC_ACQUIRE);
+        b = current_bucket;
+
+        while (b != NULL)
+        {
+            if (b->key == key)
+            {
+                heap_free(new_bucket);
+                return b->val; // Key already exists
+            }
+
+            b = __atomic_load_n(&b->next, __ATOMIC_ACQUIRE);
+        }
+
+        new_bucket->next = current_bucket;
+        if (__atomic_compare_exchange_n(&ht->table[index], &current_bucket, new_bucket, 1, __ATOMIC_RELEASE, __ATOMIC_RELAXED))
+        {
+            __atomic_fetch_add(&ht->count, 1, __ATOMIC_RELAXED);
+            return val;
+        }
+    }
+}
+
+i64_t ht_bk_insert_str_par(ht_bk_p ht, lit_p str, u64_t len, i64_t id, str_p *key)
+{
+    i64_t index;
+    str_p intr;
+    bucket_p new_bucket, current_bucket, b;
+
+    index = str_hash(str, len) % ht->size;
+    intr = heap_intern(len + 1);
+
+    new_bucket = (bucket_p)heap_alloc(sizeof(struct bucket_t));
+    if (new_bucket == NULL)
+        return NULL_I64;
+
+    memcpy(intr, str, len);
+    intr[len] = '\0';
+
+    new_bucket->key = (i64_t)intr;
+    new_bucket->val = id;
+
+    for (;;)
+    {
+        current_bucket = __atomic_load_n(&ht->table[index], __ATOMIC_ACQUIRE);
+        b = current_bucket;
+
+        while (b != NULL)
+        {
+            if (strncmp((str_p)b->key, str, len) == 0)
+            {
+                heap_untern(len + 1);
+                heap_free(new_bucket);
+                return b->val;
+            }
+
+            b = __atomic_load_n(&b->next, __ATOMIC_ACQUIRE);
+        }
+
+        new_bucket->next = current_bucket;
+        if (__atomic_compare_exchange(&ht->table[index], &current_bucket, &new_bucket, 1, __ATOMIC_RELEASE, __ATOMIC_RELAXED))
+        {
+            __atomic_fetch_add(&ht->count, 1, __ATOMIC_RELAXED);
+            *key = intr;
+
+            return id;
+        }
+    }
+}
+
 i64_t ht_bk_insert_str(ht_bk_p ht, lit_p str, u64_t len, i64_t id, str_p *key)
 {
     i64_t index;
@@ -515,7 +560,9 @@ i64_t ht_bk_insert_str(ht_bk_p ht, lit_p str, u64_t len, i64_t id, str_p *key)
         if (bucket == NULL)
             return NULL_I64;
 
-        intr = heap_intern(str, len);
+        intr = heap_intern(len + 1);
+        memcpy(intr, str, len);
+        intr[len] = '\0';
 
         bucket->key = (i64_t)intr;
         bucket->val = id;
@@ -541,7 +588,9 @@ i64_t ht_bk_insert_str(ht_bk_p ht, lit_p str, u64_t len, i64_t id, str_p *key)
     if (bucket == NULL)
         return NULL_I64;
 
-    intr = heap_intern(str, len);
+    intr = heap_intern(len + 1);
+    memcpy(intr, str, len);
+    intr[len] = '\0';
 
     bucket->key = (i64_t)intr;
     bucket->val = id;

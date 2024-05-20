@@ -202,7 +202,7 @@ obj_p pool_run(pool_p pool, u64_t tasks_count)
     for (i = 0; i < n; i++)
     {
         heap_merge(pool->executors[i].heap);
-        interpreter_env_unset(pool->executors[i].interpreter);
+        // interpreter_env_unset(pool->executors[i].interpreter);
     }
 
     // collect results
