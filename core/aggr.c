@@ -102,7 +102,7 @@ obj_p aggr_sum(obj_p val, obj_p bins, obj_p filter)
         ctx[i].offset = i * chunk;
         ctx[i].val = val;
         ctx[i].bins = bins;
-        ctx[i].out = vector_i64(as_list(bins)[0]->i64);
+        ctx[i].out = vector(val->type, as_list(bins)[0]->i64);
 
         pool_add_task(pool, i, aggr_sum_ctx, NULL, &ctx[i], j);
     }
@@ -137,7 +137,7 @@ obj_p aggr_first_ctx(raw_p x, u64_t input_len)
     val = ctx->val;
     bins = ctx->bins;
     n = as_list(bins)[0]->i64;
-    min = as_list(ctx->bins)[1]->i64;
+    min = as_list(bins)[1]->i64;
 
     switch (val->type)
     {
@@ -172,7 +172,7 @@ obj_p aggr_first(obj_p val, obj_p bins, obj_p filter)
     obj_p res, part, parts;
 
     n = pool_executors_count(pool);
-
+    debug_obj(bins);
     if (n == 1)
     {
         struct aggr_ctx_t ctx = {0, val, bins, vector(val->type, as_list(bins)[0]->i64)};

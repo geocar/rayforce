@@ -93,34 +93,36 @@ typedef struct index_scope_ctx_t
 
 obj_p index_scope_ctx(raw_p x, u64_t n)
 {
-    i64_t i, min, max, *values;
+    u64_t i;
+    i64_t min, max, *values, *indices;
     index_scope_ctx_p ctx = (index_scope_ctx_p)x;
 
     values = ctx->values;
+    indices = ctx->indices;
 
-    // if (indices)
-    // {
-    //     min = max = values[indices[0]];
-    //     for (i = 0; i < len; i++)
-    //     {
-    //         min = values[indices[i]] < min ? values[indices[i]] : min;
-    //         max = values[indices[i]] > max ? values[indices[i]] : max;
-    //     }
-    // }
-    // else
-    // {
-    min = max = values[0];
-    for (i = 0; i < n; i++)
+    if (indices)
     {
-        min = values[i] < min ? values[i] : min;
-        max = values[i] > max ? values[i] : max;
+        min = max = values[indices[0]];
+        for (i = 0; i < n; i++)
+        {
+            min = values[indices[i]] < min ? values[indices[i]] : min;
+            max = values[indices[i]] > max ? values[indices[i]] : max;
+        }
+    }
+    else
+    {
+        min = max = values[0];
+        for (i = 0; i < n; i++)
+        {
+            min = values[i] < min ? values[i] : min;
+            max = values[i] > max ? values[i] : max;
+        }
+
+        ctx->min = min;
+        ctx->max = max;
     }
 
-    ctx->min = min;
-    ctx->max = max;
-
     return NULL_OBJ;
-    // }
 }
 
 index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
@@ -147,7 +149,7 @@ index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
         for (i = 0; i < chunks - 1; i++)
         {
             ctx[i].values = values + i * chunk;
-            // ctx[i].indices = indices + i * chunk;
+            ctx[i].indices = indices ? indices + i * chunk : NULL;
             ctx[i].min = ctx[i].values[0];
             ctx[i].max = ctx[i].values[0];
 
@@ -155,7 +157,7 @@ index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
         }
 
         ctx[i].values = values + i * chunk;
-        // ctx[i].indices = indices + i * chunk;
+        ctx[i].indices = indices ? indices + i * chunk : NULL;
         ctx[i].min = ctx[i].values[0];
         ctx[i].max = ctx[i].values[0];
 
@@ -573,7 +575,7 @@ obj_p index_group_i64_scoped(i64_t values[], i64_t indices[], u64_t len, const i
     obj_p keys, vals, ht;
 
     // use open addressing if range is compatible with the input length
-    if (scope.range <= len)
+    if (scope.range <= INDEX_SCOPE_LIMIT)
     {
         keys = vector_i64(scope.range);
         hk = as_i64(keys);
