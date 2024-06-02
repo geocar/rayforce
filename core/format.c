@@ -40,15 +40,19 @@
 #include "error.h"
 #include "filter.h"
 
-#define MAX_ROW_WIDTH 80
 #define FORMAT_TRAILER_SIZE 4
-#define F64_PRECISION 2
-#define TABLE_MAX_WIDTH 10      // Maximum number of columns
-#define TABLE_MAX_HEIGHT 20     // Maximum number of rows
-#define LIST_MAX_HEIGHT 5       // Maximum number of list/dict rows
 #define ERR_STACK_MAX_HEIGHT 10 // Maximum number of error stack frames
 #define MAX_ERROR_LEN 4096
 #define NO_LIMIT -1
+
+#define TABLE_MAX_WIDTH 10       // Maximum number of columns
+#define TABLE_MAX_HEIGHT 20      // Maximum number of rows
+#define LIST_MAX_HEIGHT 5        // Maximum number of list/dict rows
+#define DEFAULT_MAX_ROW_WIDTH 80 // Maximum number of characters in a row
+#define DEFAULT_F64_PRECISION 2  // Number of decimal places for floating point numbers
+
+static u32_t MAX_ROW_WIDTH = DEFAULT_MAX_ROW_WIDTH;
+static u32_t F64_PRECISION = DEFAULT_F64_PRECISION;
 
 const lit_p unicode_glyphs[] = {"│", "─", "┌", "┐", "└", "┘", "├", "┤", "┬", "┴", "┼", "↪", "∶",
                                 "‾", "•", "╭", "╰", "╮", "╯", "┆", "…"};
@@ -56,6 +60,32 @@ const lit_p ascii_glyphs[] = {"|", "-", "+", "+", "+", "+", "+", "+", "+", "+", 
                               "~", "*", "|", "|", "|", "|", ":", "."};
 
 static b8_t __USE_UNICODE = B8_TRUE;
+
+obj_p ray_set_fpr(obj_p x)
+{
+    if (x->type != -TYPE_I64)
+        return error(ERR_TYPE, "ray_set_fpr: expected 'i64, got %s", type_name(x->type));
+
+    if (x->i64 < 0)
+        F64_PRECISION = DEFAULT_F64_PRECISION;
+    else
+        F64_PRECISION = x->i64;
+
+    return NULL_OBJ;
+}
+
+obj_p ray_set_display_width(obj_p x)
+{
+    if (x->type != -TYPE_I64)
+        return error(ERR_TYPE, "ray_set_display_width: expected 'i64, got %s", type_name(x->type));
+
+    if (x->i64 < 0)
+        MAX_ROW_WIDTH = DEFAULT_MAX_ROW_WIDTH;
+    else
+        MAX_ROW_WIDTH = x->i64;
+
+    return NULL_OBJ;
+}
 
 typedef enum
 {
