@@ -84,7 +84,7 @@ sys_info_t sys_info(i32_t threads)
 
 #elif defined(__linux__)
     FILE *cpuFile = fopen("/proc/cpuinfo", "r");
-    c8_t line[256];
+    c8_t line[256] = {0};
 
     while (fgets(line, sizeof(line), cpuFile))
     {
@@ -94,7 +94,13 @@ sys_info_t sys_info(i32_t threads)
             info.cpu[strcspn(info.cpu, "\n")] = 0; // Remove the newline
             break;
         }
+        else
+        {
+            strncpy(info.cpu, "Unknown CPU", sizeof(info.cpu) - 1);
+            break;
+        }
     }
+
     fclose(cpuFile);
 
     FILE *memFile = fopen("/proc/meminfo", "r");
