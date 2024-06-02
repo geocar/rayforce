@@ -227,7 +227,7 @@ nil_t init_typenames(obj_p typenames)
     regt(typenames,   -TYPE_SYMBOL,    "symbol");
     regt(typenames,   -TYPE_TIMESTAMP, "timestamp");
     regt(typenames,   -TYPE_GUID,      "guid");
-    regt(typenames,    TYPE_B8,        "b8");
+    regt(typenames,    TYPE_B8,        "B8");
     regt(typenames,    TYPE_U8,        "Byte");
     regt(typenames,    TYPE_I64,       "I64");
     regt(typenames,    TYPE_F64,       "F64");
