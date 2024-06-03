@@ -85,25 +85,27 @@ nil_t __index_list_precalc_hash(obj_p cols, u64_t *out, u64_t ncols, u64_t nrows
 
 typedef struct index_scope_ctx_t
 {
+    u64_t len;
     i64_t *values;
     i64_t *indices;
     i64_t min;
     i64_t max;
 } *index_scope_ctx_p;
 
-obj_p index_scope_ctx(raw_p x, u64_t n)
+obj_p index_scope_ctx(raw_p x)
 {
-    u64_t i;
+    u64_t i, l;
     i64_t min, max, *values, *indices;
     index_scope_ctx_p ctx = (index_scope_ctx_p)x;
 
     values = ctx->values;
     indices = ctx->indices;
+    l = ctx->len;
 
     if (indices)
     {
         min = max = values[indices[0]];
-        for (i = 0; i < n; i++)
+        for (i = 0; i < l; i++)
         {
             min = values[indices[i]] < min ? values[indices[i]] : min;
             max = values[indices[i]] > max ? values[indices[i]] : max;
@@ -112,7 +114,7 @@ obj_p index_scope_ctx(raw_p x, u64_t n)
     else
     {
         min = max = values[0];
-        for (i = 0; i < n; i++)
+        for (i = 0; i < l; i++)
         {
             min = values[i] < min ? values[i] : min;
             max = values[i] > max ? values[i] : max;
@@ -136,8 +138,8 @@ index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
 
     if (chunks == 1)
     {
-        struct index_scope_ctx_t ctx = (struct index_scope_ctx_t){.values = values, .indices = indices};
-        index_scope_ctx(&ctx, len);
+        struct index_scope_ctx_t ctx = (struct index_scope_ctx_t){.len = len, .values = values, .indices = indices};
+        index_scope_ctx(&ctx);
         return (index_scope_t){ctx.min, ctx.max, (u64_t)(ctx.max - ctx.min + 1)};
     }
     else
@@ -148,20 +150,22 @@ index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
         chunk = len / chunks;
         for (i = 0; i < chunks - 1; i++)
         {
+            ctx[i].len = chunk;
             ctx[i].values = values + i * chunk;
             ctx[i].indices = indices ? indices + i * chunk : NULL;
             ctx[i].min = ctx[i].values[0];
             ctx[i].max = ctx[i].values[0];
 
-            pool_add_task(pool, i, index_scope_ctx, NULL, (raw_p)&ctx[i], chunk);
+            pool_add_task(pool, i, index_scope_ctx, NULL, (raw_p)&ctx[i]);
         }
 
+        ctx[i].len = len - i * chunk;
         ctx[i].values = values + i * chunk;
         ctx[i].indices = indices ? indices + i * chunk : NULL;
         ctx[i].min = ctx[i].values[0];
         ctx[i].max = ctx[i].values[0];
 
-        pool_add_task(pool, i, index_scope_ctx, NULL, (raw_p)&ctx[i], len - i * chunk);
+        pool_add_task(pool, i, index_scope_ctx, NULL, (raw_p)&ctx[i]);
         v = pool_run(pool, chunks);
         drop_obj(v);
 

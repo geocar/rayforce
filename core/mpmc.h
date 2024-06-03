@@ -29,22 +29,20 @@
 #define CACHELINE_SIZE 64
 
 typedef c8_t cachepad_t[CACHELINE_SIZE];
-typedef obj_p (*task_fn)(raw_p, u64_t);
-typedef nil_t (*drop_fn)(raw_p, u64_t);
+typedef obj_p (*task_fn)(raw_p);
+typedef nil_t (*drop_fn)(raw_p);
 
 typedef struct
 {
     task_fn fn;
     drop_fn drop;
     raw_p arg;
-    u64_t len;
 } mpmc_data_in_t;
 
 typedef struct
 {
     drop_fn drop;
     raw_p arg;
-    u64_t len;
     obj_p result;
 } mpmc_data_out_t;
 

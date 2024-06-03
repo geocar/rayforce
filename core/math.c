@@ -857,9 +857,9 @@ typedef struct
     i64_t sum;
 } sum_ctx_t;
 
-obj_p ray_sum_ctx(raw_p x, u64_t n)
+obj_p ray_sum_ctx(raw_p arg)
 {
-    sum_ctx_t *ctx = (sum_ctx_t *)x;
+    sum_ctx_t *ctx = (sum_ctx_t *)arg;
     u64_t i, l;
     i64_t isum, *xii;
 
@@ -911,12 +911,12 @@ obj_p ray_sum(obj_p x)
         {
             ctx[i].len = chunk;
             ctx[i].input = xii + i * chunk;
-            pool_add_task(pool, i, ray_sum_ctx, NULL, &ctx[i], chunk);
+            pool_add_task(pool, i, ray_sum_ctx, NULL, &ctx[i]);
         }
 
         ctx[chunks - 1].len = l - i * chunk;
         ctx[chunks - 1].input = xii + i * chunk;
-        pool_add_task(pool, i, ray_sum_ctx, NULL, &ctx[i], l - i * chunk);
+        pool_add_task(pool, i, ray_sum_ctx, NULL, &ctx[i]);
 
         res = pool_run(pool, chunks);
 

@@ -337,11 +337,11 @@ typedef struct csv_parse_ctx_t
     c8_t sep;
 } csv_parse_ctx_t;
 
-obj_p parse_csv_batch(raw_p x, u64_t n)
+obj_p parse_csv_batch(raw_p arg)
 {
-    unused(n);
-    csv_parse_ctx_t *ctx = (csv_parse_ctx_t *)x;
-    return parse_csv_range(ctx->types, ctx->num_types, ctx->buf, ctx->size, ctx->lines, ctx->start_line, ctx->cols, ctx->sep);
+    csv_parse_ctx_t *ctx = (csv_parse_ctx_t *)arg;
+    return parse_csv_range(ctx->types, ctx->num_types, ctx->buf,
+                           ctx->size, ctx->lines, ctx->start_line, ctx->cols, ctx->sep);
 }
 
 obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t total_lines, obj_p cols, c8_t sep)
@@ -405,7 +405,7 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t
         ctx[batch].cols = cols;
         ctx[batch].sep = sep;
 
-        pool_add_task(pool, batch, parse_csv_batch, NULL, &ctx[batch], 1);
+        pool_add_task(pool, batch, parse_csv_batch, NULL, &ctx[batch]);
     }
 
     pool_prepare(pool, num_batches);

@@ -102,7 +102,7 @@ i64_t mpmc_push(mpmc_p queue, mpmc_data_t data)
 mpmc_data_t mpmc_pop(mpmc_p queue)
 {
     cell_p cell;
-    mpmc_data_t data = {.id = -1, .in = {0, 0, 0, 0}};
+    mpmc_data_t data = {.id = -1, .in = {0, 0, 0}};
     i64_t pos, seq, dif;
     u64_t rounds = 0;
 

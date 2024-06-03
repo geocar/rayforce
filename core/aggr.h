@@ -27,6 +27,7 @@
 #include "rayforce.h"
 typedef struct aggr_ctx_t
 {
+    u64_t len;
     u64_t offset;
     obj_p val;
     obj_p bins;

@@ -35,9 +35,9 @@
 #include "runtime.h"
 #include "pool.h"
 
-obj_p aggr_sum_ctx(raw_p x, u64_t input_len)
+obj_p aggr_sum_ctx(raw_p arg)
 {
-    aggr_ctx_p ctx = (aggr_ctx_p)x;
+    aggr_ctx_p ctx = (aggr_ctx_p)arg;
     u64_t i, l, n;
     i64_t *xi, *xm, *xk, *xo, *ids, min;
     f64_t *xf, *fo;
@@ -45,6 +45,7 @@ obj_p aggr_sum_ctx(raw_p x, u64_t input_len)
 
     val = ctx->val;
     bins = ctx->bins;
+    l = ctx->len;
     n = as_list(bins)[0]->i64;
     min = as_list(ctx->bins)[1]->i64;
 
@@ -59,7 +60,7 @@ obj_p aggr_sum_ctx(raw_p x, u64_t input_len)
 
         memset(xo, 0, n * sizeof(i64_t));
 
-        for (i = 0; i < input_len; i++)
+        for (i = 0; i < l; i++)
         {
             n = xk[i] - min;
             xo[xm[n]] += xi[i];
@@ -70,6 +71,43 @@ obj_p aggr_sum_ctx(raw_p x, u64_t input_len)
         return error(ERR_TYPE, "sum: unsupported type: '%s'", type_name(val->type));
     }
 }
+
+// nil_t aggr_map(obj_p val, obj_p bins, obj_p filter)
+// {
+//     pool_p pool = runtime_get()->pool;
+//     u64_t i, j, l, n, chunk;
+
+//     n = pool_executors_count(pool);
+
+//     if (n == 1)
+//     {
+//         struct aggr_ctx_t ctx = {0, val, bins, vector_i64(as_list(bins)[0]->i64)};
+//         return aggr_sum_ctx(&ctx, val->len);
+//     }
+
+//     pool_prepare(pool, n);
+//     struct aggr_ctx_t ctx[n];
+
+//     l = val->len;
+//     chunk = l / n;
+
+//     for (i = 0; i < n; i++)
+//     {
+//         if (i == n - 1)
+//             j = l - i * chunk;
+//         else
+//             j = chunk;
+
+//         ctx[i].offset = i * chunk;
+//         ctx[i].val = val;
+//         ctx[i].bins = bins;
+//         ctx[i].out = vector(val->type, as_list(bins)[0]->i64);
+
+//         pool_add_task(pool, i, aggr_sum_ctx, NULL, &ctx[i], j);
+//     }
+
+//     parts = pool_run(pool, n);
+// }
 
 obj_p aggr_sum(obj_p val, obj_p bins, obj_p filter)
 {
@@ -82,8 +120,8 @@ obj_p aggr_sum(obj_p val, obj_p bins, obj_p filter)
 
     if (n == 1)
     {
-        struct aggr_ctx_t ctx = {0, val, bins, vector_i64(as_list(bins)[0]->i64)};
-        return aggr_sum_ctx(&ctx, val->len);
+        struct aggr_ctx_t ctx = {val->len, 0, val, bins, vector_i64(as_list(bins)[0]->i64)};
+        return aggr_sum_ctx(&ctx);
     }
 
     pool_prepare(pool, n);
@@ -99,12 +137,13 @@ obj_p aggr_sum(obj_p val, obj_p bins, obj_p filter)
         else
             j = chunk;
 
+        ctx[i].len = j;
         ctx[i].offset = i * chunk;
         ctx[i].val = val;
         ctx[i].bins = bins;
         ctx[i].out = vector(val->type, as_list(bins)[0]->i64);
 
-        pool_add_task(pool, i, aggr_sum_ctx, NULL, &ctx[i], j);
+        pool_add_task(pool, i, aggr_sum_ctx, NULL, &ctx[i]);
     }
 
     parts = pool_run(pool, n);
@@ -126,7 +165,7 @@ obj_p aggr_sum(obj_p val, obj_p bins, obj_p filter)
     return res;
 }
 
-obj_p aggr_first_ctx(raw_p x, u64_t input_len)
+obj_p aggr_first_ctx(raw_p x)
 {
     aggr_ctx_p ctx = (aggr_ctx_p)x;
     u64_t i, l, n;
@@ -136,6 +175,7 @@ obj_p aggr_first_ctx(raw_p x, u64_t input_len)
 
     val = ctx->val;
     bins = ctx->bins;
+    l = ctx->len;
     n = as_list(bins)[0]->i64;
     min = as_list(bins)[1]->i64;
 
@@ -152,7 +192,7 @@ obj_p aggr_first_ctx(raw_p x, u64_t input_len)
         for (i = 0; i < n; i++)
             xo[i] = NULL_I64;
 
-        for (i = 0; i < input_len; i++)
+        for (i = 0; i < l; i++)
         {
             n = xk[i] - min;
             xo[xm[n]] = xi[i];
@@ -175,8 +215,8 @@ obj_p aggr_first(obj_p val, obj_p bins, obj_p filter)
     debug_obj(bins);
     if (n == 1)
     {
-        struct aggr_ctx_t ctx = {0, val, bins, vector(val->type, as_list(bins)[0]->i64)};
-        return aggr_first_ctx(&ctx, val->len);
+        struct aggr_ctx_t ctx = {val->len, 0, val, bins, vector(val->type, as_list(bins)[0]->i64)};
+        return aggr_first_ctx(&ctx);
     }
 
     pool_prepare(pool, n);
@@ -192,12 +232,13 @@ obj_p aggr_first(obj_p val, obj_p bins, obj_p filter)
         else
             j = chunk;
 
+        ctx[i].len = j;
         ctx[i].offset = i * chunk;
         ctx[i].val = val;
         ctx[i].bins = bins;
         ctx[i].out = vector(val->type, as_list(bins)[0]->i64);
 
-        pool_add_task(pool, i, aggr_first_ctx, NULL, &ctx[i], j);
+        pool_add_task(pool, i, aggr_first_ctx, NULL, &ctx[i]);
     }
 
     parts = pool_run(pool, n);
