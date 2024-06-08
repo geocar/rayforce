@@ -84,7 +84,7 @@ obj_p aggr_sum_partial(raw_p arg)
 {
     aggr_partial_p partial = (aggr_partial_p)arg;
     u64_t i, l, n;
-    i64_t *xi, *xm, *xk, *xo, *ids, min;
+    i64_t *xi, *xm, *xk, *xo, *ids, shift;
     f64_t *xf, *fo;
     obj_p val, bins, res;
 
@@ -92,7 +92,7 @@ obj_p aggr_sum_partial(raw_p arg)
     bins = partial->bins;
     l = partial->len;
     n = as_list(bins)[0]->i64;
-    min = as_list(partial->bins)[1]->i64;
+    shift = as_list(partial->bins)[1]->i64;
 
     switch (val->type)
     {
@@ -107,7 +107,7 @@ obj_p aggr_sum_partial(raw_p arg)
 
         for (i = 0; i < l; i++)
         {
-            n = xk[i] - min;
+            n = xk[i] - shift;
             xo[xm[n]] = addi64(xo[xm[n]], xi[i]);
         }
 
@@ -124,7 +124,7 @@ obj_p aggr_sum_partial(raw_p arg)
 
         for (i = 0; i < l; i++)
         {
-            n = xk[i] - min;
+            n = xk[i] - shift;
             fo[xm[n]] = addf64(fo[xm[n]], xf[i]);
         }
 

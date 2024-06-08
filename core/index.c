@@ -575,11 +575,12 @@ obj_p index_group_i8(i8_t values[], i64_t indices[], u64_t len)
 obj_p index_group_i64_scoped(i64_t values[], i64_t indices[], u64_t len, const index_scope_t scope)
 {
     u64_t i, j, m, n;
-    i64_t idx, *hk, *hv, *hp;
+    i64_t idx, *hk, *hv, *hp, shift;
     obj_p keys, vals, ht;
 
     if (scope.range <= INDEX_SCOPE_LIMIT)
     {
+        shift = scope.min;
         keys = vector_i64(scope.range);
         hk = as_i64(keys);
 
@@ -588,12 +589,12 @@ obj_p index_group_i64_scoped(i64_t values[], i64_t indices[], u64_t len, const i
 
         for (i = 0, j = 0; i < len; i++)
         {
-            n = values[i] - scope.min;
+            n = values[i] - shift;
             if (hk[n] == NULL_I64)
                 hk[n] = j++;
         }
 
-        return vn_list(4, i64(j), i64(scope.min), keys, NULL_OBJ);
+        return vn_list(4, i64(j), i64(shift), keys, NULL_OBJ);
 
         vals = vector_i64(len);
         hv = as_i64(vals);
