@@ -31,20 +31,12 @@
 #include "runtime.h"
 #include "format.h"
 #include "parse.h"
+#include "env.h"
 
 #define COMMANDS_LIST "\
   :?  - Displays help.\n\
   :g  - Use rich graphic formatting: [0|1].\n\
   :q  - Exits the application: [exit code]."
-
-// List of autocomplete phrases
-const char *verbs[] = {
-    "sum",
-    "select",
-    "avg",
-};
-
-const u64_t verbs_size = sizeof(verbs) / sizeof(verbs[0]);
 
 term_p term_create()
 {
@@ -60,6 +52,7 @@ term_p term_create()
     tcsetattr(STDIN_FILENO, TCSANOW, &term->newattr);
 
     // Initialize the input buffer
+    term->buf_len = 0;
     term->buf_pos = 0;
 
     return term;
@@ -85,16 +78,17 @@ nil_t term_prompt(term_p term)
     drop_obj(prompt);
 }
 
-i64_t term_highlight_into(term_p term, u64_t pos, obj_p *dst)
+i64_t term_highlight_into(term_p term, obj_p *dst)
 {
     u64_t i, j, l, n, c;
+    str_p verb;
 
     n = str_fmt_into(dst, -1, "\r\033[K");
     n += prompt_fmt_into(dst);
 
-    l = term->buf_pos;
+    l = term->buf_len;
 
-    for (i = pos; i < l; i++)
+    for (i = 0; i < l; i++)
     {
         c = 0;
         switch (term->buf[i])
@@ -114,20 +108,40 @@ i64_t term_highlight_into(term_p term, u64_t pos, obj_p *dst)
         case ',':
             n += str_fmt_into(dst, -1, "%s%c%s", GRAY, term->buf[i], RESET);
             break;
+        case ':':
+            j = 1;
+            if (i == 0 && l > 1)
+            {
+                for (; j < l; j++)
+                {
+                    if (!is_alphanum(term->buf[j]) && term->buf[j] != '?')
+                        break;
+                }
 
+                i = j - 1;
+                c = 1;
+            }
+
+            n += str_fmt_into(dst, -1, "%s%.*s%s", GRAY, j, term->buf, RESET);
+
+            break;
         default:
             if ((i == 0 || !is_alpha(term->buf[i - 1])) && is_alpha(term->buf[i]))
             {
-                // try to find in a verbs list
-                for (j = 0; j < verbs_size; j++)
+                for (j = i + 1; j < l; j++)
                 {
-                    if (strncmp(verbs[j], term->buf + i, strlen(verbs[j])) == 0)
-                    {
-                        n += str_fmt_into(dst, -1, "%s%s%s%s", BOLD, GREEN, verbs[j], RESET);
-                        i += strlen(verbs[j]) - 1;
-                        c = 1;
+                    if (!is_alphanum(term->buf[j]) && term->buf[j] != '-')
                         break;
-                    }
+                }
+
+                // try to find in a verbs list
+                verb = env_get_internal_function_lit(term->buf + i, j);
+                if (verb != NULL)
+                {
+                    n += str_fmt_into(dst, -1, "%s%s%s%s", BOLD, GREEN, verb, RESET);
+                    i += strlen(verb) - 1;
+                    c = 1;
+                    break;
                 }
             }
             else if (is_op(term->buf[i]))
@@ -182,7 +196,7 @@ nil_t term_highlight(term_p term)
 {
     obj_p fmt = NULL_OBJ;
 
-    term_highlight_into(term, 0, &fmt);
+    term_highlight_into(term, &fmt);
     printf("%s", as_string(fmt));
     fflush(stdout);
     drop_obj(fmt);
@@ -190,11 +204,22 @@ nil_t term_highlight(term_p term)
 
 nil_t term_backspace(term_p term)
 {
-    if (term->buf_pos > 0)
+    if (term->buf_pos == 0)
+        return;
+    else if (term->buf_pos == term->buf_len)
     {
         term->buf_pos--;
         term->buf[term->buf_pos] = '\0';
+        term->buf_len--;
     }
+    else
+    {
+        memmove(term->buf + term->buf_pos - 1, term->buf + term->buf_pos, term->buf_len - term->buf_pos);
+        term->buf_len--;
+        term->buf_pos--;
+    }
+
+    term_highlight(term);
 }
 
 obj_p term_read(term_p term)
@@ -210,12 +235,12 @@ obj_p term_read(term_p term)
         {
         case '\n': // New line
             // Enter key pressed, process the input buffer
-            term->buf[term->buf_pos] = '\0';
+            term->buf[term->buf_len] = '\0';
 
             if (strncmp(term->buf, ":q", 2) == 0)
             {
                 if (term->buf_pos > 2)
-                    exit_code = i64_from_str(term->buf + 2, term->buf_pos - 3);
+                    exit_code = i64_from_str(term->buf + 2, term->buf_len - 3);
                 else
                     exit_code = 0;
 
@@ -228,9 +253,9 @@ obj_p term_read(term_p term)
                 res = NULL_OBJ;
             }
             else
-                res = (term->buf_pos) ? cstring_from_str(term->buf, term->buf_pos) : NULL_OBJ;
+                res = (term->buf_len) ? cstring_from_str(term->buf, term->buf_len) : NULL_OBJ;
 
-            term->buf_pos = 0;
+            term->buf_len = 0;
             term->history_index = 0;
 
             printf("\n");
@@ -240,7 +265,6 @@ obj_p term_read(term_p term)
         case 127:  // Del
         case '\b': // Backspace
             term_backspace(term);
-            term_highlight(term);
             return res;
         case '\t': // Tab
             // term_autocomplete(term);
@@ -278,8 +302,8 @@ obj_p term_read(term_p term)
             return res;
         default:
             // regular character
-            if (term->buf_pos < TERM_BUF_SIZE - 1)
-                term->buf[term->buf_pos++] = c;
+            if (term->buf_len < TERM_BUF_SIZE - 1)
+                term->buf[term->buf_len++] = c;
 
             term_highlight(term);
 

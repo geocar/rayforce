@@ -30,7 +30,7 @@ obj_p ray_hopen(obj_p x);
 obj_p ray_hclose(obj_p x);
 obj_p ray_read(obj_p x);
 obj_p ray_write(obj_p x, obj_p y);
-obj_p ray_csv(obj_p *x, i64_t n);
+obj_p ray_read_csv(obj_p *x, i64_t n);
 obj_p ray_parse(obj_p x);
 obj_p ray_eval(obj_p x);
 obj_p ray_load(obj_p x);

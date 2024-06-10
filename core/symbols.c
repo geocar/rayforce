@@ -103,21 +103,6 @@ static inline u64_t str_hash(lit_p str, u64_t len)
     return hash;
 }
 
-u64_t polynomial_rolling_hash(lit_p str, u64_t len)
-{
-    const i32_t p = 31;      // A small prime number
-    const u64_t m = 1e9 + 9; // A large prime number
-    u64_t hash_value = 0, p_pow = 1, i;
-
-    for (i = 0; i < len; i++)
-    {
-        hash_value = (hash_value + (str[i] - 'a' + 1) * p_pow) % m;
-        p_pow = (p_pow * p) % m;
-    }
-
-    return hash_value;
-}
-
 str_p string_intern(symbols_p symbols, lit_p str, u64_t len)
 {
     u64_t rounds = 0, cap;

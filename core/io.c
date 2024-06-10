@@ -419,7 +419,7 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t
     return NULL_OBJ; // Success
 }
 
-obj_p ray_csv(obj_p *x, i64_t n)
+obj_p ray_read_csv(obj_p *x, i64_t n)
 {
     i64_t i, l, fd, len, lines, size;
     str_p buf, prev, pos, line;

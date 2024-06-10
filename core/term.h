@@ -33,6 +33,7 @@ typedef struct term_t
 {
     struct termios oldattr;
     struct termios newattr;
+    i32_t buf_len;
     i32_t buf_pos;
     c8_t buf[TERM_BUF_SIZE];
     str_p history;

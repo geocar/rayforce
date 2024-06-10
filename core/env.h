@@ -57,6 +57,7 @@ str_p env_get_type_name(i8_t type);
 str_p env_get_internal_name(obj_p obj);
 obj_p env_get_internal_function(lit_p name);
 obj_p env_get_internal_function_by_id(i64_t id);
+str_p env_get_internal_function_lit(lit_p name, u64_t len);
 obj_p env_set(env_t *env, obj_p key, obj_p val);
 obj_p env_get(env_t *env, obj_p key);
 obj_p ray_env(obj_p *x, u64_t n);

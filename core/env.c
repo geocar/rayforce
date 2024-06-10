@@ -208,7 +208,7 @@ nil_t init_functions(obj_p functions)
     regf(functions,  "modify",            TYPE_VARY,     FN_NONE,                   ray_modify);
     regf(functions,  "insert",            TYPE_VARY,     FN_NONE,                   ray_insert);
     regf(functions,  "upsert",            TYPE_VARY,     FN_NONE,                   ray_upsert);
-    regf(functions,  "csv",               TYPE_VARY,     FN_NONE,                   ray_csv);
+    regf(functions,  "read-csv",          TYPE_VARY,     FN_NONE,                   ray_read_csv);
     regf(functions,  "lj",                TYPE_VARY,     FN_NONE,                   ray_lj);
     regf(functions,  "ij",                TYPE_VARY,     FN_NONE,                   ray_ij);
     regf(functions,  "if",                TYPE_VARY,     FN_NONE | FN_SPECIAL_FORM, ray_cond);
@@ -366,4 +366,23 @@ obj_p env_get_internal_function_by_id(i64_t id)
         return clone_obj(as_list(as_list(runtime_get()->env.functions)[1])[i]);
 
     return NULL_OBJ;
+}
+
+str_p env_get_internal_function_lit(lit_p name, u64_t len)
+{
+    i64_t i, l, n, *names;
+    str_p nm;
+
+    l = as_list(runtime_get()->env.functions)[0]->len;
+    names = as_i64(as_list(runtime_get()->env.functions)[0]);
+
+    for (i = 0; i < l; i++)
+    {
+        nm = str_from_symbol(names[i]);
+        n = strlen(nm);
+        if (n == len && strncmp(name, nm, len) == 0)
+            return nm;
+    }
+
+    return NULL;
 }
