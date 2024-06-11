@@ -109,6 +109,7 @@ history_p history_create()
     history->lines = lines;
     history->size = fsize;
     history->pos = pos;
+    history->search_dir = 1;
     history->index = (pos == 0) ? 0 : pos - 1;
     history->curr_saved = 0;
     history->curr_len = 0;
@@ -176,6 +177,7 @@ nil_t history_add(history_p history, c8_t buf[], u64_t len)
     history->lines[pos + len] = '\n';
     history->pos += len + 1;
     history->index = history->pos - 1;
+    history->search_dir = 1;
 
     // Sync the history buffer to the file
     if (mmap_sync(history->lines, history->size) == -1)
@@ -189,6 +191,19 @@ i64_t history_prev(history_p history, c8_t buf[])
 
     if (index == 0)
         return len;
+
+    // Skip current line if search direction was next
+    if (history->search_dir == 0)
+    {
+        while (index > 0)
+        {
+            if (history->lines[--index] == '\n')
+                break;
+        }
+
+        history->index = index;
+        history->search_dir = 1;
+    }
 
     // Find the previous line
     while (index > 0)
@@ -207,6 +222,7 @@ i64_t history_prev(history_p history, c8_t buf[])
     strncpy(buf, history->lines, len);
     buf[len] = '\0';
     history->index = index;
+    history->search_dir = 1;
 
     return len;
 }
@@ -216,19 +232,18 @@ i64_t history_next(history_p history, c8_t buf[])
     u64_t index = history->index;
     i64_t len = 0;
 
-    // Skip current line
-    while (index + 1 < history->pos)
+    // Skip current line if search direction was previous
+    if (history->search_dir == 1)
     {
-        if (history->lines[index] == '\n')
-            break;
+        while (index + 1 < history->pos)
+        {
+            if (history->lines[++index] == '\n')
+                break;
+        }
 
-        index++;
+        history->index = index;
+        history->search_dir = 0;
     }
-
-    history->index = index;
-
-    if (index == 0 || index + 1 == history->pos)
-        return len;
 
     // Find the next line
     while (index + 1 < history->pos)
@@ -243,6 +258,9 @@ i64_t history_next(history_p history, c8_t buf[])
     }
 
     history->index = index;
+
+    if (len == 0)
+        history->search_dir = 1;
 
     return len;
 }

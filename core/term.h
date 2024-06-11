@@ -36,6 +36,7 @@ typedef struct history_t
     u64_t size;
     u64_t pos;
     u64_t index;
+    i64_t search_dir;
     i64_t curr_saved;
     u64_t curr_len;
     c8_t curr[TERM_BUF_SIZE];
