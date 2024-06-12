@@ -596,7 +596,12 @@ obj_p term_read(term_p term)
         switch (c)
         {
         case '\n': // New line
-            // Enter key pressed, process the input buffer
+            if (term->buf_len == 0)
+            {
+                res = NULL_OBJ;
+                goto ret;
+            }
+
             term->buf[term->buf_len] = '\0';
 
             if (strncmp(term->buf, ":q", 2) == 0)
@@ -615,14 +620,15 @@ obj_p term_read(term_p term)
                 res = NULL_OBJ;
             }
             else
-                res = (term->buf_len) ? cstring_from_str(term->buf, term->buf_len) : NULL_OBJ;
+                res = cstring_from_str(term->buf, term->buf_len);
 
             history_add(term->history, term->buf, term->buf_len);
+
+        ret:
             term->buf_len = 0;
             term->buf_pos = 0;
             term_reset_idx(term);
             history_reset_current(term->history);
-
             printf("\n");
             fflush(stdout);
 
