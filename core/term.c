@@ -291,6 +291,12 @@ i64_t history_restore_current(history_p history, c8_t buf[])
     return l;
 }
 
+nil_t history_reset_current(history_p history)
+{
+    history->curr_saved = 0;
+    history->curr_len = 0;
+}
+
 term_p term_create()
 {
     term_p term;
@@ -476,35 +482,47 @@ nil_t term_redraw(term_p term)
     drop_obj(fmt);
 }
 
-nil_t term_autocomplete(term_p term)
+nil_t term_backspace(term_p term)
 {
-    u64_t i, l, n;
-    str_p verb;
-
-    if (term->tabidx == 0)
+    if (term->buf_pos == 0)
+        return;
+    else if (term->buf_pos == term->buf_len)
     {
-        debug("SAVE!!!!!!!!!!!");
-        term->history->curr_saved = 0;
-        history_save_current(term->history, term->buf, term->buf_len);
+        term->buf_pos--;
+        term->buf[term->buf_pos] = '\0';
+        term->buf_len--;
     }
     else
     {
-        debug("RESTORE!!!!!!!!!!!");
-        l = history_restore_current(term->history, term->buf);
-        term->buf_len = l;
-        term->buf_pos = l;
+        memmove(term->buf + term->buf_pos - 1, term->buf + term->buf_pos, term->buf_len - term->buf_pos);
+        term->buf_len--;
+        term->buf_pos--;
     }
 
+    term_redraw(term);
+}
+
+nil_t term_autocomplete(term_p term)
+{
+    u64_t i, l, n, pos;
+    c8_t *buf;
+    str_p verb;
+
+    pos = term->history->curr_len;
+    buf = term->history->curr;
+
     // Find start of the word
-    for (i = term->buf_pos; i > 0; i--)
+    for (i = pos; i > 0; i--)
     {
-        if (!is_alphanum(term->buf[i - 1]) && term->buf[i - 1] != '-')
+        if (!is_alphanum(buf[i - 1]) && buf[i - 1] != '-')
             break;
     }
 
-    n = term->buf_pos - i;
+    n = pos - i;
+    if (n == 0)
+        return;
 
-    verb = env_get_internal_function_lit(term->buf + i, n, &term->tabidx, B8_FALSE);
+    verb = env_get_internal_function_lit(buf + i, n, &term->tabidx, B8_FALSE);
     if (verb != NULL)
     {
         l = strlen(verb);
@@ -538,30 +556,11 @@ nil_t term_autocomplete(term_p term)
     }
 }
 
-nil_t term_backspace(term_p term)
-{
-    if (term->buf_pos == 0)
-        return;
-    else if (term->buf_pos == term->buf_len)
-    {
-        term->buf_pos--;
-        term->buf[term->buf_pos] = '\0';
-        term->buf_len--;
-    }
-    else
-    {
-        memmove(term->buf + term->buf_pos - 1, term->buf + term->buf_pos, term->buf_len - term->buf_pos);
-        term->buf_len--;
-        term->buf_pos--;
-    }
-
-    term_redraw(term);
-}
-
 obj_p term_read(term_p term)
 {
     c8_t c;
-    i64_t l, exit_code;
+    u64_t l;
+    i64_t exit_code;
     obj_p res = NULL;
 
     if (read(STDIN_FILENO, &c, 1) == 1)
@@ -596,6 +595,7 @@ obj_p term_read(term_p term)
             term->buf_len = 0;
             term->buf_pos = 0;
             term->tabidx = 0;
+            history_reset_current(term->history);
 
             printf("\n");
             fflush(stdout);
@@ -605,8 +605,10 @@ obj_p term_read(term_p term)
         case '\b': // Backspace
             term->tabidx = 0;
             term_backspace(term);
+            history_reset_current(term->history);
             return res;
         case '\t': // Tab
+            history_save_current(term->history, term->buf, term->buf_len);
             term_autocomplete(term);
             return res;
         case '\033': // Escape sequence
@@ -668,6 +670,8 @@ obj_p term_read(term_p term)
             return res;
         default:
             term->tabidx = 0;
+            history_reset_current(term->history);
+
             // regular character
             if (term->buf_pos < term->buf_len)
             {
