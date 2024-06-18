@@ -42,6 +42,7 @@
   :?  - Displays help.\n\
   :g  - Use rich graphic formatting: [0|1].\n\
   :q  - Exits the application: [exit code]."
+#define is_cmd(t, c) ((t)->buf_len == strlen(c) && strncmp((t)->buf, c, strlen(c)) == 0)
 
 nil_t cursor_move_start()
 {
@@ -61,6 +62,11 @@ nil_t cursor_move_right(i32_t i)
 nil_t line_clear()
 {
     printf("\r\033[K");
+}
+
+nil_t line_new()
+{
+    printf("\n");
 }
 
 nil_t cursor_hide()
@@ -700,9 +706,37 @@ nil_t term_reset_idx(term_p term)
     term->colidx = 0;
 }
 
-obj_p term_read(term_p term)
+obj_p term_handle_return(term_p term)
 {
     i64_t exit_code;
+    obj_p res = NULL_OBJ;
+
+    if (term->buf_len == 0)
+        return NULL_OBJ;
+
+    term->buf[term->buf_len] = '\0';
+
+    if (is_cmd(term, ":q"))
+    {
+        exit_code = (term->buf_len > 2) ? i64_from_str(term->buf + 2, term->buf_len - 3) : 0;
+        poll_exit(runtime_get()->poll, exit_code);
+        return NULL;
+    }
+
+    if (is_cmd(term, ":?"))
+    {
+        printf("\n%s** Commands list:\n%s%s", YELLOW, COMMANDS_LIST, RESET);
+        return NULL_OBJ;
+    }
+
+    res = cstring_from_str(term->buf, term->buf_len);
+    hist_add(term->hist, term->buf, term->buf_len);
+
+    return res;
+}
+
+obj_p term_read(term_p term)
+{
     u64_t l, n;
     obj_p res = NULL;
 
@@ -713,36 +747,12 @@ obj_p term_read(term_p term)
     switch (term->nextc)
     {
     case KEYCODE_RETURN:
-        if (term->buf_len == 0)
-        {
-            res = NULL_OBJ;
-            goto ret;
-        }
-
-        term->buf[term->buf_len] = '\0';
-
-        if (strncmp(term->buf, ":q", 2) == 0)
-        {
-            exit_code = (term->buf_len > 2) ? i64_from_str(term->buf + 2, term->buf_len - 3) : 0;
-            poll_exit(runtime_get()->poll, exit_code);
-        }
-        else if (strncmp(term->buf, ":?", 2) == 0)
-        {
-            printf("\n%s** Commands list:\n%s%s", YELLOW, COMMANDS_LIST, RESET);
-            res = NULL_OBJ;
-        }
-        else
-        {
-            res = cstring_from_str(term->buf, term->buf_len);
-            hist_add(term->hist, term->buf, term->buf_len);
-        }
-
-    ret:
+        res = term_handle_return(term);
         term_reset_idx(term);
         hist_reset_current(term->hist);
         term->buf_len = 0;
         term->buf_pos = 0;
-        printf("\n");
+        line_new();
         fflush(stdout);
         break;
     case KEYCODE_BACKSPACE:
