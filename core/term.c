@@ -729,7 +729,7 @@ obj_p term_read(term_p term)
         else if (strncmp(term->buf, ":?", 2) == 0)
         {
             printf("\n%s** Commands list:\n%s%s", YELLOW, COMMANDS_LIST, RESET);
-            fflush(stdout);
+            res = NULL_OBJ;
         }
         else
         {
@@ -744,9 +744,6 @@ obj_p term_read(term_p term)
         term->buf_pos = 0;
         printf("\n");
         fflush(stdout);
-
-        term_redraw(term);
-
         break;
     case KEYCODE_BACKSPACE:
     case KEYCODE_DELETE:
@@ -845,7 +842,6 @@ obj_p term_read(term_p term)
 
         term->buf[term->buf_len] = '\0';
         term_redraw(term);
-
         break;
     }
 
