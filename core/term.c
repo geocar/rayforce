@@ -43,7 +43,9 @@
   :?  - Displays help.\n\
   :g  - Use rich graphic formatting: [0|1].\n\
   :q  - Exits the application: [exit code]."
+
 #define is_cmd(t, c) ((t)->buf_len == strlen(c) && strncmp((t)->buf, c, strlen(c)) == 0)
+#define is_esc(t, e) ((t)->input_len == strlen(e) && strncmp((t)->input, e, strlen(e)) == 0)
 
 nil_t cursor_move_start()
 {
@@ -438,10 +440,7 @@ i64_t term_getc(term_p term)
 
     mutex_lock(&term->lock);
 
-    if (term->input[0] != KEYCODE_ESCAPE || term->input_len == 3)
-        term->input_len = 0;
-
-    term->input[term->input_len++] = buf[0];
+    term->input[term->input_len++ % 8] = buf[0];
 
     mutex_unlock(&term->lock);
 
@@ -501,10 +500,7 @@ i64_t term_getc(term_p term)
 {
     i64_t sz;
 
-    if (term->input[0] != KEYCODE_ESCAPE || term->input_len == 3)
-        term->input_len = 0;
-
-    sz = (i64_t)read(STDIN_FILENO, term->input + term->input_len++, 1);
+    sz = (i64_t)read(STDIN_FILENO, term->input + (term->input_len++ % 8), 1);
 
     if (sz == -1)
         return -1;
@@ -901,13 +897,9 @@ obj_p term_handle_escape(term_p term)
 {
     u64_t l;
 
-    // wait for the next key
-    if (term->input_len < 3)
-        return NULL;
-
-    switch (term->input[2])
+    // Up arrow esc
+    if (is_esc(term, "\x1b[A"))
     {
-    case KEYCODE_UP: // Up arrow key
         hist_save_current(term->hist, term->buf, term->buf_len);
         l = hist_prev(term->hist, term->buf);
         if (l > 0)
@@ -916,8 +908,12 @@ obj_p term_handle_escape(term_p term)
             term->buf_pos = l;
             term_redraw(term);
         }
-        return NULL;
-    case KEYCODE_DOWN: // Down arrow key
+        goto proceed;
+    }
+
+    // Down arrow esc
+    if (is_esc(term, "\x1b[B"))
+    {
         l = hist_next(term->hist, term->buf);
         if (l > 0)
         {
@@ -931,42 +927,74 @@ obj_p term_handle_escape(term_p term)
             term->buf_pos = l;
         }
         term_redraw(term);
-        return NULL;
-    case KEYCODE_RIGHT: // Right arrow key
+        goto proceed;
+    }
+
+    // Right arrow esc
+    if (is_esc(term, "\x1b[C"))
+    {
         if (term->buf_pos < term->buf_len)
         {
             term->buf_pos++;
             cursor_move_right(1);
             fflush(stdout);
         }
-        return NULL;
-    case KEYCODE_LEFT: // Left arrow key
+        goto proceed;
+    }
+
+    // Left arrow esc
+    if (is_esc(term, "\x1b[D"))
+    {
         if (term->buf_pos > 0)
         {
             term->buf_pos--;
             cursor_move_left(1);
             fflush(stdout);
         }
-        return NULL;
-    case KEYCODE_HOME: // Home key
+        goto proceed;
+    }
+
+    // Home esc
+    if (is_esc(term, "\x1b[H"))
+    {
         if (term->buf_pos > 0)
         {
             cursor_move_left(term->buf_pos);
             term->buf_pos = 0;
             fflush(stdout);
         }
-        return NULL;
-    case KEYCODE_END: // End key
+        goto proceed;
+    }
+
+    // End esc
+    if (is_esc(term, "\x1b[F"))
+    {
         if (term->buf_len > 0)
         {
             cursor_move_right(term->buf_len - term->buf_pos);
             term->buf_pos = term->buf_len;
             fflush(stdout);
         }
-        return NULL;
-    default:
-        return NULL;
+        goto proceed;
     }
+
+    // Delete esc
+    if (is_esc(term, "\x1b[3~"))
+    {
+        if (term->buf_pos < term->buf_len)
+        {
+            memmove(term->buf + term->buf_pos, term->buf + term->buf_pos + 1, term->buf_len - term->buf_pos);
+            term->buf_len--;
+            term_redraw(term);
+        }
+        goto proceed;
+    }
+
+    return NULL;
+
+proceed:
+    term->input_len = 0;
+    return NULL;
 }
 
 obj_p term_handle_symbol(term_p term)
@@ -1003,6 +1031,7 @@ obj_p term_read(term_p term)
         hist_reset_current(term->hist);
         term->buf_len = 0;
         term->buf_pos = 0;
+        term->input_len = 0;
         line_new();
         fflush(stdout);
         break;
@@ -1011,13 +1040,16 @@ obj_p term_read(term_p term)
         term_reset_idx(term);
         hist_reset_current(term->hist);
         term_handle_backspace(term);
+        term->input_len = 0;
         break;
     case KEYCODE_TAB:
         hist_save_current(term->hist, term->buf, term->buf_len);
         term_handle_tab(term);
+        term->input_len = 0;
         break;
     case KEYCODE_CTRL_C:
         poll_exit(runtime_get()->poll, 0);
+        term->input_len = 0;
         break;
     case KEYCODE_ESCAPE:
         res = term_handle_escape(term);
@@ -1026,6 +1058,7 @@ obj_p term_read(term_p term)
         term_reset_idx(term);
         hist_reset_current(term->hist);
         res = term_handle_symbol(term);
+        term->input_len = 0;
         break;
     }
 
