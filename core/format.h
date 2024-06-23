@@ -63,7 +63,7 @@ i64_t prompt_fmt_into(obj_p *dst);
 obj_p obj_fmt(obj_p obj);
 i64_t obj_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj);
 obj_p obj_fmt_n(obj_p *obj, u64_t n);
-nil_t use_unicode(b8_t use);
+nil_t format_use_unicode(b8_t use);
 obj_p ray_set_fpr(obj_p x);           // set float precision
 obj_p ray_set_display_width(obj_p x); // set display width
 nil_t ray_print_elapsed_ms(str_p msg, f64_t elapsed);

@@ -1275,7 +1275,7 @@ obj_p obj_fmt_n(obj_p *x, u64_t n)
     return res;
 }
 
-nil_t use_unicode(b8_t use)
+nil_t format_use_unicode(b8_t use)
 {
     __USE_UNICODE = use;
 }

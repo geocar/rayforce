@@ -41,7 +41,7 @@
 #define HIST_SIZE 4096 * 1024 // 4MB
 #define COMMANDS_LIST "\
   :?  - Displays help.\n\
-  :g  - Use rich graphic formatting: [0|1].\n\
+  :u  - Use unicode for graphic formatting: [0|1].\n\
   :t  - Turns on|off measurement of expressions: [0|1].\n\
   :q  - Exits the application: [exit code]."
 
@@ -881,6 +881,7 @@ obj_p term_handle_return(term_p term)
 {
     i64_t exit_code;
     obj_p res = NULL_OBJ;
+    b8_t onoff;
 
     if (term->buf_len == 0)
         return NULL_OBJ;
@@ -894,16 +895,25 @@ obj_p term_handle_return(term_p term)
         return NULL;
     }
 
+    if (is_cmd(term, ":u"))
+    {
+        onoff = (term->buf_len > 2 && term->buf[3] == '1') ? B8_TRUE : B8_FALSE;
+        format_use_unicode(onoff);
+        printf("\n%s. Format use unicode: %s.%s", YELLOW, onoff ? "on" : "off", RESET);
+        return NULL_OBJ;
+    }
+
     if (is_cmd(term, ":t"))
     {
-        set_timeit((term->buf_len > 2 && term->buf[3] == '1') ? B8_TRUE : B8_FALSE);
-        printf("\n%s. Timeit is %s.%s", YELLOW, get_timeit() ? "on" : "off", RESET);
+        onoff = (term->buf_len > 2 && term->buf[3] == '1') ? B8_TRUE : B8_FALSE;
+        set_timeit(onoff);
+        printf("\n%s. Timeit is %s.%s", YELLOW, onoff ? "on" : "off", RESET);
         return NULL_OBJ;
     }
 
     if (is_cmd(term, ":?"))
     {
-        printf("\n%s** Commands list:\n%s%s", YELLOW, COMMANDS_LIST, RESET);
+        printf("\n%s. Commands list:%s\n%s%s%s", YELLOW, RESET, GRAY, COMMANDS_LIST, RESET);
         return NULL_OBJ;
     }
 
