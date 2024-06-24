@@ -214,7 +214,8 @@ load:
 symbols_p symbols_create(nil_t)
 {
     symbols_p symbols;
-    raw_p pooladdr, string_pool;
+    raw_p pooladdr;
+    str_p string_pool;
 
     symbols = (symbols_p)heap_mmap(sizeof(struct symbols_t));
 

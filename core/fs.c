@@ -30,7 +30,7 @@
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 
-i64_t fs_fopen(str_p path, i64_t attrs)
+i64_t fs_fopen(lit_p path, i64_t attrs)
 {
     obj_p s;
     str_p tmp_path, p, slash;
@@ -84,12 +84,12 @@ i64_t fs_fclose(i64_t fd)
     return CloseHandle((HANDLE)fd);
 }
 
-i64_t fs_dcreate(str_p path)
+i64_t fs_dcreate(lit_p path)
 {
     return CreateDirectory(path, NULL);
 }
 
-i64_t fs_dopen(str_p path)
+i64_t fs_dopen(lit_p path)
 {
     HANDLE hFind;
     WIN32_FIND_DATA FindFileData;
@@ -136,7 +136,7 @@ EM_JS(i64_t, fs_dopen_js, (lit_p path), {
 });
 // clang-format on
 
-i64_t fs_fopen(str_p path, i64_t attrs)
+i64_t fs_fopen(lit_p path, i64_t attrs)
 {
     return open(path, attrs, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 }
@@ -183,14 +183,14 @@ i64_t fs_fclose(i64_t fd)
     return close(fd);
 }
 
-i64_t fs_dcreate(str_p path)
+i64_t fs_dcreate(lit_p path)
 {
     fs_dcreate_js(path);
 
     return 0;
 }
 
-i64_t fs_dopen(str_p path)
+i64_t fs_dopen(lit_p path)
 {
     return fs_dopen_js(path);
 }
@@ -202,7 +202,7 @@ i64_t fs_dclose(i64_t fd)
 
 #else
 
-i64_t fs_fopen(str_p path, i64_t attrs)
+i64_t fs_fopen(lit_p path, i64_t attrs)
 {
     obj_p s;
     str_p tmp_path, p, slash;
@@ -266,7 +266,7 @@ i64_t fs_fclose(i64_t fd)
     return close(fd);
 }
 
-i64_t fs_dcreate(str_p path)
+i64_t fs_dcreate(lit_p path)
 {
 #ifdef __cplusplus
     struct stat st
@@ -285,7 +285,7 @@ i64_t fs_dcreate(str_p path)
     return 0;
 }
 
-i64_t fs_dopen(str_p path)
+i64_t fs_dopen(lit_p path)
 {
     DIR *dir = opendir(path);
 
