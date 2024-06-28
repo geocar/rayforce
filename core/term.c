@@ -581,17 +581,20 @@ i64_t term_redraw_into(term_p term, obj_p *dst)
             }
             else if (term->buf[i] == '\"')
             {
-                // string
-                for (j = i + 1; j < l; j++)
+                if (i == 0 || term->buf[i - 1] != '\\')
                 {
-                    if (term->buf[j] == '\"')
+                    // string
+                    for (j = i + 1; j < l; j++)
                     {
-                        n += str_fmt_into(dst, -1, "%s", YELLOW);
-                        n += str_fmt_into(dst, -1, "%.*s", j - i + 1, term->buf + i);
-                        n += str_fmt_into(dst, -1, "%s", RESET);
-                        i = j;
-                        c = 1;
-                        break;
+                        if (term->buf[j] == '\"' && term->buf[j - 1] != '\\')
+                        {
+                            n += str_fmt_into(dst, -1, "%s", YELLOW);
+                            n += str_fmt_into(dst, -1, "%.*s", j - i + 1, term->buf + i);
+                            n += str_fmt_into(dst, -1, "%s", RESET);
+                            i = j;
+                            c = 1;
+                            break;
+                        }
                     }
                 }
             }
@@ -720,7 +723,6 @@ paren_t term_find_open_paren(term_p term)
     {
         switch (term->buf[i])
         {
-
         case KEYCODE_RPAREN:
         case KEYCODE_RCURLY:
         case KEYCODE_RBRACKET:
@@ -745,10 +747,13 @@ paren_t term_find_open_paren(term_p term)
                 squote = -1;
             break;
         case KEYCODE_DQUOTE:
-            if (dquote == -1)
-                dquote = i;
-            else
-                dquote = -1;
+            if (i == 0 || term->buf[i - 1] != '\\')
+            {
+                if (dquote == -1)
+                    dquote = i;
+                else
+                    dquote = -1;
+            }
             break;
         default:
             break;
