@@ -55,6 +55,7 @@ i64_t SYMBOL_DO;
 i64_t SYMBOL_BY;
 i64_t SYMBOL_SET;
 i64_t SYMBOL_LET;
+i64_t SYMBOL_FROM;
 
 #define regf(r, n, t, f, o)                      \
     {                                            \
@@ -268,6 +269,8 @@ nil_t init_keywords(obj_p *keywords)
     push_raw(keywords, &SYMBOL_SELF);
     SYMBOL_LET = symbols_intern("let", 3);
     push_raw(keywords, &SYMBOL_LET);
+    SYMBOL_FROM = symbols_intern("from", 4);
+    push_raw(keywords, &SYMBOL_FROM);
 }
 
 env_t env_create(nil_t)

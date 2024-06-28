@@ -38,6 +38,7 @@ extern i64_t SYMBOL_DO;
 extern i64_t SYMBOL_BY;
 extern i64_t SYMBOL_SET;
 extern i64_t SYMBOL_LET;
+extern i64_t SYMBOL_FROM;
 
 /*
  *  Environment
