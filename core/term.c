@@ -840,8 +840,9 @@ redraw:
     if (l == n && strncmp(word, hbuf + start, n) == 0)
         return B8_FALSE;
 
-    strncpy(tbuf + start, word, l);
-    strncpy(tbuf + start + l, hbuf + end, len - end);
+    memcpy(tbuf + start, word, l);
+    memcpy(tbuf + start + l, hbuf + end, len - end);
+    tbuf[start + l + len - end] = '\0';
     term->buf_len = start + l + len - end;
     term->buf_pos = start + l;
     term_redraw(term);
@@ -875,16 +876,16 @@ b8_t term_autocomplete_path(term_p term, u64_t start)
     if (last_slash != NULL)
     {
         path_len = last_slash - hbuf - start + 1;
-        strncpy(path, hbuf + start, path_len);
+        memcpy(path, hbuf + start, path_len);
         prefix_len = hbuf + end - last_slash - 1;
-        strncpy(prefix, last_slash + 1, prefix_len);
+        memcpy(prefix, last_slash + 1, prefix_len);
     }
     else
     {
         path_len = 2;
-        strncpy(path, "./", path_len);
+        memcpy(path, "./", path_len);
         prefix_len = n;
-        strncpy(prefix, hbuf + start, prefix_len);
+        memcpy(prefix, hbuf + start, prefix_len);
     }
 
     path[path_len] = '\0';
