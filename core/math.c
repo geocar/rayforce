@@ -850,28 +850,15 @@ obj_p ray_mod(obj_p x, obj_p y)
     }
 }
 
-typedef struct
+obj_p ray_sum_partial(u64_t len, i64_t input[])
 {
-    u64_t len;
-    i64_t *input;
-    i64_t sum;
-} sum_ctx_t;
+    u64_t i;
+    i64_t isum;
 
-obj_p ray_sum_ctx(raw_p arg)
-{
-    sum_ctx_t *ctx = (sum_ctx_t *)arg;
-    u64_t i, l;
-    i64_t isum, *xii;
+    for (i = 0, isum = 0; i < len; i++)
+        isum += (input[i] == NULL_I64) ? 0 : input[i];
 
-    l = ctx->len;
-    xii = ctx->input;
-
-    for (i = 0, isum = 0; i < l; i++)
-        isum += (xii[i] == NULL_I64) ? 0 : xii[i];
-
-    ctx->sum = isum;
-
-    return NULL_OBJ;
+    return i64(isum);
 }
 
 obj_p ray_sum(obj_p x)
@@ -881,7 +868,6 @@ obj_p ray_sum(obj_p x)
     f64_t fsum, *xfi;
     pool_p pool;
     obj_p res;
-    sum_ctx_t ctx[128];
 
     switch (x->type)
     {
@@ -908,22 +894,16 @@ obj_p ray_sum(obj_p x)
         chunk = l / chunks;
 
         for (i = 0; i < chunks - 1; i++)
-        {
-            ctx[i].len = chunk;
-            ctx[i].input = xii + i * chunk;
-            pool_add_task(pool, i, ray_sum_ctx, NULL, &ctx[i]);
-        }
+            pool_add_task(pool, ray_sum_partial, 2, chunk, xii + i * chunk);
 
-        ctx[chunks - 1].len = l - i * chunk;
-        ctx[chunks - 1].input = xii + i * chunk;
-        pool_add_task(pool, i, ray_sum_ctx, NULL, &ctx[i]);
+        pool_add_task(pool, ray_sum_partial, 2, l - i * chunk, xii + i * chunk);
 
         res = pool_run(pool, chunks);
 
-        drop_obj(res);
-
         for (i = 0, isum = 0; i < chunks; i++)
-            isum += ctx[i].sum;
+            isum += as_list(res)[i]->i64;
+
+        drop_obj(res);
 
         return i64(isum);
 

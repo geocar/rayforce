@@ -72,13 +72,24 @@ obj_p parse_cmdline(i32_t argc, str_p argv[])
                 push_obj(&vals, str);
                 break;
 
+            case 'c':
+                opt++;
+
+                if (argv[opt] == NULL)
+                    usage();
+
+                push_sym(&keys, "cores");
+                str = cstring_from_str(argv[opt], strlen(argv[opt]));
+                push_obj(&vals, str);
+                break;
+
             case 't':
                 opt++;
 
                 if (argv[opt] == NULL)
                     usage();
 
-                push_sym(&keys, "threads");
+                push_sym(&keys, "timeit");
                 str = cstring_from_str(argv[opt], strlen(argv[opt]));
                 push_obj(&vals, str);
                 break;
@@ -131,7 +142,7 @@ i32_t runtime_create(i32_t argc, str_p argv[])
         __RUNTIME->args = parse_cmdline(argc, argv);
 
         // thread count
-        arg = runtime_get_arg("threads");
+        arg = runtime_get_arg("cores");
         if (!is_null(arg))
         {
             n = atoi(as_string(arg));
@@ -171,6 +182,14 @@ i32_t runtime_create(i32_t argc, str_p argv[])
                 drop_obj(fmt);
                 drop_obj(res);
             }
+        }
+
+        // timeit
+        arg = runtime_get_arg("timeit");
+        if (!is_null(arg))
+        {
+            n = atoi(as_string(arg));
+            timeit_activate(n);
         }
     }
     else

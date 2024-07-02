@@ -83,29 +83,15 @@ nil_t __index_list_precalc_hash(obj_p cols, u64_t *out, u64_t ncols, u64_t nrows
         index_hash_obj(as_list(cols)[i], out, filter, nrows, deref);
 }
 
-typedef struct index_scope_ctx_t
+obj_p index_scope_partial(u64_t len, i64_t *values, i64_t *indices, i64_t *pmin, i64_t *pmax)
 {
-    u64_t len;
-    i64_t *values;
-    i64_t *indices;
-    i64_t min;
-    i64_t max;
-} *index_scope_ctx_p;
-
-obj_p index_scope_ctx(raw_p x)
-{
-    u64_t i, l;
-    i64_t min, max, *values, *indices;
-    index_scope_ctx_p ctx = (index_scope_ctx_p)x;
-
-    values = ctx->values;
-    indices = ctx->indices;
-    l = ctx->len;
+    i64_t min, max;
+    u64_t i;
 
     if (indices)
     {
         min = max = values[indices[0]];
-        for (i = 0; i < l; i++)
+        for (i = 0; i < len; i++)
         {
             min = values[indices[i]] < min ? values[indices[i]] : min;
             max = values[indices[i]] > max ? values[indices[i]] : max;
@@ -114,14 +100,14 @@ obj_p index_scope_ctx(raw_p x)
     else
     {
         min = max = values[0];
-        for (i = 0; i < l; i++)
+        for (i = 0; i < len; i++)
         {
             min = values[i] < min ? values[i] : min;
             max = values[i] > max ? values[i] : max;
         }
 
-        ctx->min = min;
-        ctx->max = max;
+        *pmin = min;
+        *pmax = max;
     }
 
     return NULL_OBJ;
@@ -129,7 +115,7 @@ obj_p index_scope_ctx(raw_p x)
 
 index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
 {
-    u64_t i, n, chunks, chunk;
+    u64_t i, chunks, chunk;
     i64_t min, max;
     pool_p pool = pool_get();
     obj_p v;
@@ -137,47 +123,32 @@ index_scope_t index_scope(i64_t values[], i64_t indices[], u64_t len)
     chunks = pool_executors_count(pool);
 
     if (chunks == 1)
-    {
-        struct index_scope_ctx_t ctx = (struct index_scope_ctx_t){.len = len, .values = values, .indices = indices};
-        index_scope_ctx(&ctx);
-        return (index_scope_t){ctx.min, ctx.max, (u64_t)(ctx.max - ctx.min + 1)};
-    }
+        index_scope_partial(len, values, indices, &min, &max);
     else
     {
-        struct index_scope_ctx_t ctx[chunks];
+        i64_t mins[chunks];
+        i64_t maxs[chunks];
         pool_prepare(pool, chunks);
 
         chunk = len / chunks;
         for (i = 0; i < chunks - 1; i++)
-        {
-            ctx[i].len = chunk;
-            ctx[i].values = values + i * chunk;
-            ctx[i].indices = indices ? indices + i * chunk : NULL;
-            ctx[i].min = ctx[i].values[0];
-            ctx[i].max = ctx[i].values[0];
+            pool_add_task(pool, index_scope_partial, 5, chunk, values + i * chunk, indices ? indices + i * chunk : NULL, &mins[i], &maxs[i]);
 
-            pool_add_task(pool, i, index_scope_ctx, NULL, (raw_p)&ctx[i]);
-        }
-
-        ctx[i].len = len - i * chunk;
-        ctx[i].values = values + i * chunk;
-        ctx[i].indices = indices ? indices + i * chunk : NULL;
-        ctx[i].min = ctx[i].values[0];
-        ctx[i].max = ctx[i].values[0];
-
-        pool_add_task(pool, i, index_scope_ctx, NULL, (raw_p)&ctx[i]);
+        pool_add_task(pool, index_scope_partial, 5, len - i * chunk, values + i * chunk, indices ? indices + i * chunk : NULL, &mins[i], &maxs[i]);
         v = pool_run(pool, chunks);
         drop_obj(v);
 
-        min = max = ctx[0].min;
+        min = max = mins[0];
         for (i = 0; i < chunks; i++)
         {
-            min = ctx[i].min < min ? ctx[i].min : min;
-            max = ctx[i].max > max ? ctx[i].max : max;
+            min = mins[i] < min ? mins[i] : min;
+            max = maxs[i] > max ? maxs[i] : max;
         }
-
-        return (index_scope_t){min, max, (u64_t)(max - min + 1)};
     }
+
+    timeit_tick("index scope");
+
+    return (index_scope_t){min, max, (u64_t)(max - min + 1)};
 }
 
 obj_p index_distinct_i8(i8_t values[], u64_t len, b8_t term)
@@ -574,7 +545,7 @@ obj_p index_group_i8(i8_t values[], i64_t indices[], u64_t len)
 
 obj_p index_group_i64_scoped(i64_t values[], i64_t indices[], u64_t len, const index_scope_t scope)
 {
-    u64_t i, j, m, n;
+    u64_t i, j, n;
     i64_t idx, *hk, *hv, *hp, shift;
     obj_p keys, vals, ht;
 

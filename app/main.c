@@ -32,7 +32,7 @@ nil_t print_logo(sys_info_t *info)
   printf("%s"
          "  RayforceDB: %d.%d %s\n"
          "  %s %d(MB) %d core(s)\n"
-         "  Using %d threads(s)\n"
+         "  Using %d cores(s)\n"
          "  Started from: %s\n"
          "  Documentation: https://rayforcedb.com/\n"
          "  Github: https://github.com/singaraiona/rayforce\n"

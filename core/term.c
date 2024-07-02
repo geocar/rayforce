@@ -976,6 +976,7 @@ obj_p term_handle_return(term_p term)
         onoff = (term->buf_len > 2 && term->buf[3] == '1') ? B8_TRUE : B8_FALSE;
         format_use_unicode(onoff);
         printf("\n%s. Format use unicode: %s.%s", YELLOW, onoff ? "on" : "off", RESET);
+        hist_add(term->hist, term->buf, term->buf_len);
         return NULL_OBJ;
     }
 
@@ -984,6 +985,7 @@ obj_p term_handle_return(term_p term)
         onoff = (term->buf_len > 2 && term->buf[3] == '1') ? B8_TRUE : B8_FALSE;
         timeit_activate(onoff);
         printf("\n%s. Timeit is %s.%s", YELLOW, onoff ? "on" : "off", RESET);
+        hist_add(term->hist, term->buf, term->buf_len);
         return NULL_OBJ;
     }
 
