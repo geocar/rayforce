@@ -156,6 +156,7 @@ obj_p aggr_sum(obj_p val, obj_p index)
         drop_obj(parts);
         return res;
     default:
+        drop_obj(parts);
         return error(ERR_TYPE, "sum: unsupported type: '%s'", type_name(val->type));
     }
 }
@@ -187,6 +188,7 @@ obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p 
 
         return res;
     default:
+        drop_obj(res);
         return error(ERR_TYPE, "first: unsupported type: '%s'", type_name(val->type));
     }
 }
@@ -201,19 +203,29 @@ obj_p aggr_first(obj_p val, obj_p index)
     n = index_group_count(index);
     l = parts->len;
 
-    res = clone_obj(as_list(parts)[0]);
-    xo = as_i64(res);
+    unwrap_list(parts);
 
-    for (i = 1; i < l; i++)
+    switch (val->type)
     {
-        xi = as_i64(as_list(parts)[i]);
-        for (j = 0; j < n; j++)
-            xo[j] = (xo[j] == NULL_I64) ? xi[j] : xo[j];
+    case TYPE_I64:
+    case TYPE_SYMBOL:
+    case TYPE_TIMESTAMP:
+        res = clone_obj(as_list(parts)[0]);
+        xo = as_i64(res);
+
+        for (i = 1; i < l; i++)
+        {
+            xi = as_i64(as_list(parts)[i]);
+            for (j = 0; j < n; j++)
+                xo[j] = (xo[j] == NULL_I64) ? xi[j] : xo[j];
+        }
+
+        drop_obj(parts);
+        return res;
+    default:
+        drop_obj(parts);
+        return error(ERR_TYPE, "first: unsupported type: '%s'", type_name(val->type));
     }
-
-    drop_obj(parts);
-
-    return res;
 }
 
 obj_p aggr_last(obj_p val, obj_p index)

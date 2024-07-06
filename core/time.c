@@ -148,7 +148,7 @@ nil_t timeit_print(nil_t)
         return;
 
     fmt = timeit_fmt();
-    printf("%s%s%s", GRAY, as_string(fmt), RESET);
+    printf("%s%.*s%s", GRAY, (i32_t)fmt->len, as_string(fmt), RESET);
     drop_obj(fmt);
 }
 

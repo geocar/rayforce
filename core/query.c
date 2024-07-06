@@ -73,6 +73,7 @@ obj_p remap_group(obj_p *gvals, obj_p cols, obj_p tab, obj_p filter, obj_p gkeys
         v = (gcols == NULL_OBJ) ? aggr_first(cols, index) : aggr_first(gcols, index);
         if (is_error(v))
         {
+            drop_obj(index);
             drop_obj(res);
             return v;
         }
@@ -282,6 +283,7 @@ obj_p select_apply_filters(obj_p obj, query_ctx_p ctx)
 
 obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx)
 {
+    u64_t tablen;
     obj_p prm, val, gkeys = NULL_OBJ, gvals = NULL_OBJ,
                     groupby = NULL_OBJ, gcol = NULL_OBJ;
 
@@ -300,12 +302,15 @@ obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx)
 
         drop_obj(prm);
 
+        tablen = ctx->tablen;
         unmount_env(ctx->tablen);
+        ctx->tablen = 0;
 
         if (is_error(groupby))
         {
             drop_obj(gkeys);
             drop_obj(gvals);
+            timeit_span_end("group");
             return groupby;
         }
 
@@ -317,14 +322,23 @@ obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx)
         drop_obj(groupby);
 
         if (is_error(prm))
+        {
+            drop_obj(gkeys);
+            timeit_span_end("group");
             return prm;
+        }
 
         mount_env(prm);
+        ctx->tablen = tablen;
 
         drop_obj(prm);
 
         if (is_error(gcol))
+        {
+            drop_obj(gkeys);
+            timeit_span_end("group");
             return gcol;
+        }
 
         ctx->group_fields = gkeys;
         ctx->group_values = gcol;

@@ -112,6 +112,22 @@ nil_t dump_stack(nil_t);
 #define anymap_key(x) (((obj_p)((str_p)x - PAGE_SIZE))->obj)
 #define anymap_val(x) (x)
 
+#define unwrap_list(x)                            \
+    {                                             \
+        u64_t _i, _l;                             \
+        obj_p _res;                               \
+        _l = (x)->len;                            \
+        for (_i = 0; _i < _l; _i++)               \
+        {                                         \
+            if (is_error(as_list(x)[_i]))         \
+            {                                     \
+                _res = clone_obj(as_list(x)[_i]); \
+                drop_obj(x);                      \
+                return _res;                      \
+            }                                     \
+        }                                         \
+    }
+
 b8_t is_valid(obj_p obj);
 u32_t next_power_of_two_u32(u32_t n);
 u64_t next_power_of_two_u64(u64_t n);
