@@ -36,7 +36,7 @@
 #include "../core/util.h"
 #include "../core/parse.h"
 #include "../core/runtime.h"
-#include "../core/rel.h"
+#include "../core/cmp.h"
 #include "../core/eval.h"
 
 typedef enum test_status_t

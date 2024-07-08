@@ -37,6 +37,7 @@
 #include "aggr.h"
 #include "index.h"
 #include "string.h"
+#include "pool.h"
 
 obj_p ray_at(obj_p x, obj_p y)
 {
@@ -1011,21 +1012,19 @@ obj_p ray_value(obj_p x)
 
 obj_p ray_where(obj_p x)
 {
-    u64_t i, j, l;
-    obj_p res;
+    u64_t i, j, l, ones;
     i64_t *cur;
     b8_t *bcur;
+    obj_p res;
 
     switch (x->type)
     {
     case TYPE_B8:
-        l = x->len;
-        bcur = as_b8(x);
-        for (i = 0, j = 0; i < l; i++)
-            j += bcur[i];
-
-        res = vector_i64(j);
+        ones = ops_count_ones(x);
+        res = vector_i64(ones);
         cur = as_i64(res);
+        bcur = as_b8(x);
+        l = x->len;
 
         for (i = 0, j = 0; i < l; i++)
             if (bcur[i])

@@ -21,8 +21,8 @@
  *   SOFTWARE.
  */
 
-#ifndef REL_H
-#define REL_H
+#ifndef CMP_H
+#define CMP_H
 
 #include "rayforce.h"
 
@@ -33,4 +33,4 @@ obj_p ray_gt(obj_p x, obj_p y);
 obj_p ray_le(obj_p x, obj_p y);
 obj_p ray_ge(obj_p x, obj_p y);
 
-#endif // REL_H
+#endif // CMP_H

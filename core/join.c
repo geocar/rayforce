@@ -25,7 +25,7 @@
 #include "heap.h"
 #include "util.h"
 #include "items.h"
-#include "rel.h"
+#include "cmp.h"
 #include "ops.h"
 #include "binary.h"
 #include "compose.h"

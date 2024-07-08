@@ -21,16 +21,82 @@
  *   SOFTWARE.
  */
 
-#include "rel.h"
+#include "cmp.h"
 #include "util.h"
 #include "heap.h"
 #include "ops.h"
 #include "error.h"
+#include "runtime.h"
+#include "pool.h"
+
+obj_p cmp_map(raw_p cmp, obj_p lhs, obj_p rhs)
+{
+    pool_p pool = runtime_get()->pool;
+    u64_t i, l, n, chunk;
+    obj_p res, parts;
+    raw_p argv[6];
+
+    n = pool_executors_count(pool);
+    res = vector_b8(lhs->len);
+    l = lhs->len;
+
+    if (n == 1)
+    {
+        argv[0] = (raw_p)l;
+        argv[1] = (raw_p)0;
+        argv[2] = lhs;
+        argv[3] = rhs;
+        argv[4] = res;
+        pool_call_task_fn(cmp, 5, argv);
+
+        return vn_list(1, res);
+    }
+
+    pool_prepare(pool, n);
+
+    chunk = l / n;
+
+    for (i = 0; i < n - 1; i++)
+        pool_add_task(pool, cmp, 5, chunk, i * chunk, lhs, rhs, res);
+
+    pool_add_task(pool, cmp, 5, l - i * chunk, i * chunk, lhs, rhs, res);
+
+    parts = pool_run(pool, n);
+    unwrap_list(parts);
+    drop_obj(parts);
+
+    return res;
+}
+
+obj_p ray_eq_partial(u64_t len, u64_t offset, obj_p lhs, obj_p rhs, obj_p res)
+{
+    u64_t i;
+    i64_t *xi, *yi, si;
+    b8_t *out;
+
+    out = as_b8(res) + offset;
+
+    switch (mtype2(lhs->type, rhs->type))
+    {
+    case mtype2(TYPE_I64, -TYPE_I64):
+    case mtype2(TYPE_SYMBOL, -TYPE_SYMBOL):
+    case mtype2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+        xi = as_i64(lhs) + offset;
+        si = rhs->i64;
+        for (i = 0; i < len; i++)
+            out[i] = xi[i] == si;
+        break;
+    default:
+        break;
+    }
+
+    return NULL_OBJ;
+}
 
 obj_p ray_eq(obj_p x, obj_p y)
 {
     i64_t i, l;
-    obj_p vec;
+    obj_p vec, parts;
 
     switch (mtype2(x->type, y->type))
     {
@@ -48,14 +114,7 @@ obj_p ray_eq(obj_p x, obj_p y)
     case mtype2(TYPE_I64, -TYPE_I64):
     case mtype2(TYPE_SYMBOL, -TYPE_SYMBOL):
     case mtype2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
-        l = x->len;
-        vec = vector_b8(l);
-
-        for (i = 0; i < l; i++)
-            as_b8(vec)[i] = as_i64(x)[i] == y->i64;
-
-        return vec;
-
+        return cmp_map(ray_eq_partial, x, y);
     case mtype2(TYPE_F64, -TYPE_F64):
         l = x->len;
         vec = vector_b8(l);
@@ -77,14 +136,7 @@ obj_p ray_eq(obj_p x, obj_p y)
     case mtype2(-TYPE_I64, TYPE_I64):
     case mtype2(-TYPE_SYMBOL, TYPE_SYMBOL):
     case mtype2(-TYPE_TIMESTAMP, TYPE_TIMESTAMP):
-        l = y->len;
-        vec = vector_b8(l);
-
-        for (i = 0; i < l; i++)
-            as_b8(vec)[i] = x->i64 == as_i64(y)[i];
-
-        return vec;
-
+        return cmp_map(ray_eq_partial, y, x);
     case mtype2(-TYPE_F64, TYPE_F64):
         l = y->len;
         vec = vector_b8(l);

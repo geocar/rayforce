@@ -33,7 +33,7 @@
 #include "ops.h"
 #include "serde.h"
 #include "math.h"
-#include "rel.h"
+#include "cmp.h"
 #include "logic.h"
 #include "items.h"
 #include "compose.h"
