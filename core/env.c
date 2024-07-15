@@ -98,7 +98,7 @@ obj_p ray_memstat(obj_p *x, u64_t n)
     ins_sym(&keys, 3, "syms");
 
     vals = list(4);
-    // as_list(vals)[0] = i64(stat.system + symbols_memsize(symbols));
+    as_list(vals)[0] = i64(stat.system);
     as_list(vals)[1] = i64(stat.heap);
     as_list(vals)[2] = i64(stat.free);
     as_list(vals)[3] = i64(symbols_count(symbols));
