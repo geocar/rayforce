@@ -203,10 +203,7 @@ raw_p mmap_reserve(raw_p addr, u64_t size)
 {
     raw_p ptr;
 
-    if (addr == NULL)
-        ptr = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    else
-        ptr = mmap(addr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    ptr = mmap(addr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     if (ptr == MAP_FAILED)
         return NULL;
