@@ -167,6 +167,7 @@ obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p 
     u64_t i, n;
     i64_t *xi, *yi;
     f64_t *xf, *yf;
+    obj_p *xo, *yo;
     guid_t *xg, *yg;
 
     n = index_group_count(index);
@@ -219,6 +220,21 @@ obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p 
         }
 
         return res;
+    case TYPE_LIST:
+        xo = as_list(val) + offset;
+        yo = as_list(res);
+
+        for (i = 0; i < n; i++)
+            yo[i] = NULL_OBJ;
+
+        for (i = 0; i < len; i++)
+        {
+            n = index_group_get_id(index, i + offset);
+            if (yo[n] == NULL_OBJ)
+                yo[n] = clone_obj(xo[i]);
+        }
+
+        return res;
     default:
         drop_obj(res);
         return error(ERR_TYPE, "first: unsupported type: '%s'", type_name(val->type));
@@ -231,7 +247,7 @@ obj_p aggr_first(obj_p val, obj_p index)
     i64_t *xi, *yi;
     f64_t *xf, *yf;
     guid_t *xg, *yg;
-    obj_p res, parts;
+    obj_p res, parts, *xo, *yo;
 
     parts = aggr_map(aggr_first_partial, val, index);
     n = index_group_count(index);
@@ -279,6 +295,20 @@ obj_p aggr_first(obj_p val, obj_p index)
             for (j = 0; j < n; j++)
                 if (memcmp(yg[j], NULL_GUID, sizeof(guid_t)) == 0)
                     memcpy(yg[j], xg[j], sizeof(guid_t));
+        }
+
+        drop_obj(parts);
+        return res;
+    case TYPE_LIST:
+        res = clone_obj(as_list(parts)[0]);
+        yo = as_list(res);
+
+        for (i = 1; i < l; i++)
+        {
+            xo = as_list(as_list(parts)[i]);
+            for (j = 0; j < n; j++)
+                if (yo[j] == NULL_OBJ)
+                    yo[j] = clone_obj(xo[j]);
         }
 
         drop_obj(parts);
