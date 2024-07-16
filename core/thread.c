@@ -68,23 +68,26 @@ i32_t cond_wait(cond_t *cond, mutex_t *mutex)
     return SleepConditionVariableCS(&cond->inner, &mutex->inner, INFINITE) ? 0 : -1;
 }
 
-int cond_signal(cond_t *cond)
+i32_t cond_signal(cond_t *cond)
 {
     WakeConditionVariable(&cond->inner);
     return 0;
 }
 
-int cond_broadcast(cond_t *cond)
+i32_t cond_broadcast(cond_t *cond)
 {
     WakeAllConditionVariable(&cond->inner);
     return 0;
 }
 
 // Thread functions
-thread_t thread_create(void *(*fn)(void *), void *arg)
+thread_t thread_create(raw_p (*fn)(raw_p), raw_p arg)
 {
     thread_t t;
-    t.handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, arg, 0, NULL);
+    raw_p (*orig_fn)(raw_p) = fn;
+    DWORD(*cfn)
+    (raw_p) = (DWORD(*)(raw_p))(raw_p)orig_fn;
+    t.handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)cfn, arg, 0, NULL);
     return t;
 }
 
@@ -103,9 +106,10 @@ i32_t thread_detach(thread_t thread)
     return CloseHandle(thread.handle) ? 0 : -1;
 }
 
-nil_t thread_exit(void *res)
+nil_t thread_exit(raw_p res)
 {
-    ExitThread((DWORD)res);
+    i64_t code = (i64_t)res;
+    ExitThread((DWORD)code);
 }
 
 #else

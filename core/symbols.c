@@ -43,8 +43,8 @@ static inline u64_t str_hash(lit_p str, u64_t len)
     u64_t hash = 0x1234ABCD1234ABCD;
     u64_t c1 = 0x87c37b91114253d5ULL;
     u64_t c2 = 0x4cf5ad432745937fULL;
-    const int r1 = 31;
-    const int r2 = 27;
+    const i32_t r1 = 31;
+    const i32_t r2 = 27;
     const u64_t m = 5ULL;
     const u64_t n = 0x52dce729ULL;
 

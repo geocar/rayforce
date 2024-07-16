@@ -96,7 +96,7 @@ test_result_t test_multiple_allocs_and_frees_rand()
     // Free the allocated blocks in the shuffled order
     for (i = 0; i < num_allocs; i++)
     {
-        int index = indices[i];
+        i32_t index = indices[i];
         heap_free(ptrs[index]);
         ptrs[index] = NULL;
     }

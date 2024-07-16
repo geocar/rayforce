@@ -36,6 +36,7 @@
 #include <windows.h>
 #include <direct.h>
 #define MSG_NOSIGNAL 0
+#define PAGE_SIZE 4096
 #define MAP_FAILED (raw_p)(-1)
 #define getcwd _getcwd
 #elif defined(__linux__)
