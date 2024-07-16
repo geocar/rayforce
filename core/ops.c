@@ -32,6 +32,8 @@
 #include "unary.h"
 #include "eval.h"
 #include "error.h"
+#include "runtime.h"
+#include "pool.h"
 
 __thread u64_t __RND_SEED__ = 0;
 
@@ -204,6 +206,91 @@ u64_t ops_rank(obj_p *x, u64_t n)
         l = 1;
 
     return l;
+}
+obj_p ops_where_partial(b8_t *mask, u64_t len, i64_t *ids)
+{
+    u64_t i, j, k, m, n64, b, *block;
+
+    n64 = len / 64 * 64;
+
+    // Process 64 bytes at a time
+    for (i = 0, j = 0; i < n64; i += 64)
+    {
+        block = (u64_t *)(mask + i);
+        for (k = 0; k < 8; k++) // 8 u64_t in 64 bytes
+        {
+            b = block[k];
+            if (b)
+            {
+                for (m = 0; m < 8; m++) // 8 bytes in each u64_t
+                {
+                    if (b & 0xFF)
+                        ids[j++] = i + k * 8 + m;
+                    b >>= 8;
+                }
+            }
+        }
+    }
+
+    // Handle remaining bytes
+    for (; i < len; i++)
+    {
+        if (mask[i])
+            ids[j++] = i;
+    }
+
+    return i64(j);
+}
+
+obj_p ops_where(b8_t *mask, u64_t len)
+{
+    u64_t i, j, ids_len, n, chunk, count;
+    i64_t *ids;
+    obj_p res, parts;
+    pool_p pool = runtime_get()->pool;
+    raw_p argv[3];
+
+    n = pool_executors_count(pool);
+
+    res = vector_i64(len);
+    ids = as_i64(res);
+
+    if (n == 1)
+    {
+        argv[0] = mask;
+        argv[1] = (raw_p)len;
+        argv[2] = (raw_p)ids;
+        parts = pool_call_task_fn(ops_where_partial, 3, argv);
+        ids_len = parts->i64;
+        drop_obj(parts);
+        resize_obj(&res, ids_len);
+
+        return res;
+    }
+
+    pool_prepare(pool, n);
+
+    chunk = len / n;
+
+    for (i = 0; i < n - 1; i++)
+        pool_add_task(pool, ops_where_partial, 3, mask + i * chunk, chunk, ids + i * chunk);
+
+    pool_add_task(pool, ops_where_partial, 3, mask + i * chunk, len - i * chunk, ids + i * chunk);
+
+    parts = pool_run(pool, n);
+
+    // Now collapse the results
+    for (i = 0, j = 0; i < n; i++)
+    {
+        count = as_list(parts)[i]->i64;
+        memmove(ids + j, ids + i * chunk, count * sizeof(i64_t));
+        j += count;
+    }
+
+    drop_obj(parts);
+    resize_obj(&res, j);
+
+    return res;
 }
 
 #if defined(OS_WINDOWS)

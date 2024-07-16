@@ -153,7 +153,7 @@ obj_p parse_0x(parser_t *parser)
     str_p end, current = parser->current;
     span_t span;
     u64_t num_u64;
-    u8_t num_u8, null_guid[16] = {0};
+    u8_t num_u8;
     obj_p res;
 
     if (*current == '0')
@@ -189,7 +189,7 @@ obj_p parse_0x(parser_t *parser)
 
         if (*(parser->current + 1) == 'g')
         {
-            res = guid(null_guid);
+            res = guid(NULL_GUID);
             shift(parser, 2);
             nfo_insert(parser->nfo, (i64_t)res, span);
 
