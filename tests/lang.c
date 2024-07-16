@@ -150,3 +150,10 @@ test_result_t test_lang_update()
 {
     PASS();
 }
+
+test_result_t test_lang_serde()
+{
+    TEST_ASSERT_EQ("(de (ser null))", "null");
+
+    PASS();
+}

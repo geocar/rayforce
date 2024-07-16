@@ -159,6 +159,7 @@ test_entry_t tests[] = {
     {"test_lang_math", test_lang_math},
     {"test_lang_query", test_lang_query},
     {"test_lang_update", test_lang_update},
+    {"test_lang_serde", test_lang_serde},
 };
 // ---
 

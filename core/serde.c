@@ -365,6 +365,8 @@ obj_p load_obj(u8_t **buf, u64_t len)
 
     switch (type)
     {
+    case TYPE_NULL:
+        return NULL_OBJ;
     case -TYPE_B8:
         obj = b8(**buf);
         (*buf)++;
