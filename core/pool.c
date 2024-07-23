@@ -296,6 +296,9 @@ nil_t pool_prepare(pool_p pool)
     u64_t i, n;
     obj_p env;
 
+    if (pool == NULL)
+        panic("Pool prepare: pool is NULL");
+
     env = interpreter_env_get();
 
     mutex_lock(&pool->mutex);
@@ -319,6 +322,9 @@ nil_t pool_add_task(pool_p pool, raw_p fn, u64_t argc, ...)
     va_list args;
     task_data_t data, old_data;
     mpmc_p queue;
+
+    if (pool == NULL)
+        panic("Pool add task: pool is NULL");
 
     mutex_lock(&pool->mutex);
 
@@ -365,6 +371,9 @@ obj_p pool_run(pool_p pool)
     u64_t i, n, tasks_count, executors_count;
     obj_p res;
     task_data_t data;
+
+    if (pool == NULL)
+        panic("Pool run: pool is NULL");
 
     mutex_lock(&pool->mutex);
 

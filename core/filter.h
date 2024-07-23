@@ -27,6 +27,6 @@
 #include "rayforce.h"
 
 obj_p filter_map(obj_p val, obj_p index);
-obj_p filter_collect(obj_p index);
+obj_p filter_collect(obj_p val, obj_p index);
 
 #endif // FILTER_H

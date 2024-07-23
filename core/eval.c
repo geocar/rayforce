@@ -209,7 +209,7 @@ __attribute__((hot)) obj_p eval(obj_p obj)
                 }
                 else if (x->type == TYPE_FILTERMAP)
                 {
-                    y = filter_collect(x);
+                    y = filter_collect(as_list(x)[0], as_list(x)[1]);
                     drop_obj(x);
                     x = y;
                 }
@@ -239,7 +239,7 @@ __attribute__((hot)) obj_p eval(obj_p obj)
                 }
                 else if (x->type == TYPE_FILTERMAP)
                 {
-                    y = filter_collect(x);
+                    y = filter_collect(as_list(x)[0], as_list(x)[1]);
                     drop_obj(x);
                     x = y;
                 }
@@ -259,7 +259,7 @@ __attribute__((hot)) obj_p eval(obj_p obj)
                 }
                 else if (y->type == TYPE_FILTERMAP)
                 {
-                    z = filter_collect(y);
+                    z = filter_collect(as_list(y)[0], as_list(y)[1]);
                     drop_obj(y);
                     y = z;
                 }
@@ -294,7 +294,7 @@ __attribute__((hot)) obj_p eval(obj_p obj)
                     }
                     else if (x->type == TYPE_FILTERMAP)
                     {
-                        y = filter_collect(x);
+                        y = filter_collect(as_list(x)[0], as_list(x)[1]);
                         drop_obj(x);
                         x = y;
                     }

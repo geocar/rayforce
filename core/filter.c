@@ -51,7 +51,7 @@ obj_p filter_map(obj_p val, obj_p index)
     }
 }
 
-obj_p filter_collect(obj_p index)
+obj_p filter_collect(obj_p val, obj_p index)
 {
-    return at_ids(as_list(index)[0], as_i64(as_list(index)[1]), as_list(index)[1]->len);
+    return at_ids(val, as_i64(index), index->len);
 }

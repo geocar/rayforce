@@ -395,7 +395,7 @@ obj_p select_apply_mappings(obj_p obj, query_ctx_p ctx)
             }
             else if (val->type == TYPE_FILTERMAP)
             {
-                prm = filter_collect(val);
+                prm = filter_collect(as_list(val)[0], as_list(val)[1]);
                 drop_obj(val);
                 val = prm;
             }
@@ -478,7 +478,7 @@ obj_p select_collect_fields(query_ctx_p ctx)
 
         if (prm->type == TYPE_FILTERMAP)
         {
-            val = filter_collect(prm);
+            val = filter_collect(as_list(prm)[0], as_list(prm)[1]);
             drop_obj(prm);
         }
         else if (prm->type == TYPE_ENUM)

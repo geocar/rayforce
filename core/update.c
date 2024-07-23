@@ -890,7 +890,7 @@ obj_p ray_update(obj_p obj)
         }
         else if (val->type == TYPE_FILTERMAP)
         {
-            prm = filter_collect(val);
+            prm = filter_collect(as_list(val)[0], as_list(val)[1]);
             drop_obj(val);
             val = prm;
         }
