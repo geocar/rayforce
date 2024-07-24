@@ -108,6 +108,6 @@ nil_t pool_prepare(pool_p pool);
 nil_t pool_add_task(pool_p pool, raw_p fn, u64_t argc, ...);
 obj_p pool_call_task_fn(raw_p fn, u64_t argc, raw_p argv[]);
 obj_p pool_run(pool_p pool);
-u64_t pool_split_by(pool_p pool, u64_t input_len);
+u64_t pool_split_by(pool_p pool, u64_t input_len, u64_t groups_len);
 
 #endif // POOL_H

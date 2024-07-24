@@ -100,7 +100,7 @@ obj_p aggr_map(raw_p aggr, obj_p val, obj_p index)
 
     group_count = index_group_count(index);
     group_len = index_group_len(index);
-    n = pool_split_by(pool, group_count);
+    n = pool_split_by(pool, group_len, group_count);
 
     if (n == 1)
     {

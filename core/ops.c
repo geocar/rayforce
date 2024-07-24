@@ -253,7 +253,7 @@ obj_p ops_where(b8_t *mask, u64_t len)
     obj_p res, parts;
     pool_p pool = runtime_get()->pool;
 
-    n = pool_split_by(pool, len);
+    n = pool_split_by(pool, len, 0);
 
     res = vector_i64(len);
     ids = as_i64(res);

@@ -444,13 +444,15 @@ obj_p pool_run(pool_p pool)
     return res;
 }
 
-u64_t pool_split_by(pool_p pool, u64_t input_len)
+u64_t pool_split_by(pool_p pool, u64_t input_len, u64_t groups_len)
 {
     if (pool == NULL)
         return 1;
     else if (interpreter_current()->id != 0)
         return 1;
     else if (input_len <= pool->executors_count + 1)
+        return 1;
+    else if (groups_len >= POOL_SPLIT_THRESHOLD)
         return 1;
     else
         return pool->executors_count + 1;

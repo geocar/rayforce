@@ -65,7 +65,7 @@ obj_p unary_call_atomic(unary_f f, obj_p x)
             return NULL_OBJ;
 
         v = as_list(x);
-        n = pool_split_by(pool, l);
+        n = pool_split_by(pool, l, 0);
 
         if (n > 1)
         {
