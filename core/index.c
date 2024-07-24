@@ -574,6 +574,62 @@ obj_p index_group_i8(obj_p obj, obj_p filter)
     return index_group_build(j, vals, NULL_I64, NULL_OBJ, clone_obj(filter));
 }
 
+obj_p index_group_i64_unscoped(obj_p obj, obj_p filter)
+{
+    u64_t i, n, len, groups;
+    i64_t idx, *hk, *hv, *hp, *values, *indices;
+    obj_p keys, vals, v, ht;
+
+    values = as_i64(obj);
+    indices = is_null(filter) ? NULL : as_i64(filter);
+    len = indices ? filter->len : obj->len;
+
+    // use hash table if range is large
+    ht = ht_oa_create(len, TYPE_I64);
+    vals = vector_i64(len);
+    hp = as_i64(vals);
+
+    // distribute bins
+    if (indices)
+    {
+        for (i = 0, groups = 0; i < len; i++)
+        {
+            n = values[indices[i]];
+            idx = ht_oa_tab_next_with(&ht, n, &hash_fnv1a, &hash_cmp_i64, NULL);
+            hk = as_i64(as_list(ht)[0]);
+            hv = as_i64(as_list(ht)[1]);
+            if (hk[idx] == NULL_I64)
+            {
+                hk[idx] = n;
+                hv[idx] = groups++;
+            }
+
+            hp[i] = hv[idx];
+        }
+    }
+    else
+    {
+        for (i = 0, groups = 0; i < len; i++)
+        {
+            n = values[i];
+            idx = ht_oa_tab_next_with(&ht, n, &hash_fnv1a, &hash_cmp_i64, NULL);
+            hk = as_i64(as_list(ht)[0]);
+            hv = as_i64(as_list(ht)[1]);
+            if (hk[idx] == NULL_I64)
+            {
+                hk[idx] = n;
+                hv[idx] = groups++;
+            }
+
+            hp[i] = hv[idx];
+        }
+    }
+
+    drop_obj(ht);
+
+    return index_group_build(groups, vals, NULL_I64, NULL_OBJ, clone_obj(filter));
+}
+
 obj_p index_group_i64_scoped_partial(i64_t input[], i64_t filter[], i64_t group_ids[], u64_t len, u64_t offset, i64_t min, i64_t out[])
 {
     u64_t i, l;
@@ -661,50 +717,7 @@ obj_p index_group_i64_scoped(obj_p obj, obj_p filter, const index_scope_t scope)
         return index_group_build(groups, vals, NULL_I64, NULL_OBJ, clone_obj(filter));
     }
 
-    // use hash table if range is large
-    ht = ht_oa_create(len, TYPE_I64);
-    vals = vector_i64(len);
-    hp = as_i64(vals);
-
-    // distribute bins
-    if (indices)
-    {
-        for (i = 0, groups = 0; i < len; i++)
-        {
-            n = values[indices[i]];
-            idx = ht_oa_tab_next_with(&ht, n, &hash_kmh, &hash_cmp_i64, NULL);
-            hk = as_i64(as_list(ht)[0]);
-            hv = as_i64(as_list(ht)[1]);
-            if (hk[idx] == NULL_I64)
-            {
-                hk[idx] = n;
-                hv[idx] = groups++;
-            }
-
-            hp[i] = hv[idx];
-        }
-    }
-    else
-    {
-        for (i = 0, groups = 0; i < len; i++)
-        {
-            n = values[i];
-            idx = ht_oa_tab_next_with(&ht, n, &hash_kmh, &hash_cmp_i64, NULL);
-            hk = as_i64(as_list(ht)[0]);
-            hv = as_i64(as_list(ht)[1]);
-            if (hk[idx] == NULL_I64)
-            {
-                hk[idx] = n;
-                hv[idx] = groups++;
-            }
-
-            hp[i] = hv[idx];
-        }
-    }
-
-    drop_obj(ht);
-
-    return index_group_build(groups, vals, NULL_I64, NULL_OBJ, clone_obj(filter));
+    return index_group_i64_unscoped(obj, filter);
 }
 
 obj_p index_group_i64(obj_p obj, obj_p filter)
@@ -724,11 +737,7 @@ obj_p index_group_i64(obj_p obj, obj_p filter)
 
 obj_p index_group_f64(obj_p obj, obj_p filter)
 {
-    u64_t len;
-
-    len = is_null(filter) ? obj->len : filter->len;
-
-    return index_group_i64_scoped(obj, filter, (index_scope_t){.min = 0, .max = 0, .range = len + 1});
+    return index_group_i64_unscoped(obj, filter);
 }
 
 obj_p index_group_guid(obj_p obj, obj_p filter)

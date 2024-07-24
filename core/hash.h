@@ -63,6 +63,7 @@ i64_t ht_bk_get(ht_bk_p ht, i64_t key);
 u64_t hash_kmh(i64_t key, raw_p seed);
 // FNV-1a hash
 u64_t hash_fnv1a(i64_t key, raw_p seed);
+u64_t hast_64bit_mix(i64_t key, raw_p seed);
 // Identity
 u64_t hash_i64(i64_t a, raw_p seed);
 u64_t hash_obj(i64_t a, raw_p seed);

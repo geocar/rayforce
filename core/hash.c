@@ -432,13 +432,13 @@ i64_t ht_bk_get(ht_bk_p ht, i64_t key)
     return NULL_I64;
 }
 
-u64_t hash_kmh(i64_t key, nil_t *seed)
+u64_t hash_kmh(i64_t key, raw_p seed)
 {
     unused(seed);
     return (key * 6364136223846793005ull) >> 32;
 }
 
-u64_t hash_fnv1a(i64_t key, nil_t *seed)
+u64_t hash_fnv1a(i64_t key, raw_p seed)
 {
     unused(seed);
     u64_t hash = 14695981039346656037ull;
@@ -454,6 +454,20 @@ u64_t hash_fnv1a(i64_t key, nil_t *seed)
     return hash;
 }
 
+u64_t hast_64bit_mix(i64_t key, raw_p seed)
+{
+    unused(seed);
+    u64_t value = key;
+
+    // Use a 64-bit mix function
+    value ^= value >> 33;
+    value *= 0xff51afd7ed558ccdULL;
+    value ^= value >> 33;
+    value *= 0xc4ceb9fe1a85ec53ULL;
+    value ^= value >> 33;
+
+    return (size_t)value;
+}
 u64_t hash_guid(i64_t a, raw_p seed)
 {
     unused(seed);
