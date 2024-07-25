@@ -272,9 +272,9 @@ obj_p ops_where(b8_t *mask, u64_t len)
     chunk = len / n;
 
     for (i = 0; i < n - 1; i++)
-        pool_add_task(pool, ops_where_partial, 4, mask, chunk, ids, i * chunk);
+        pool_add_task(pool, (raw_p)ops_where_partial, 4, mask, chunk, ids, i * chunk);
 
-    pool_add_task(pool, ops_where_partial, 4, mask, len - i * chunk, ids, i * chunk);
+    pool_add_task(pool, (raw_p)ops_where_partial, 4, mask, len - i * chunk, ids, i * chunk);
 
     parts = pool_run(pool);
 

@@ -436,7 +436,7 @@ str_p str_rchr(lit_p s, i32_t c, u64_t n)
     ptr = s;
     last_ptr = NULL;
 
-    while ((found_ptr = memchr(ptr, c, n - (ptr - s))) != NULL)
+    while ((found_ptr = (lit_p)memchr(ptr, c, n - (ptr - s))) != NULL)
     {
         last_ptr = found_ptr;
         ptr = found_ptr + 1;

@@ -1085,6 +1085,7 @@ obj_p index_group_list_direct(obj_p obj, obj_p filter)
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
         case TYPE_ENUM:
+        case TYPE_F64:
             break;
         default:
             return NULL_OBJ;
@@ -1110,6 +1111,11 @@ obj_p index_group_list_direct(obj_p obj, obj_p filter)
         case TYPE_TIMESTAMP:
         case TYPE_ENUM:
             scopes[i] = index_scope(as_i64(values[i]), indices, len);
+            printf("ISCOPES: %lld %lld %lld\n", scopes[i].min, scopes[i].max, scopes[i].range);
+            break;
+        case TYPE_F64:
+            scopes[i] = index_scope((i64_t *)as_f64(values[i]), indices, len);
+            printf("FSCOPES: %lld %lld %lld\n", scopes[i].min, scopes[i].max, scopes[i].range);
             break;
         default:
             // because we already checked the types, this should never happen
@@ -1175,6 +1181,19 @@ obj_p index_group_list_direct(obj_p obj, obj_p filter)
             break;
         case TYPE_ENUM:
             xi = as_i64(enum_val(col));
+            if (indices)
+            {
+                for (j = 0; j < len; j++)
+                    xo[j] += (xi[indices[j]] - scopes[i].min) * multipliers[i];
+            }
+            else
+            {
+                for (j = 0; j < len; j++)
+                    xo[j] += (xi[j] - scopes[i].min) * multipliers[i];
+            }
+            break;
+        case TYPE_F64:
+            xi = (i64_t *)as_f64(col);
             if (indices)
             {
                 for (j = 0; j < len; j++)
