@@ -263,6 +263,7 @@ obj_p aggr_first(obj_p val, obj_p index)
     u64_t i, j, l, n;
     i64_t k, *xi, *xo, *group_ids, shift;
     f64_t *fo, *fi;
+    guid_t *gi, *go;
     obj_p res, parts, *oi, *oo;
 
     n = index_group_count(index);
@@ -322,6 +323,24 @@ obj_p aggr_first(obj_p val, obj_p index)
                 if (ops_is_nan(fo[j]))
                     fo[j] = fi[j];
         }
+        drop_obj(parts);
+
+        return res;
+
+    case TYPE_GUID:
+        parts = aggr_map(aggr_first_partial, val, index);
+        unwrap_list(parts);
+        l = parts->len;
+        res = clone_obj(as_list(parts)[0]);
+        go = as_guid(res);
+        for (i = 1; i < l; i++)
+        {
+            gi = as_guid(as_list(parts)[i]);
+            for (j = 0; j < n; j++)
+                if (memcmp(go[j], NULL_GUID, sizeof(guid_t)) == 0)
+                    memcpy(go[j], gi[j], sizeof(guid_t));
+        }
+
         drop_obj(parts);
 
         return res;

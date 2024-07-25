@@ -23,14 +23,14 @@
 
 test_result_t test_str_match()
 {
-    TEST_ASSERT(str_match("brown", "br?*wn"), "brown\", \"br?*wn");
-    TEST_ASSERT(str_match("broasdfasdfwn", "br?*wn"), "broasdfasdfwn\", \"br?*wn");
-    TEST_ASSERT(str_match("browmwn", "br?*wn"), "browmwn\", \"br?*wn");
-    TEST_ASSERT(str_match("brown", "[wertfb]rown"), "brown\", \"[wertfb]rown");
-    TEST_ASSERT(str_match("brown", "[^wertf]rown"), "brown\", \"[^wertf]rown");
-    TEST_ASSERT(!str_match("bro[wn", "[^wertf]ro[[wn"), "bro[wn\", \"[^wertf]ro[[wn");
-    TEST_ASSERT(str_match("bro^wn", "[^wertf]ro^wn"), "bro^wn\", \"[^wertf]ro^wn");
-    TEST_ASSERT(!str_match("brown", "br[?*]wn"), "brown\", \"br[?*]wn");
+    TEST_ASSERT(str_match("brown", 5, "br?*wn", 6), "brown\", \"br?*wn");
+    TEST_ASSERT(str_match("broasdfasdfwn", 13, "br?*wn", 6), "broasdfasdfwn\", \"br?*wn");
+    TEST_ASSERT(str_match("browmwn", 7, "br?*wn", 6), "browmwn\", \"br?*wn");
+    TEST_ASSERT(str_match("brown", 5, "[wertfb]rown", 12), "brown\", \"[wertfb]rown");
+    TEST_ASSERT(str_match("brown", 5, "[^wertf]rown", 12), "brown\", \"[^wertf]rown");
+    TEST_ASSERT(!str_match("bro[wn", 6, "[^wertf]ro[[wn", 14), "bro[wn\", \"[^wertf]ro[[wn");
+    TEST_ASSERT(str_match("bro^wn", 6, "[^wertf]ro^wn", 13), "bro^wn\", \"[^wertf]ro^wn");
+    TEST_ASSERT(!str_match("brown", 5, "br[?*]wn", 8), "brown\", \"br[?*]wn");
 
     PASS();
 }

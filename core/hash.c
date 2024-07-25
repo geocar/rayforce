@@ -59,7 +59,6 @@ nil_t ht_oa_rehash(obj_p *obj, hash_f hash, raw_p seed)
     obj_p new_obj;
     i8_t type;
     i64_t *orig_keys, *new_keys, *orig_vals = NULL, *new_vals = NULL;
-
     size = as_list(*obj)[0]->len;
     orig_keys = as_i64(as_list(*obj)[0]);
 
@@ -189,8 +188,7 @@ i64_t ht_oa_tab_get_with(obj_p obj, i64_t key, hash_f hash, cmp_f cmp, raw_p see
 
 u64_t hash_index_obj(obj_p obj)
 {
-    u64_t hash, len, i, c;
-    str_p str;
+    u64_t hash, len, i;
 
     switch (obj->type)
     {
@@ -203,12 +201,7 @@ u64_t hash_index_obj(obj_p obj)
     case -TYPE_GUID:
         return hash_index_u64(*(u64_t *)as_guid(obj), *((u64_t *)as_guid(obj) + 1));
     case TYPE_C8:
-        str = as_string(obj);
-        hash = 5381;
-        while ((c = *str++))
-            hash = ((hash << 5) + hash) + c;
-
-        return hash;
+        return str_hash(as_string(obj), obj->len);
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:

@@ -77,7 +77,8 @@ i64_t hash_cmp_i64(i64_t a, i64_t b, raw_p seed);
 u64_t hash_index_obj(obj_p obj);
 inline __attribute__((always_inline)) u64_t hash_index_u64(u64_t h, u64_t k)
 {
-    u64_t a, b, s = 0x9ddfea08eb382d69ull;
+    const u64_t s = 0x9ddfea08eb382d69ull;
+    u64_t a, b;
 
     a = (h ^ k) * s;
     a ^= (a >> 47);

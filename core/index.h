@@ -33,6 +33,7 @@ typedef struct __index_list_ctx_t
     obj_p lcols;
     obj_p rcols;
     u64_t *hashes;
+    i64_t *filter;
 } __index_list_ctx_t;
 
 typedef struct __index_find_ctx_t

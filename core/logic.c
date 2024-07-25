@@ -84,7 +84,7 @@ obj_p ray_like(obj_p x, obj_p y)
     switch (mtype2(x->type, y->type))
     {
     case mtype2(TYPE_C8, TYPE_C8):
-        return (b8(str_match(as_string(x), as_string(y))));
+        return (b8(str_match(as_string(x), x->len, as_string(y), y->len)));
     case mtype2(TYPE_LIST, TYPE_C8):
         l = x->len;
         res = vector_b8(l);
@@ -98,7 +98,7 @@ obj_p ray_like(obj_p x, obj_p y)
                 throw(ERR_TYPE, "like: unsupported types: '%s, %s", type_name(e->type), type_name(y->type));
             }
 
-            as_b8(res)[i] = str_match(as_string(e), as_string(y));
+            as_b8(res)[i] = str_match(as_string(e), e->len, as_string(y), y->len);
         }
 
         return res;
@@ -117,7 +117,7 @@ obj_p ray_like(obj_p x, obj_p y)
                 throw(ERR_TYPE, "like: unsupported types: '%s, '%s", type_name(e->type), type_name(y->type));
             }
 
-            as_b8(res)[i] = str_match(as_string(e), as_string(y));
+            as_b8(res)[i] = str_match(as_string(e), e->len, as_string(y), y->len);
             drop_obj(e);
         }
 

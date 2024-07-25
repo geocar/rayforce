@@ -31,7 +31,7 @@
 str_p str_chk_from_end(str_p pat);
 b8_t str_starts_with(str_p str, str_p pat);
 b8_t str_ends_with(str_p str, str_p pat);
-b8_t str_match(str_p str, str_p pat);
+b8_t str_match(str_p str, u64_t str_len, str_p pat, u64_t pat_len);
 obj_p string_from_str(lit_p str, u64_t len);
 obj_p cstring_from_str(lit_p str, u64_t len);
 obj_p cstring_from_obj(obj_p obj);
@@ -41,6 +41,7 @@ u64_t str_cpy(str_p dst, str_p src);
 u64_t str_len(str_p s, u64_t n);
 i64_t str_cmp(lit_p lhs, u64_t m, lit_p rhs, u64_t n);
 str_p str_rchr(lit_p s, i32_t c, u64_t n);
+u64_t str_hash(lit_p str, u64_t len);
 obj_p vn_vstring(lit_p fmt, va_list args);
 
 #endif // STRING_H

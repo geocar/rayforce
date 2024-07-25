@@ -276,109 +276,99 @@ b8_t str_ends_with(str_p str, str_p pat)
  * Note that this implementation assumes that the pattern and text strings do not contain any null characters ('\0').
  * If this is not the case, a more sophisticated implementation may be required.
  */
-b8_t str_match(str_p str, str_p pat)
+b8_t str_match(str_p str, u64_t str_len, str_p pat, u64_t pat_len)
 {
     str_p s = NULL;
     b8_t inv = B8_FALSE, match = B8_FALSE;
+    u64_t str_pos = 0, pat_pos = 0, s_pos;
 
-    while (*str)
+    while (str_pos < str_len)
     {
-        switch (*pat)
+        if (pat_pos >= pat_len)
+            return B8_FALSE;
+
+        switch (pat[pat_pos])
         {
         case '*':
-            while (*pat == '*')
-                pat++;
-
-            if (*pat == '\0')
+            while (pat_pos < pat_len && pat[pat_pos] == '*')
+                pat_pos++;
+            if (pat_pos == pat_len)
                 return B8_TRUE;
-
-            if (*pat != '[' && *pat != '?')
+            if (pat[pat_pos] != '[' && pat[pat_pos] != '?')
             {
-                s = str;
-                while (*s && *s != *pat)
-                    s++;
-
-                // If character is not found in the rest of the string
-                if (!*s)
+                s = str + str_pos;
+                s_pos = str_pos;
+                while (s_pos < str_len && str[s_pos] != pat[pat_pos])
+                    s_pos++;
+                if (s_pos == str_len)
                     return B8_FALSE;
-
-                str = s; // Move str to the position of the found character
+                str_pos = s_pos;
             }
             else
             {
-                // If followed by wildcard or set, we'll need to consider every possibility
-                s = str;
+                s = str + str_pos;
             }
             break;
-
         case '?':
-            str++;
-            pat++;
+            str_pos++;
+            pat_pos++;
             break;
-
         case '[':
-            pat++;
-            inv = (*pat == '^') ? B8_TRUE : B8_FALSE;
+            pat_pos++;
+            if (pat_pos >= pat_len)
+                return B8_FALSE;
+            inv = (pat[pat_pos] == '^') ? B8_TRUE : B8_FALSE;
             if (inv)
-                pat++;
-
+                pat_pos++;
             match = B8_FALSE;
-            while (*pat != ']' && *pat != '\0')
+            while (pat_pos < pat_len && pat[pat_pos] != ']')
             {
-                if (*str == *pat)
+                if (str[str_pos] == pat[pat_pos])
                     match = B8_TRUE;
-                pat++;
+                pat_pos++;
             }
-
-            if (*pat == '\0')
+            if (pat_pos == pat_len)
                 return B8_FALSE; // unmatched '['
-
             if ((match && inv) || (!match && !inv))
             {
-                // Failed to match with the current character set
                 if (!s)
                     return B8_FALSE;
-
-                // Revert back to the position right after the '*'
-                str = s + 1;
-                pat -= (inv ? 2 : 1); // Go back to '['
+                str_pos = (s - str) + 1;
+                pat_pos -= (inv ? 2 : 1);
             }
             else
             {
-                str++;
-                pat++;
+                str_pos++;
+                pat_pos++;
             }
             break;
-
         default:
-            if (*str != *pat)
+            if (str[str_pos] != pat[pat_pos])
             {
                 if (!s)
                     return B8_FALSE;
-
-                str = ++s;
-                pat -= 2; // To account for the next iteration's increment
+                str_pos = (s - str) + 1;
+                pat_pos -= 2;
             }
             else
             {
-                str++;
-                pat++;
+                str_pos++;
+                pat_pos++;
             }
             break;
         }
     }
 
-    // Check for trailing patterns
-    while (*pat)
+    while (pat_pos < pat_len)
     {
-        if (*pat == '?')
+        if (pat[pat_pos] == '?')
             return B8_FALSE;
-        if (*pat++ != '*')
+        if (pat[pat_pos] != '*')
             return B8_FALSE;
-        while (*pat == '*')
-            pat++;
+        pat_pos++;
+        while (pat_pos < pat_len && pat[pat_pos] == '*')
+            pat_pos++;
     }
-
     return B8_TRUE;
 }
 
@@ -453,4 +443,73 @@ str_p str_rchr(lit_p s, i32_t c, u64_t n)
     }
 
     return (str_p)last_ptr;
+}
+
+/*
+ * Simplefied version of murmurhash
+ */
+u64_t str_hash(lit_p str, u64_t len)
+{
+    u64_t i, k, k1;
+    u64_t hash = 0x1234ABCD1234ABCD;
+    u64_t c1 = 0x87c37b91114253d5ULL;
+    u64_t c2 = 0x4cf5ad432745937fULL;
+    const i32_t r1 = 31;
+    const i32_t r2 = 27;
+    const u64_t m = 5ULL;
+    const u64_t n = 0x52dce729ULL;
+
+    // Process each 8-byte block of the key
+    for (i = 0; i + 7 < len; i += 8)
+    {
+        k = (u64_t)str[i] |
+            ((u64_t)str[i + 1] << 8) |
+            ((u64_t)str[i + 2] << 16) |
+            ((u64_t)str[i + 3] << 24) |
+            ((u64_t)str[i + 4] << 32) |
+            ((u64_t)str[i + 5] << 40) |
+            ((u64_t)str[i + 6] << 48) |
+            ((u64_t)str[i + 7] << 56);
+
+        k *= c1;
+        k = (k << r1) | (k >> (64 - r1));
+        k *= c2;
+
+        hash ^= k;
+        hash = ((hash << r2) | (hash >> (64 - r2))) * m + n;
+    }
+
+    // Process the tail of the data
+    k1 = 0;
+    switch (len & 7)
+    {
+    case 7:
+        k1 ^= ((u64_t)str[i + 6]) << 48; // fall through
+    case 6:
+        k1 ^= ((u64_t)str[i + 5]) << 40; // fall through
+    case 5:
+        k1 ^= ((u64_t)str[i + 4]) << 32; // fall through
+    case 4:
+        k1 ^= ((u64_t)str[i + 3]) << 24; // fall through
+    case 3:
+        k1 ^= ((u64_t)str[i + 2]) << 16; // fall through
+    case 2:
+        k1 ^= ((u64_t)str[i + 1]) << 8; // fall through
+    case 1:
+        k1 ^= ((u64_t)str[i]);
+        k1 *= c1;
+        k1 = (k1 << r1) | (k1 >> (64 - r1));
+        k1 *= c2;
+        hash ^= k1;
+    }
+
+    // Finalize the hash
+    hash ^= len;
+    hash ^= (hash >> 33);
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= (hash >> 33);
+    hash *= 0xc4ceb9fe1a85ec53ULL;
+    hash ^= (hash >> 33);
+
+    return hash;
 }

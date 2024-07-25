@@ -169,6 +169,17 @@ obj_p ray_eq(obj_p x, obj_p y)
 
         return vec;
 
+    case mtype2(TYPE_C8, TYPE_C8):
+        if (x->len != y->len)
+            return error_str(ERR_LENGTH, "eq: vectors of different length");
+
+        l = x->len;
+        vec = vector_b8(l);
+
+        for (i = 0; i < l; i++)
+            as_b8(vec)[i] = as_string(x)[i] == as_string(y)[i];
+
+        return vec;
     case mtype2(TYPE_I64, TYPE_I64):
     case mtype2(TYPE_SYMBOL, TYPE_SYMBOL):
     case mtype2(TYPE_TIMESTAMP, TYPE_TIMESTAMP):
