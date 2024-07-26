@@ -148,6 +148,37 @@ next:
     goto next;
 }
 
+i64_t ht_oa_tab_insert_with(obj_p *obj, i64_t key, i64_t val, hash_f hash, cmp_f cmp, raw_p seed)
+{
+    u64_t i, size;
+    i64_t *keys, *vals;
+
+    size = as_list(*obj)[0]->len;
+    keys = as_i64(as_list(*obj)[0]);
+    vals = as_i64(as_list(*obj)[1]);
+
+next:
+    for (i = hash(key, seed) & (size - 1); i < size; i++)
+    {
+        if (keys[i] == NULL_I64)
+        {
+            keys[i] = key;
+            vals[i] = val;
+            return val;
+        }
+
+        if (cmp(keys[i], key, seed) == 0)
+            return vals[i];
+    }
+
+    ht_oa_rehash(obj, hash, seed);
+
+    size = as_list(*obj)[0]->len;
+    keys = as_i64(as_list(*obj)[0]);
+
+    goto next;
+}
+
 i64_t ht_oa_tab_get(obj_p obj, i64_t key)
 {
     u64_t i, size;

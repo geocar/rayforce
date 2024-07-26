@@ -284,7 +284,7 @@ __attribute__((hot)) nil_t heap_free(raw_p ptr)
     for (;; order++)
     {
         // check if we are at the root block (no buddies left)
-        if (block->pool_order == order || order <= MIN_BLOCK_ORDER)
+        if (block->pool_order == order)
             return heap_insert_block(block, order);
 
         // calculate buddy

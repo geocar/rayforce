@@ -212,6 +212,7 @@ obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p 
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
+    case TYPE_ENUM:
         xi = as_i64(val);
         yi = as_i64(res);
 
@@ -260,11 +261,11 @@ obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p 
 
 obj_p aggr_first(obj_p val, obj_p index)
 {
-    u64_t i, j, l, n;
-    i64_t k, *xi, *xo, *group_ids, shift;
+    u64_t i, j, xl, l, n;
+    i64_t k, *xi, *xo, *xe, *group_ids, shift;
     f64_t *fo, *fi;
     guid_t *gi, *go;
-    obj_p res, parts, *oi, *oo;
+    obj_p res, parts, *oi, *oo, ek, sym;
 
     n = index_group_count(index);
 
@@ -273,6 +274,7 @@ obj_p aggr_first(obj_p val, obj_p index)
     case TYPE_I64:
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
+    case TYPE_ENUM:
         // val is a column by which we group
         if ((as_list(index)[3] != NULL_OBJ) && as_list(index)[3] == val)
         {
@@ -289,24 +291,52 @@ obj_p aggr_first(obj_p val, obj_p index)
                 if (k != NULL_I64)
                     xo[k] = i + shift;
             }
-
-            return res;
         }
-
-        parts = aggr_map(aggr_first_partial, val, index);
-        unwrap_list(parts);
-        l = parts->len;
-        res = clone_obj(as_list(parts)[0]);
-
-        xo = as_i64(res);
-        for (i = 1; i < l; i++)
+        else
         {
-            xi = as_i64(as_list(parts)[i]);
-            for (j = 0; j < n; j++)
-                if (xo[j] == NULL_I64)
-                    xo[j] = xi[j];
+            parts = aggr_map(aggr_first_partial, val, index);
+            unwrap_list(parts);
+            l = parts->len;
+            res = clone_obj(as_list(parts)[0]);
+
+            xo = as_i64(res);
+            for (i = 1; i < l; i++)
+            {
+                xi = as_i64(as_list(parts)[i]);
+                for (j = 0; j < n; j++)
+                    if (xo[j] == NULL_I64)
+                        xo[j] = xi[j];
+            }
+            drop_obj(parts);
         }
-        drop_obj(parts);
+
+        if (val->type == TYPE_ENUM)
+        {
+            ek = ray_key(val);
+            sym = ray_get(ek);
+            drop_obj(ek);
+
+            if (is_error(sym))
+            {
+                drop_obj(res);
+                return sym;
+            }
+
+            debug_obj(sym);
+            if (is_null(sym) || sym->type != TYPE_SYMBOL)
+            {
+                drop_obj(sym);
+                drop_obj(res);
+                return error(ERR_TYPE, "first: can not resolve an enum");
+            }
+
+            xe = as_symbol(sym);
+
+            for (i = 0; i < n; i++)
+                xo[i] = xe[xo[i]];
+
+            drop_obj(sym);
+        }
 
         return res;
 

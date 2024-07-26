@@ -31,6 +31,7 @@
 obj_p ht_oa_create(u64_t size, i8_t vals);
 i64_t ht_oa_tab_next(obj_p *obj, i64_t key);
 i64_t ht_oa_tab_next_with(obj_p *obj, i64_t key, hash_f hash, cmp_f cmp, raw_p seed);
+i64_t ht_oa_tab_insert_with(obj_p *obj, i64_t key, i64_t val, hash_f hash, cmp_f cmp, raw_p seed);
 i64_t ht_oa_tab_get(obj_p obj, i64_t key);
 i64_t ht_oa_tab_get_with(obj_p obj, i64_t key, hash_f hash, cmp_f cmp, raw_p seed);
 nil_t ht_oa_rehash(obj_p *obj, hash_f hash, raw_p seed);
