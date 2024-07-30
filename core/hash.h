@@ -39,14 +39,6 @@ i64_t ht_oa_tab_get(obj_p obj, i64_t key);
 i64_t ht_oa_tab_get_with(obj_p obj, i64_t key, hash_f hash, cmp_f cmp, raw_p seed);
 nil_t ht_oa_rehash(obj_p *obj, hash_f hash, raw_p seed);
 
-// Radix partitioned hash table
-obj_p ht_parted_create(u64_t size, u64_t parts);
-nil_t ht_parted_build(obj_p ht, i64_t keys[], u64_t len);
-nil_t ht_parted_build_with(obj_p ht, i64_t keys[], u64_t len, hash_f hash, cmp_f cmp, raw_p seed);
-i64_t ht_parted_insert(obj_p ht, i64_t key, i64_t val);
-i64_t ht_parted_insert_with(obj_p ht, i64_t key, i64_t val,
-                            hash_f hash, cmp_f cmp, raw_p seed);
-
 // Multithreaded lockfree hash table
 typedef struct bucket_t
 {
@@ -77,7 +69,8 @@ i64_t ht_bk_get(ht_bk_p ht, i64_t key);
 u64_t hash_kmh(i64_t key, raw_p seed);
 // FNV-1a hash
 u64_t hash_fnv1a(i64_t key, raw_p seed);
-u64_t hast_64bit_mix(i64_t key, raw_p seed);
+u64_t hash_murmur3(i64_t key, raw_p seed);
+
 // Identity
 u64_t hash_i64(i64_t a, raw_p seed);
 u64_t hash_obj(i64_t a, raw_p seed);

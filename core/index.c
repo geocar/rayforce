@@ -698,6 +698,59 @@ obj_p index_group_build(u64_t groups_count, obj_p group_ids, i64_t index_min, ob
     return vn_list(5, i64(groups_count), group_ids, i64(index_min), source, filter);
 }
 
+obj_p index_group_distribute_partial(u64_t parts, u64_t part, u64_t *groups, i64_t keys[], i64_t out[], u64_t len, hash_f hash, cmp_f cmp)
+{
+    u64_t i, segment;
+    i64_t *k, *v, idx;
+    obj_p ht;
+
+    ht = ht_oa_create(len / parts, TYPE_I64);
+
+    for (i = 0; i < len; i++)
+    {
+        // determine if the key is ours due to radix partitioning
+        segment = keys[i] % parts;
+        if (segment != part)
+            continue;
+
+        idx = ht_oa_tab_next_with(&ht, keys[i], hash, cmp, NULL);
+        k = as_i64(as_list(ht)[0]);
+        v = as_i64(as_list(ht)[1]);
+
+        if (k[idx] == NULL_I64)
+        {
+            k[idx] = keys[i];
+            v[idx] = __atomic_fetch_add(groups, 1, __ATOMIC_RELAXED);
+        }
+
+        out[i] = v[idx];
+    }
+
+    drop_obj(ht);
+
+    return NULL_OBJ;
+}
+
+u64_t index_group_distribute(i64_t keys[], i64_t out[], u64_t len, hash_f hash, cmp_f cmp)
+{
+    u64_t i, parts, groups;
+    pool_p pool;
+    obj_p v;
+
+    pool = pool_get();
+    parts = pool_split_by(pool, len, 0);
+    groups = 0;
+
+    pool_prepare(pool);
+    for (i = 0; i < parts; i++)
+        pool_add_task(pool, index_group_distribute_partial, 8, parts, i, &groups, keys, out, len, hash, cmp);
+
+    v = pool_run(pool);
+    drop_obj(v);
+
+    return groups;
+}
+
 obj_p index_group_i8(obj_p obj, obj_p filter)
 {
     u64_t i, j, n, len, range;
@@ -753,44 +806,17 @@ obj_p index_group_i64_unscoped(obj_p obj, obj_p filter)
 {
     u64_t i, n, len;
     i64_t *out, *values, *indices, v, g;
-    obj_p keys, vals, ht;
+    obj_p keys, vals;
 
     values = as_i64(obj);
     indices = is_null(filter) ? NULL : as_i64(filter);
     len = indices ? filter->len : obj->len;
 
     // use hash table if range is large
-    ht = ht_oa_create(len, TYPE_I64);
     vals = vector_i64(len);
     out = as_i64(vals);
 
-    // distribute bins
-    if (indices)
-    {
-        for (i = 0, g = 0; i < len; i++)
-        {
-            n = values[indices[i]];
-            v = ht_oa_tab_insert_with(&ht, n, g, &hash_fnv1a, &hash_cmp_i64, NULL);
-            if (v == g)
-                g++;
-
-            out[i] = v;
-        }
-    }
-    else
-    {
-        for (i = 0, g = 0; i < len; i++)
-        {
-            n = values[i];
-            v = ht_oa_tab_insert_with(&ht, n, g, &hash_fnv1a, &hash_cmp_i64, NULL);
-            if (v == g)
-                g++;
-
-            out[i] = v;
-        }
-    }
-
-    drop_obj(ht);
+    g = index_group_distribute(values, out, len, &hash_murmur3, &hash_cmp_i64);
 
     return index_group_build(g, vals, NULL_I64, NULL_OBJ, clone_obj(filter));
 }
@@ -964,44 +990,17 @@ obj_p index_group_guid(obj_p obj, obj_p filter)
 obj_p index_group_obj(obj_p obj, obj_p filter)
 {
     u64_t i, g, n, v, len;
-    i64_t *out, *indices;
-    obj_p vals, *values, ht;
+    i64_t *out, *indices, *values;
+    obj_p vals;
 
-    values = as_list(obj);
+    values = (i64_t *)as_list(obj);
     indices = is_null(filter) ? NULL : as_i64(filter);
     len = indices ? filter->len : obj->len;
 
-    ht = ht_oa_create(len, TYPE_I64);
     vals = vector_i64(len);
     out = as_i64(vals);
 
-    // distribute bins
-    if (indices)
-    {
-        for (i = 0, g = 0; i < len; i++)
-        {
-            n = (i64_t)values[indices[i]];
-            v = ht_oa_tab_insert_with(&ht, n, g, &hash_obj, &hash_cmp_obj, NULL);
-            if (v == g)
-                g++;
-
-            out[i] = v;
-        }
-    }
-    else
-    {
-        for (i = 0, g = 0; i < len; i++)
-        {
-            n = (i64_t)values[i];
-            v = ht_oa_tab_insert_with(&ht, n, g, &hash_obj, &hash_cmp_obj, NULL);
-            if (v == g)
-                g++;
-
-            out[i] = v;
-        }
-    }
-
-    drop_obj(ht);
+    g = index_group_distribute(values, out, len, &hash_obj, &hash_cmp_obj);
 
     return index_group_build(g, vals, NULL_I64, NULL_OBJ, clone_obj(filter));
 }

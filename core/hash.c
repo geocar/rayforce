@@ -250,122 +250,6 @@ i64_t ht_oa_tab_get_with(obj_p obj, i64_t key, hash_f hash, cmp_f cmp, raw_p see
     return NULL_I64;
 }
 
-obj_p ht_parted_create(u64_t size, u64_t parts)
-{
-    u64_t i, l;
-    obj_p tables, partitions;
-
-    l = size / parts;
-    partitions = list(parts);
-    tables = list(parts);
-
-    for (i = 0; i < parts; i++)
-    {
-        as_list(partitions)[i] = vector_i64(0);
-        as_list(tables)[i] = ht_oa_create(l, TYPE_I64);
-    }
-
-    return vn_list(2, tables, partitions);
-}
-
-obj_p ht_parted_build_partial(obj_p *partition, obj_p *ht)
-{
-    u64_t i, l;
-    i64_t *keys;
-
-    l = (*partition)->len;
-    keys = as_i64(*partition);
-
-    for (i = 0; i < l; i++)
-        ht_oa_tab_insert(ht, keys[i], keys[i]);
-
-    return NULL_OBJ;
-}
-
-obj_p ht_parted_build_partial_with(obj_p *partition, obj_p *ht, hash_f hash, cmp_f cmp, raw_p seed)
-{
-    u64_t i, l;
-    i64_t *keys;
-
-    l = (*partition)->len;
-    keys = as_i64(*partition);
-
-    for (i = 0; i < l; i++)
-        ht_oa_tab_insert_with(ht, keys[i], keys[i], hash, cmp, seed);
-
-    return NULL_OBJ;
-}
-
-nil_t ht_parted_build(obj_p ht, i64_t keys[], u64_t len)
-{
-    u64_t i, l, partition;
-    obj_p partitions, v;
-    pool_p pool;
-
-    // distribute keys among partitions
-    partitions = as_list(ht)[0];
-    for (i = 0; i < len; i++)
-    {
-        partition = keys[i] % partitions->len;
-        push_raw(&as_list(partitions)[partition], &keys[i]);
-    }
-
-    // build hash tables in parallel
-    pool = pool_get();
-    pool_prepare(pool);
-    l = partitions->len;
-
-    for (i = 0; i < l; i++)
-        pool_add_task(pool, ht_parted_build_partial, 2, &as_list(partitions)[i], &as_list(as_list(ht)[1])[i]);
-
-    v = pool_run(pool);
-    drop_obj(v);
-}
-
-nil_t ht_parted_build_with(obj_p ht, i64_t keys[], u64_t len, hash_f hash, cmp_f cmp, raw_p seed)
-{
-    u64_t i, l, partition;
-    obj_p partitions, v;
-    pool_p pool;
-
-    // distribute keys among partitions
-    partitions = as_list(ht)[0];
-    for (i = 0; i < len; i++)
-    {
-        partition = hash(keys[i], seed) % partitions->len;
-        push_raw(&as_list(partitions)[partition], &keys[i]);
-    }
-
-    // build hash tables in parallel
-    pool = pool_get();
-    pool_prepare(pool);
-    l = partitions->len;
-
-    for (i = 0; i < l; i++)
-        pool_add_task(pool, ht_parted_build_partial_with, 2, &as_list(partitions)[i], &as_list(as_list(ht)[1])[i]);
-
-    v = pool_run(pool);
-    drop_obj(v);
-}
-
-i64_t ht_parted_insert(obj_p ht, i64_t key, i64_t val)
-{
-    i64_t partition;
-
-    partition = key % as_list(ht)[0]->len;
-
-    return ht_oa_tab_insert(&as_list(ht)[partition], key, val);
-}
-
-i64_t ht_parted_insert_with(obj_p ht, i64_t key, i64_t val, hash_f hash, cmp_f cmp, raw_p seed)
-{
-    i64_t partition;
-
-    partition = hash(key, seed) % as_list(ht)[0]->len;
-
-    return ht_oa_tab_insert_with(&as_list(ht)[partition], key, val, hash, cmp, seed);
-}
-
 u64_t hash_index_obj(obj_p obj)
 {
     u64_t hash, len, i;
@@ -666,20 +550,21 @@ u64_t hash_fnv1a(i64_t key, raw_p seed)
     return hash;
 }
 
-u64_t hast_64bit_mix(i64_t key, raw_p seed)
+u64_t hash_murmur3(i64_t key, raw_p seed)
 {
     unused(seed);
-    u64_t value = key;
+    u64_t hash = key;
 
     // Use a 64-bit mix function
-    value ^= value >> 33;
-    value *= 0xff51afd7ed558ccdULL;
-    value ^= value >> 33;
-    value *= 0xc4ceb9fe1a85ec53ULL;
-    value ^= value >> 33;
+    hash ^= hash >> 33;
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= hash >> 33;
+    hash *= 0xc4ceb9fe1a85ec53ULL;
+    hash ^= hash >> 33;
 
-    return (size_t)value;
+    return hash;
 }
+
 u64_t hash_guid(i64_t a, raw_p seed)
 {
     unused(seed);
@@ -692,6 +577,12 @@ u64_t hash_guid(i64_t a, raw_p seed)
 
     // Combine the two parts
     return upper_part ^ lower_part;
+}
+
+u64_t hash_i64(i64_t a, raw_p seed)
+{
+    unused(seed);
+    return (u64_t)a;
 }
 
 u64_t hash_obj(i64_t a, raw_p seed)
