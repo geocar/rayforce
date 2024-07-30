@@ -197,77 +197,16 @@ obj_p aggr_sum(obj_p val, obj_p index)
     }
 }
 
-obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p res)
-{
-    u64_t i, n;
-    i64_t *xi, *yi;
-    f64_t *xf, *yf;
-    guid_t *xg, *yg;
-    obj_p *xo, *yo;
-
-    n = index_group_count(index);
-
-    switch (val->type)
-    {
-    case TYPE_I64:
-    case TYPE_SYMBOL:
-    case TYPE_TIMESTAMP:
-    case TYPE_ENUM:
-        xi = as_i64(val);
-        yi = as_i64(res);
-
-        for (i = 0; i < n; i++)
-            yi[i] = NULL_I64;
-
-        aggr_iter(index, len, offset, if (yi[$y] == NULL_I64) yi[$y] = xi[$x]);
-
-        return res;
-    case TYPE_F64:
-        xf = as_f64(val);
-        yf = as_f64(res);
-
-        for (i = 0; i < n; i++)
-            yf[i] = NULL_F64;
-
-        aggr_iter(index, len, offset, if (ops_is_nan(yf[$y])) yf[$y] = xf[$x]);
-
-        return res;
-    case TYPE_GUID:
-        xg = as_guid(val);
-        yg = as_guid(res);
-
-        for (i = 0; i < n; i++)
-            memcpy(yg[i], NULL_GUID, sizeof(guid_t));
-
-        aggr_iter(index, len, offset,
-                  if (memcmp(yg[$y], NULL_GUID, sizeof(guid_t)) == 0)
-                      memcpy(yg[$y], xg[$x], sizeof(guid_t)));
-
-        return res;
-    case TYPE_LIST:
-        xo = as_list(val);
-        yo = as_list(res);
-
-        for (i = 0; i < n; i++)
-            yo[i] = NULL_OBJ;
-
-        aggr_iter(index, len, offset, if (yo[$y] == NULL_OBJ) yo[$y] = clone_obj(xo[$x]));
-
-        return res;
-    default:
-        return error(ERR_TYPE, "first: unsupported type: '%s'", type_name(val->type));
-    }
-}
-
 obj_p aggr_first(obj_p val, obj_p index)
 {
     u64_t i, j, xl, l, n;
     i64_t k, *xi, *xo, *xe, *group_ids, shift;
     f64_t *fo, *fi;
     guid_t *gi, *go;
-    obj_p res, parts, *oi, *oo, ek, sym;
+    obj_p res, *oi, *oo, ek, sym;
 
     n = index_group_count(index);
+    l = index_group_len(index);
 
     switch (val->type)
     {
@@ -275,20 +214,15 @@ obj_p aggr_first(obj_p val, obj_p index)
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
     case TYPE_ENUM:
-        parts = aggr_map(aggr_first_partial, val, index);
-        unwrap_list(parts);
-        l = parts->len;
-        res = clone_obj(as_list(parts)[0]);
+        res = vector(val->type, n);
 
+        xi = as_i64(val);
         xo = as_i64(res);
-        for (i = 1; i < l; i++)
-        {
-            xi = as_i64(as_list(parts)[i]);
-            for (j = 0; j < n; j++)
-                if (xo[j] == NULL_I64)
-                    xo[j] = xi[j];
-        }
-        drop_obj(parts);
+
+        for (i = 0; i < n; i++)
+            xo[i] = NULL_I64;
+
+        aggr_iter(index, l, 0, if (xo[$y] == NULL_I64) xo[$y] = xi[$x]);
 
         if (val->type == TYPE_ENUM)
         {
@@ -320,57 +254,46 @@ obj_p aggr_first(obj_p val, obj_p index)
         return res;
 
     case TYPE_F64:
-        parts = aggr_map(aggr_first_partial, val, index);
-        unwrap_list(parts);
-        l = parts->len;
-        res = clone_obj(as_list(parts)[0]);
+        res = vector_f64(n);
+
+        fi = as_f64(val);
         fo = as_f64(res);
-        for (i = 1; i < l; i++)
-        {
-            fi = as_f64(as_list(parts)[i]);
-            for (j = 0; j < n; j++)
-                if (ops_is_nan(fo[j]))
-                    fo[j] = fi[j];
-        }
-        drop_obj(parts);
+
+        for (i = 0; i < n; i++)
+            fo[i] = NULL_F64;
+
+        aggr_iter(index, l, 0, if (ops_is_nan(fo[$y])) fo[$y] = fi[$x]);
 
         return res;
 
-    case TYPE_GUID:
-        parts = aggr_map(aggr_first_partial, val, index);
-        unwrap_list(parts);
-        l = parts->len;
-        res = clone_obj(as_list(parts)[0]);
-        go = as_guid(res);
-        for (i = 1; i < l; i++)
-        {
-            gi = as_guid(as_list(parts)[i]);
-            for (j = 0; j < n; j++)
-                if (memcmp(go[j], NULL_GUID, sizeof(guid_t)) == 0)
-                    memcpy(go[j], gi[j], sizeof(guid_t));
-        }
+        // case TYPE_GUID:
+        //     parts = aggr_map(aggr_first_partial, val, index);
+        //     unwrap_list(parts);
+        //     l = parts->len;
+        //     res = clone_obj(as_list(parts)[0]);
+        //     go = as_guid(res);
+        //     for (i = 1; i < l; i++)
+        //     {
+        //         gi = as_guid(as_list(parts)[i]);
+        //         for (j = 0; j < n; j++)
+        //             if (memcmp(go[j], NULL_GUID, sizeof(guid_t)) == 0)
+        //                 memcpy(go[j], gi[j], sizeof(guid_t));
+        //     }
 
-        drop_obj(parts);
+        //     drop_obj(parts);
 
-        return res;
+        //     return res;
 
-    case TYPE_LIST:
-        parts = aggr_map(aggr_first_partial, val, index);
-        unwrap_list(parts);
-        l = parts->len;
-        res = clone_obj(as_list(parts)[0]);
-        for (i = 1; i < l; i++)
-        {
-            oo = as_list(res);
-            oi = as_list(as_list(parts)[i]);
-            for (j = 0; j < n; j++)
-                if (oo[j] == NULL_OBJ)
-                    oo[j] = clone_obj(oi[j]);
-        }
+        // case TYPE_LIST:
+        //     xo = as_list(val);
+        //     yo = as_list(res);
 
-        drop_obj(parts);
+        //     for (i = 0; i < n; i++)
+        //         yo[i] = NULL_OBJ;
 
-        return res;
+        //     aggr_iter(index, len, offset, if (yo[$y] == NULL_OBJ) yo[$y] = clone_obj(xo[$x]));
+
+        //     return res;
 
     default:
         return error(ERR_TYPE, "first: unsupported type: '%s'", type_name(val->type));
