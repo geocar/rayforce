@@ -97,6 +97,8 @@ typedef enum
 
 b8_t ops_as_b8(obj_p x);
 b8_t ops_is_nan(f64_t x);
+b8_t ops_is_prime(u64_t x);
+u64_t ops_next_prime(u64_t x);
 u64_t ops_rand_u64(nil_t);
 u64_t ops_count(obj_p x);
 u64_t ops_count_ones(b8_t *mask, u64_t len);

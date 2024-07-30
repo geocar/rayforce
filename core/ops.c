@@ -80,6 +80,33 @@ b8_t ops_is_nan(f64_t x)
     return (bits & 0x7ff0000000000000ull) == 0x7ff0000000000000ull && (bits & 0x000fffffffffffffull) != 0;
 }
 
+b8_t ops_is_prime(u64_t x)
+{
+    u64_t i;
+
+    if (x <= 1)
+        return B8_FALSE;
+    if (x <= 3)
+        return B8_TRUE;
+    if (x % 2 == 0 || x % 3 == 0)
+        return B8_FALSE;
+    for (i = 5; i * i <= x; i += 6)
+    {
+        if (x % i == 0 || x % (i + 2) == 0)
+            return B8_FALSE;
+    }
+
+    return B8_TRUE;
+}
+
+u64_t ops_next_prime(u64_t x)
+{
+    while (!ops_is_prime(x))
+        x++;
+
+    return x;
+}
+
 u64_t ops_rand_u64(nil_t)
 {
     if (__RND_SEED__ == 0)

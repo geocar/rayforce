@@ -35,20 +35,26 @@
 #include "atomic.h"
 #include "pool.h"
 
+u64_t optimal_hash_table_size(u64_t len, f64_t load_factor)
+{
+    u64_t size = (u64_t)ceilf64(len / load_factor);
+    return ops_next_prime(size);
+}
+
 obj_p ht_oa_create(u64_t size, i8_t vals)
 {
-    u64_t i;
+    u64_t i, adjusted_size;
     obj_p k, v;
 
-    size = next_power_of_two_u64(size);
-    k = vector(TYPE_I64, size);
+    adjusted_size = optimal_hash_table_size(size, 0.75);
+    k = vector(TYPE_I64, adjusted_size);
 
     if (vals >= 0)
-        v = vector(vals, size);
+        v = vector(vals, adjusted_size);
     else
         v = NULL_OBJ;
 
-    for (i = 0; i < size; i++)
+    for (i = 0; i < adjusted_size; i++)
         as_i64(k)[i] = NULL_I64;
 
     return dict(k, v);
@@ -56,10 +62,11 @@ obj_p ht_oa_create(u64_t size, i8_t vals)
 
 nil_t ht_oa_rehash(obj_p *obj, hash_f hash, raw_p seed)
 {
-    u64_t i, j, size, key, factor;
+    u64_t i, j, size, key, new_size;
     obj_p new_obj;
     i8_t type;
     i64_t *orig_keys, *new_keys, *orig_vals = NULL, *new_vals = NULL;
+
     size = as_list(*obj)[0]->len;
     orig_keys = as_i64(as_list(*obj)[0]);
 
@@ -70,7 +77,7 @@ nil_t ht_oa_rehash(obj_p *obj, hash_f hash, raw_p seed)
 
     new_obj = ht_oa_create(size * 2, type);
 
-    factor = as_list(new_obj)[0]->len - 1;
+    new_size = as_list(new_obj)[0]->len;
     new_keys = as_i64(as_list(new_obj)[0]);
 
     if (type > -1)
@@ -83,7 +90,7 @@ nil_t ht_oa_rehash(obj_p *obj, hash_f hash, raw_p seed)
             key = orig_keys[i];
 
             // Recalculate the index for the new table
-            j = hash ? hash(key, seed) & factor : (u64_t)key & factor;
+            j = hash ? hash(key, seed) % new_size : (u64_t)key % new_size;
 
             while (new_keys[j] != NULL_I64)
             {
@@ -109,21 +116,19 @@ i64_t ht_oa_tab_next(obj_p *obj, i64_t key)
     u64_t i, size;
     i64_t *keys;
 
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-
-next:
-    for (i = (u64_t)key & (size - 1); i < size; i++)
+    for (;;)
     {
-        if ((keys[i] == NULL_I64) || (keys[i] == key))
-            return i;
+        size = as_list(*obj)[0]->len;
+        keys = as_i64(as_list(*obj)[0]);
+
+        for (i = (u64_t)key % size; i < size; i++)
+        {
+            if ((keys[i] == NULL_I64) || (keys[i] == key))
+                return i;
+        }
+
+        ht_oa_rehash(obj, NULL, NULL);
     }
-
-    ht_oa_rehash(obj, NULL, NULL);
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-
-    goto next;
 }
 
 i64_t ht_oa_tab_next_with(obj_p *obj, i64_t key, hash_f hash, cmp_f cmp, raw_p seed)
@@ -131,22 +136,19 @@ i64_t ht_oa_tab_next_with(obj_p *obj, i64_t key, hash_f hash, cmp_f cmp, raw_p s
     u64_t i, size;
     i64_t *keys;
 
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-
-next:
-    for (i = hash(key, seed) & (size - 1); i < size; i++)
+    for (;;)
     {
-        if (keys[i] == NULL_I64 || cmp(keys[i], key, seed) == 0)
-            return i;
+        size = as_list(*obj)[0]->len;
+        keys = as_i64(as_list(*obj)[0]);
+
+        for (i = hash(key, seed) % size; i < size; i++)
+        {
+            if (keys[i] == NULL_I64 || cmp(keys[i], key, seed) == 0)
+                return i;
+        }
+
+        ht_oa_rehash(obj, hash, seed);
     }
-
-    ht_oa_rehash(obj, hash, seed);
-
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-
-    goto next;
 }
 
 i64_t ht_oa_tab_insert(obj_p *obj, i64_t key, i64_t val)
@@ -154,31 +156,27 @@ i64_t ht_oa_tab_insert(obj_p *obj, i64_t key, i64_t val)
     u64_t i, size;
     i64_t *keys, *vals;
 
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-    vals = as_i64(as_list(*obj)[1]);
-
-next:
-    for (i = (u64_t)key & (size - 1); i < size; i++)
+    for (;;)
     {
-        if (keys[i] == NULL_I64)
+        size = as_list(*obj)[0]->len;
+        keys = as_i64(as_list(*obj)[0]);
+        vals = as_i64(as_list(*obj)[1]);
+
+        for (i = (u64_t)key % size; i < size; i++)
         {
-            keys[i] = key;
-            vals[i] = val;
-            return val;
+            if (keys[i] == NULL_I64)
+            {
+                keys[i] = key;
+                vals[i] = val;
+                return val;
+            }
+
+            if (keys[i] == key)
+                return vals[i];
         }
 
-        if (keys[i] == key)
-            return vals[i];
+        ht_oa_rehash(obj, NULL, NULL);
     }
-
-    ht_oa_rehash(obj, NULL, NULL);
-
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-    vals = as_i64(as_list(*obj)[1]);
-
-    goto next;
 }
 
 i64_t ht_oa_tab_insert_with(obj_p *obj, i64_t key, i64_t val, hash_f hash, cmp_f cmp, raw_p seed)
@@ -186,30 +184,29 @@ i64_t ht_oa_tab_insert_with(obj_p *obj, i64_t key, i64_t val, hash_f hash, cmp_f
     u64_t i, size;
     i64_t *keys, *vals;
 
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-    vals = as_i64(as_list(*obj)[1]);
-
-next:
-    for (i = hash(key, seed) & (size - 1); i < size; i++)
+    for (;;)
     {
-        if (keys[i] == NULL_I64)
+        size = as_list(*obj)[0]->len;
+        keys = as_i64(as_list(*obj)[0]);
+        vals = as_i64(as_list(*obj)[1]);
+
+        for (i = hash(key, seed) % size; i < size; i++)
         {
-            keys[i] = key;
-            vals[i] = val;
-            return val;
+            if (keys[i] == NULL_I64)
+            {
+                keys[i] = key;
+                vals[i] = val;
+                return val;
+            }
+
+            if (cmp(keys[i], key, seed) == 0)
+                return vals[i];
         }
 
-        if (cmp(keys[i], key, seed) == 0)
-            return vals[i];
+        printf("TO REHASH: %p\n", *obj);
+        ht_oa_rehash(obj, hash, cmp);
+        printf("REHASED: %p\n", *obj);
     }
-
-    ht_oa_rehash(obj, hash, seed);
-
-    size = as_list(*obj)[0]->len;
-    keys = as_i64(as_list(*obj)[0]);
-
-    goto next;
 }
 
 i64_t ht_oa_tab_get(obj_p obj, i64_t key)
@@ -220,7 +217,7 @@ i64_t ht_oa_tab_get(obj_p obj, i64_t key)
     size = as_list(obj)[0]->len;
     keys = as_i64(as_list(obj)[0]);
 
-    for (i = (u64_t)key & (size - 1); i < size; i++)
+    for (i = (u64_t)key % size; i < size; i++)
     {
         if (keys[i] == NULL_I64)
             return NULL_I64;
@@ -239,7 +236,7 @@ i64_t ht_oa_tab_get_with(obj_p obj, i64_t key, hash_f hash, cmp_f cmp, raw_p see
     size = as_list(obj)[0]->len;
     keys = as_i64(as_list(obj)[0]);
 
-    for (i = hash(key, seed) & (size - 1); i < size; i++)
+    for (i = hash(key, seed) % size; i < size; i++)
     {
         if (keys[i] == NULL_I64)
             return NULL_I64;
