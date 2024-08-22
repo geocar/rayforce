@@ -90,17 +90,17 @@ date_t date_from_days(i64_t v)
     i64_t days = v - years_by_days(years);
     i64_t yy = years + 1;
     u8_t leap = leap_year(yy);
-    i8_t mid = 0;
+    i32_t mid = 0;
 
-    for (mid = 13; mid > 0; mid--)
-        if (MONTHDAYS_FWD[leap][mid - 1] != 0 && days / MONTHDAYS_FWD[leap][mid - 1] != 0)
+    for (mid = 12; mid > 0; mid--)
+        if (MONTHDAYS_FWD[leap][mid] != 0 && days / MONTHDAYS_FWD[leap][mid] != 0)
             break;
 
-    if (mid == 13)
+    if (mid == 12 || mid < 0)
         mid = 0;
 
     i64_t mm = (1 + mid % 12);
-    i64_t dd = (1 + days - MONTHDAYS_FWD[leap][(i32_t)mid]);
+    i64_t dd = (1 + days - MONTHDAYS_FWD[leap][mid]);
 
     return (date_t){
         .year = (u16_t)yy,
