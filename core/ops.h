@@ -86,7 +86,7 @@ typedef u64_t (*hash_f)(i64_t, nil_t *);
 typedef i64_t (*cmp_f)(i64_t, i64_t, nil_t *);
 typedef obj_p (*unary_f)(obj_p);
 typedef obj_p (*binary_f)(obj_p, obj_p);
-typedef obj_p (*vary_f)(obj_p *, i64_t n);
+typedef obj_p (*vary_f)(obj_p *, u64_t);
 
 typedef enum
 {
