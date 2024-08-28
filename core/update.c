@@ -560,7 +560,7 @@ obj_p __update_table(obj_p tab, obj_p keys, obj_p vals, obj_p filters, obj_p gro
 
         l = keys->len;
 
-        // gids = aggr_indices(groupby, ids);
+        // gids = aggr_ids(groupby, ids);
         drop_obj(groupby);
         n = gids->len;
 

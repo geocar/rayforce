@@ -37,89 +37,91 @@
 #include "cmp.h"
 #include "pool.h"
 
-#define AGGR_ITER(index, len, offset, val, res, coerse, ini, aggr) \
-    ({                                                             \
-        u64_t $i, $x, $y, $n;                                      \
-        i64_t *group_ids, *source, *filter, shift;                 \
-        coerse##_t *$in, *$out;                                    \
-        $n = index_group_count(index);                             \
-        group_ids = as_i64(as_list(index)[1]);                     \
-        $in = as_##coerse(val);                                    \
-        $out = as_##coerse(res);                                   \
-        for ($y = 0; $y < $n; $y++)                                \
-        {                                                          \
-            ini;                                                   \
-        }                                                          \
-        if (as_list(index)[3] != NULL_OBJ)                         \
-        {                                                          \
-            source = as_i64(as_list(index)[3]);                    \
-            shift = as_list(index)[2]->i64;                        \
-            if (as_list(index)[4] != NULL_OBJ)                     \
-            {                                                      \
-                filter = as_i64(as_list(index)[4]);                \
-                for ($i = 0; $i < len; $i++)                       \
-                {                                                  \
-                    $x = filter[$i + offset];                      \
-                    $y = group_ids[source[$x] - shift];            \
-                    aggr;                                          \
-                }                                                  \
-            }                                                      \
-            else                                                   \
-            {                                                      \
-                for ($i = 0; $i < len; $i++)                       \
-                {                                                  \
-                    $x = $i + offset;                              \
-                    $y = group_ids[source[$x] - shift];            \
-                    aggr;                                          \
-                }                                                  \
-            }                                                      \
-        }                                                          \
-        else                                                       \
-        {                                                          \
-            if (as_list(index)[4] != NULL_OBJ)                     \
-            {                                                      \
-                filter = as_i64(as_list(index)[4]);                \
-                for ($i = 0; $i < len; $i++)                       \
-                {                                                  \
-                    $x = filter[$i + offset];                      \
-                    $y = group_ids[$i + offset];                   \
-                    aggr;                                          \
-                }                                                  \
-            }                                                      \
-            else                                                   \
-            {                                                      \
-                for ($i = 0; $i < len; $i++)                       \
-                {                                                  \
-                    $x = $i + offset;                              \
-                    $y = group_ids[$x];                            \
-                    aggr;                                          \
-                }                                                  \
-            }                                                      \
-        }                                                          \
+#define AGGR_ITER(index, len, offset, val, res, incoerse, outcoerse, ini, aggr) \
+    ({                                                                          \
+        u64_t $i, $x, $y, $n;                                                   \
+        i64_t *group_ids, *source, *filter, shift;                              \
+        incoerse##_t *$in;                                                      \
+        outcoerse##_t *$out;                                                    \
+        $n = index_group_count(index);                                          \
+        group_ids = as_i64(as_list(index)[1]);                                  \
+        $in = as_##incoerse(val);                                               \
+        $out = as_##outcoerse(res);                                             \
+        for ($y = 0; $y < $n; $y++)                                             \
+        {                                                                       \
+            ini;                                                                \
+        }                                                                       \
+        if (as_list(index)[3] != NULL_OBJ)                                      \
+        {                                                                       \
+            source = as_i64(as_list(index)[3]);                                 \
+            shift = as_list(index)[2]->i64;                                     \
+            if (as_list(index)[4] != NULL_OBJ)                                  \
+            {                                                                   \
+                filter = as_i64(as_list(index)[4]);                             \
+                for ($i = 0; $i < len; $i++)                                    \
+                {                                                               \
+                    $x = filter[$i + offset];                                   \
+                    $y = group_ids[source[$x] - shift];                         \
+                    aggr;                                                       \
+                }                                                               \
+            }                                                                   \
+            else                                                                \
+            {                                                                   \
+                for ($i = 0; $i < len; $i++)                                    \
+                {                                                               \
+                    $x = $i + offset;                                           \
+                    $y = group_ids[source[$x] - shift];                         \
+                    aggr;                                                       \
+                }                                                               \
+            }                                                                   \
+        }                                                                       \
+        else                                                                    \
+        {                                                                       \
+            if (as_list(index)[4] != NULL_OBJ)                                  \
+            {                                                                   \
+                filter = as_i64(as_list(index)[4]);                             \
+                for ($i = 0; $i < len; $i++)                                    \
+                {                                                               \
+                    $x = filter[$i + offset];                                   \
+                    $y = group_ids[$i + offset];                                \
+                    aggr;                                                       \
+                }                                                               \
+            }                                                                   \
+            else                                                                \
+            {                                                                   \
+                for ($i = 0; $i < len; $i++)                                    \
+                {                                                               \
+                    $x = $i + offset;                                           \
+                    $y = group_ids[$x];                                         \
+                    aggr;                                                       \
+                }                                                               \
+            }                                                                   \
+        }                                                                       \
     })
 
-#define AGGR_COLLECT(parts, groups, coerse, aggr)  \
-    ({                                             \
-        u64_t $x, $y, $i, $j, $l;                  \
-        coerse##_t *$in, *$out;                    \
-        obj_p $res;                                \
-        $res = clone_obj(as_list(parts)[0]);       \
-        $l = parts->len;                           \
-        $out = as_##coerse($res);                  \
-        for ($i = 1; $i < $l; $i++)                \
-        {                                          \
-            $in = as_##coerse(as_list(parts)[$i]); \
-            for ($j = 0; $j < groups; $j++)        \
-            {                                      \
-                $x = $j;                           \
-                $y = $j;                           \
-                aggr;                              \
-            }                                      \
-        }                                          \
-        $res;                                      \
+#define AGGR_COLLECT(parts, groups, incoerse, outcoerse, aggr) \
+    ({                                                         \
+        u64_t $x, $y, $i, $j, $l;                              \
+        incoerse##_t *$in;                                     \
+        outcoerse##_t *$out;                                   \
+        obj_p $res;                                            \
+        $res = clone_obj(as_list(parts)[0]);                   \
+        $l = parts->len;                                       \
+        $out = as_##outcoerse($res);                           \
+        for ($i = 1; $i < $l; $i++)                            \
+        {                                                      \
+            $in = as_##incoerse(as_list(parts)[$i]);           \
+            for ($j = 0; $j < groups; $j++)                    \
+            {                                                  \
+                $x = $j;                                       \
+                $y = $j;                                       \
+                aggr;                                          \
+            }                                                  \
+        }                                                      \
+        $res;                                                  \
     })
 
-obj_p aggr_map(raw_p aggr, obj_p val, obj_p index)
+obj_p aggr_map(raw_p aggr, obj_p val, i8_t outype, obj_p index)
 {
     pool_p pool = runtime_get()->pool;
     u64_t i, l, n, group_count, group_len, chunk;
@@ -132,7 +134,7 @@ obj_p aggr_map(raw_p aggr, obj_p val, obj_p index)
 
     if (n == 1)
     {
-        res = vector(val->type, group_count);
+        res = vector(outype, group_count);
         argv[0] = (raw_p)group_len;
         argv[1] = (raw_p)0;
         argv[2] = val;
@@ -149,9 +151,9 @@ obj_p aggr_map(raw_p aggr, obj_p val, obj_p index)
     chunk = l / n;
 
     for (i = 0; i < n - 1; i++)
-        pool_add_task(pool, aggr, 5, chunk, i * chunk, val, index, vector(val->type, group_count));
+        pool_add_task(pool, aggr, 5, chunk, i * chunk, val, index, vector(outype, group_count));
 
-    pool_add_task(pool, aggr, 5, l - i * chunk, i * chunk, val, index, vector(val->type, group_count));
+    pool_add_task(pool, aggr, 5, l - i * chunk, i * chunk, val, index, vector(outype, group_count));
 
     return pool_run(pool);
 }
@@ -164,16 +166,16 @@ obj_p aggr_first_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p 
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
     case TYPE_ENUM:
-        AGGR_ITER(index, len, offset, val, res, i64, $out[$y] = NULL_I64, if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
+        AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = NULL_I64, if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
         return res;
     case TYPE_F64:
-        AGGR_ITER(index, len, offset, val, res, f64, $out[$y] = NULL_F64, if (ops_is_nan($out[$y])) $out[$y] = $in[$x]);
+        AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = NULL_F64, if (ops_is_nan($out[$y])) $out[$y] = $in[$x]);
         return res;
     case TYPE_GUID:
-        AGGR_ITER(index, len, offset, val, res, guid, memset($out[$y], 0, sizeof(guid_t)), if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
+        AGGR_ITER(index, len, offset, val, res, guid, guid, memset($out[$y], 0, sizeof(guid_t)), if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
         return res;
     case TYPE_LIST:
-        AGGR_ITER(index, len, offset, val, res, list, $out[$y] = NULL_OBJ, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
+        AGGR_ITER(index, len, offset, val, res, list, list, $out[$y] = NULL_OBJ, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
         return res;
     default:
         drop_obj(res);
@@ -187,7 +189,7 @@ obj_p aggr_first(obj_p val, obj_p index)
     i64_t *xo, *xe;
     obj_p parts, res, ek, sym;
     n = index_group_count(index);
-    parts = aggr_map(aggr_first_partial, val, index);
+    parts = aggr_map(aggr_first_partial, val, val->type, index);
     unwrap_list(parts);
 
     switch (val->type)
@@ -196,7 +198,7 @@ obj_p aggr_first(obj_p val, obj_p index)
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
     case TYPE_ENUM:
-        res = AGGR_COLLECT(parts, n, i64, if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
+        res = AGGR_COLLECT(parts, n, i64, i64, if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
         res->type = val->type;
         drop_obj(parts);
         if (val->type == TYPE_ENUM)
@@ -228,15 +230,15 @@ obj_p aggr_first(obj_p val, obj_p index)
 
         return res;
     case TYPE_F64:
-        res = AGGR_COLLECT(parts, n, f64, if (ops_is_nan($out[$y])) $out[$y] = $in[$x]);
+        res = AGGR_COLLECT(parts, n, f64, f64, if (ops_is_nan($out[$y])) $out[$y] = $in[$x]);
         drop_obj(parts);
         return res;
     case TYPE_GUID:
-        res = AGGR_COLLECT(parts, n, guid, if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
+        res = AGGR_COLLECT(parts, n, guid, guid, if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
         drop_obj(parts);
         return res;
     case TYPE_LIST:
-        res = AGGR_COLLECT(parts, n, list, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
+        res = AGGR_COLLECT(parts, n, list, list, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
         drop_obj(parts);
         return res;
     default:
@@ -253,16 +255,16 @@ obj_p aggr_last_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p r
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
     case TYPE_ENUM:
-        AGGR_ITER(index, len, offset, val, res, i64, $out[$y] = NULL_I64, if ($in[$x] != NULL_I64) $out[$y] = $in[$x]);
+        AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = NULL_I64, if ($in[$x] != NULL_I64) $out[$y] = $in[$x]);
         return res;
     case TYPE_F64:
-        AGGR_ITER(index, len, offset, val, res, f64, $out[$y] = NULL_F64, if (!ops_is_nan($in[$x])) $out[$y] = $in[$x]);
+        AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = NULL_F64, if (!ops_is_nan($in[$x])) $out[$y] = $in[$x]);
         return res;
     case TYPE_GUID:
-        AGGR_ITER(index, len, offset, val, res, guid, memset($out[$y], 0, sizeof(guid_t)), if (memcmp($in[$x], NULL_GUID, sizeof(guid_t)) != 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
+        AGGR_ITER(index, len, offset, val, res, guid, guid, memset($out[$y], 0, sizeof(guid_t)), if (memcmp($in[$x], NULL_GUID, sizeof(guid_t)) != 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
         return res;
     case TYPE_LIST:
-        AGGR_ITER(index, len, offset, val, res, list, $out[$y] = NULL_OBJ, if ($in[$x] != NULL_OBJ) { drop_obj($out[$y]); $out[$y] = clone_obj($in[$x]); });
+        AGGR_ITER(index, len, offset, val, res, list, list, $out[$y] = NULL_OBJ, if ($in[$x] != NULL_OBJ) { drop_obj($out[$y]); $out[$y] = clone_obj($in[$x]); });
         return res;
     default:
         drop_obj(res);
@@ -277,7 +279,7 @@ obj_p aggr_last(obj_p val, obj_p index)
     obj_p parts, res, ek, sym;
 
     n = index_group_count(index);
-    parts = aggr_map(aggr_last_partial, val, index);
+    parts = aggr_map(aggr_last_partial, val, val->type, index);
     unwrap_list(parts);
 
     switch (val->type)
@@ -286,7 +288,7 @@ obj_p aggr_last(obj_p val, obj_p index)
     case TYPE_SYMBOL:
     case TYPE_TIMESTAMP:
     case TYPE_ENUM:
-        res = AGGR_COLLECT(parts, n, i64, if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
+        res = AGGR_COLLECT(parts, n, i64, i64, if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
         drop_obj(parts);
         if (val->type == TYPE_ENUM)
         {
@@ -317,15 +319,15 @@ obj_p aggr_last(obj_p val, obj_p index)
 
         return res;
     case TYPE_F64:
-        res = AGGR_COLLECT(parts, n, f64, if (ops_is_nan($out[$y])) $out[$y] = $in[$x]);
+        res = AGGR_COLLECT(parts, n, f64, f64, if (ops_is_nan($out[$y])) $out[$y] = $in[$x]);
         drop_obj(parts);
         return res;
     case TYPE_GUID:
-        res = AGGR_COLLECT(parts, n, guid, if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
+        res = AGGR_COLLECT(parts, n, guid, guid, if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
         drop_obj(parts);
         return res;
     case TYPE_LIST:
-        res = AGGR_COLLECT(parts, n, list, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
+        res = AGGR_COLLECT(parts, n, list, list, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
         drop_obj(parts);
         return res;
     default:
@@ -339,10 +341,10 @@ obj_p aggr_sum_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p re
     switch (val->type)
     {
     case TYPE_I64:
-        AGGR_ITER(index, len, offset, val, res, i64, $out[$y] = 0, $out[$y] = addi64($out[$y], $in[$x]));
+        AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = addi64($out[$y], $in[$x]));
         return res;
     case TYPE_F64:
-        AGGR_ITER(index, len, offset, val, res, f64, $out[$y] = 0.0, $out[$y] = addf64($out[$y], $in[$x]));
+        AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = addf64($out[$y], $in[$x]));
         return res;
     default:
         drop_obj(res);
@@ -356,17 +358,17 @@ obj_p aggr_sum(obj_p val, obj_p index)
     obj_p parts, res;
 
     n = index_group_count(index);
-    parts = aggr_map(aggr_sum_partial, val, index);
+    parts = aggr_map(aggr_sum_partial, val, val->type, index);
     unwrap_list(parts);
 
     switch (val->type)
     {
     case TYPE_I64:
-        res = AGGR_COLLECT(parts, n, i64, $out[$y] = addi64($out[$y], $in[$x]));
+        res = AGGR_COLLECT(parts, n, i64, i64, $out[$y] = addi64($out[$y], $in[$x]));
         drop_obj(parts);
         return res;
     case TYPE_F64:
-        res = AGGR_COLLECT(parts, n, f64, $out[$y] = addf64($out[$y], $in[$x]));
+        res = AGGR_COLLECT(parts, n, f64, f64, $out[$y] = addf64($out[$y], $in[$x]));
         drop_obj(parts);
         return res;
     default:
@@ -381,10 +383,10 @@ obj_p aggr_max_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p re
     {
     case TYPE_I64:
     case TYPE_TIMESTAMP:
-        AGGR_ITER(index, len, offset, val, res, i64, $out[$y] = 0, $out[$y] = maxi64($out[$y], $in[$x]));
+        AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = maxi64($out[$y], $in[$x]));
         return res;
     case TYPE_F64:
-        AGGR_ITER(index, len, offset, val, res, f64, $out[$y] = 0.0, $out[$y] = maxf64($out[$y], $in[$x]));
+        AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = maxf64($out[$y], $in[$x]));
         return res;
     default:
         drop_obj(res);
@@ -398,17 +400,17 @@ obj_p aggr_max(obj_p val, obj_p index)
     obj_p parts, res;
 
     n = index_group_count(index);
-    parts = aggr_map(aggr_max_partial, val, index);
+    parts = aggr_map(aggr_max_partial, val, val->type, index);
     unwrap_list(parts);
 
     switch (val->type)
     {
     case TYPE_I64:
-        res = AGGR_COLLECT(parts, n, i64, $out[$y] = maxi64($out[$y], $in[$x]));
+        res = AGGR_COLLECT(parts, n, i64, i64, $out[$y] = maxi64($out[$y], $in[$x]));
         drop_obj(parts);
         return res;
     case TYPE_F64:
-        res = AGGR_COLLECT(parts, n, f64, $out[$y] = maxf64($out[$y], $in[$x]));
+        res = AGGR_COLLECT(parts, n, f64, f64, $out[$y] = maxf64($out[$y], $in[$x]));
         drop_obj(parts);
         return res;
     default:
@@ -423,10 +425,10 @@ obj_p aggr_min_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p re
     {
     case TYPE_I64:
     case TYPE_TIMESTAMP:
-        AGGR_ITER(index, len, offset, val, res, i64, $out[$y] = 0, $out[$y] = mini64($out[$y], $in[$x]));
+        AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = mini64($out[$y], $in[$x]));
         return res;
     case TYPE_F64:
-        AGGR_ITER(index, len, offset, val, res, f64, $out[$y] = 0.0, $out[$y] = minf64($out[$y], $in[$x]));
+        AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = minf64($out[$y], $in[$x]));
         return res;
     default:
         drop_obj(res);
@@ -440,17 +442,17 @@ obj_p aggr_min(obj_p val, obj_p index)
     obj_p parts, res;
 
     n = index_group_count(index);
-    parts = aggr_map(aggr_max_partial, val, index);
+    parts = aggr_map(aggr_max_partial, val, val->type, index);
     unwrap_list(parts);
 
     switch (val->type)
     {
     case TYPE_I64:
-        res = AGGR_COLLECT(parts, n, i64, $out[$y] = mini64($out[$y], $in[$x]));
+        res = AGGR_COLLECT(parts, n, i64, i64, $out[$y] = mini64($out[$y], $in[$x]));
         drop_obj(parts);
         return res;
     case TYPE_F64:
-        res = AGGR_COLLECT(parts, n, f64, $out[$y] = minf64($out[$y], $in[$x]));
+        res = AGGR_COLLECT(parts, n, f64, f64, $out[$y] = minf64($out[$y], $in[$x]));
         drop_obj(parts);
         return res;
     default:
@@ -462,16 +464,23 @@ obj_p aggr_min(obj_p val, obj_p index)
 obj_p aggr_count_partial(u64_t len, u64_t offset, obj_p val, obj_p index, obj_p res)
 {
     unused(val);
-    u64_t i, n;
-    i64_t *yi;
-
-    n = index_group_count(index);
-    yi = as_i64(res);
-
-    for (i = 0; i < n; i++)
-        yi[i] = 0;
-
-    AGGR_ITER(index, len, offset, val, res, i64, $out[$y] = 0, {unused($in); $out[$y]++; });
+    switch (val->type)
+    {
+    case TYPE_I64:
+        AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, {unused($in); $out[$y]++; });
+        return res;
+    case TYPE_F64:
+        AGGR_ITER(index, len, offset, val, res, f64, i64, $out[$y] = 0, {unused($in); $out[$y]++; });
+        return res;
+    case TYPE_GUID:
+        AGGR_ITER(index, len, offset, val, res, guid, i64, $out[$y] = 0, {unused($in); $out[$y]++; });
+        return res;
+    case TYPE_LIST:
+        AGGR_ITER(index, len, offset, val, res, list, i64, $out[$y] = 0, {unused($in); $out[$y]++; });
+        return res;
+    default:
+        return error(ERR_TYPE, "count: unsupported type: '%s'", type_name(val->type));
+    }
 
     return res;
 }
@@ -482,11 +491,11 @@ obj_p aggr_count(obj_p val, obj_p index)
     obj_p parts, res;
 
     n = index_group_count(index);
-    parts = aggr_map(aggr_count_partial, val, index);
+    parts = aggr_map(aggr_count_partial, val, TYPE_I64, index);
     unwrap_list(parts);
-
-    res = AGGR_COLLECT(parts, n, i64, $out[$y] += $in[$x]);
+    res = AGGR_COLLECT(parts, n, i64, i64, $out[$y] += $in[$x]);
     drop_obj(parts);
+
     return res;
 }
 
@@ -675,197 +684,129 @@ obj_p aggr_collect(obj_p val, obj_p index)
 {
     u64_t i, l, m, n;
     i64_t *cnts;
-    obj_p cnt, res;
+    obj_p cnt, k, v, res;
 
-    // cnt = aggr_count(val, index);
-    // if (is_error(cnt))
-    //     return cnt;
+    cnt = aggr_count(val, index);
+    if (is_error(cnt))
+        return cnt;
 
-    // cnts = as_i64(cnt);
-    // n = cnt->len;
-    // l = index_group_len(index);
+    cnts = as_i64(cnt);
+    n = cnt->len;
+    l = index_group_len(index);
 
-    // switch (val->type)
-    // {
-    // case TYPE_I64:
-    // case TYPE_SYMBOL:
-    // case TYPE_TIMESTAMP:
-    //     res = list(n);
+    switch (val->type)
+    {
+    case TYPE_I64:
+    case TYPE_SYMBOL:
+    case TYPE_TIMESTAMP:
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, i64, list, {
+            m = cnts[$y];
+            $out[$y] = vector(val->type, m);
+            $out[$y]->len = 0; }, as_i64($out[$y])[$out[$y]->len++] = $in[$x]);
+        drop_obj(cnt);
 
-    //     // alloc vectors for each group
-    //     for (i = 0; i < n; i++)
-    //     {
-    //         m = cnts[i];
-    //         as_list(res)[i] = vector(val->type, m);
-    //         as_list(res)[i]->len = 0;
-    //     }
+        return res;
+    case TYPE_F64:
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, f64, list, {
+            m = cnts[$y];
+            $out[$y] = vector(val->type, m);
+            $out[$y]->len = 0; }, as_f64($out[$y])[$out[$y]->len++] = $in[$x]);
+        drop_obj(cnt);
 
-    //     AGGR_ITER(index, l, 0, val, res, i64, $out[$y] = 0, $out[$y] = maxi64($out[$y], $in[$x]));
-    //     AGGR_ITER(index, l, 0, as_i64(as_list(res)[$y])[as_list(res)[$y]->len++] = as_i64(val)[$x]);
+        return res;
 
-    //     drop_obj(cnt);
+    case TYPE_ENUM:
+        k = ray_key(val);
+        if (is_error(k))
+            return k;
 
-    return res;
-    // case TYPE_F64:
-    //     res = list(n);
-    //     for (i = 0; i < n; i++)
-    //     {
-    //         m = cnts[i];
-    //         as_list(res)[i] = vector_f64(m);
-    //         as_list(res)[i]->len = 0;
-    //     }
+        v = ray_get(k);
+        drop_obj(k);
 
-    //     if (filters)
-    //     {
-    //         for (i = 0; i < l; i++)
-    //         {
-    //             n = as_i64(bins)[i];
-    //             as_f64(as_list(res)[n])[as_list(res)[n]->len++] = as_f64(obj)[filters[i]];
-    //         }
+        if (is_error(v))
+            return v;
 
-    //         return res;
-    //     }
+        if (v->type != TYPE_SYMBOL)
+        {
+            drop_obj(cnt);
+            drop_obj(v);
+            return error(ERR_TYPE, "enum: '%s' is not a 'Symbol'", type_name(v->type));
+        }
 
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         n = as_i64(bins)[i];
-    //         as_f64(as_list(res)[n])[as_list(res)[n]->len++] = as_f64(obj)[i];
-    //     }
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, i64, list, {
+            m = cnts[$y];
+            $out[$y] = vector_symbol(m);
+            $out[$y]->len = 0; }, as_symbol($out[$y])[$out[$y]->len++] = as_symbol(v)[$in[$x]]);
+        drop_obj(v);
+        drop_obj(cnt);
 
-    //     return res;
-    // case TYPE_ENUM:
-    //     k = ray_key(obj);
-    //     if (is_error(k))
-    //         return k;
+        return res;
+    case TYPE_LIST:
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, list, list, {
+            m = cnts[$y];
+            $out[$y] = list(m);
+            $out[$y]->len = 0; }, as_list($out[$y])[$out[$y]->len++] = clone_obj($in[$x]));
+        drop_obj(cnt);
 
-    //     v = ray_get(k);
-    //     drop_obj(k);
-
-    //     if (is_error(v))
-    //         return v;
-
-    //     if (v->type != TYPE_SYMBOL)
-    //         return error(ERR_TYPE, "enum: '%s' is not a 'Symbol'", type_name(v->type));
-
-    //     res = list(n);
-    //     for (i = 0; i < n; i++)
-    //     {
-    //         m = cnts[i];
-    //         as_list(res)[i] = vector_symbol(m);
-    //         as_list(res)[i]->len = 0;
-    //     }
-
-    //     if (filters)
-    //     {
-    //         for (i = 0; i < l; i++)
-    //         {
-    //             n = as_i64(bins)[i];
-    //             as_i64(as_list(res)[n])[as_list(res)[n]->len++] = as_i64(v)[as_i64(enum_val(obj))[filters[i]]];
-    //         }
-
-    //         drop_obj(v);
-
-    //         return res;
-    //     }
-
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         n = as_i64(bins)[i];
-    //         as_i64(as_list(res)[n])[as_list(res)[n]->len++] = as_i64(v)[as_i64(enum_val(obj))[i]];
-    //     }
-
-    //     drop_obj(v);
-
-    //     return res;
-    // case TYPE_LIST:
-    //     res = list(n);
-    //     for (i = 0; i < n; i++)
-    //     {
-    //         m = cnts[i];
-    //         as_list(res)[i] = list(m);
-    //         as_list(res)[i]->len = 0;
-    //     }
-
-    //     if (filters)
-    //     {
-    //         for (i = 0; i < l; i++)
-    //         {
-    //             n = as_i64(bins)[i];
-    //             as_list(as_list(res)[n])[as_list(res)[n]->len++] = clone_obj(as_list(obj)[filters[i]]);
-    //         }
-
-    //         return res;
-    //     }
-
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         n = as_i64(bins)[i];
-    //         as_list(as_list(res)[n])[as_list(res)[n]->len++] = clone_obj(as_list(obj)[i]);
-    //     }
-
-    //     return res;
-    // case TYPE_ANYMAP:
-    //     res = list(n);
-    //     for (i = 0; i < n; i++)
-    //     {
-    //         m = cnts[i];
-    //         as_list(res)[i] = list(m);
-    //         as_list(res)[i]->len = 0;
-    //     }
-
-    //     if (filters)
-    //     {
-    //         for (i = 0; i < l; i++)
-    //         {
-    //             n = as_i64(bins)[i];
-    //             as_list(as_list(res)[n])[as_list(res)[n]->len++] = at_idx(obj, filters[i]);
-    //         }
-
-    //         return res;
-    //     }
-
-    //     for (i = 0; i < l; i++)
-    //     {
-    //         n = as_i64(bins)[i];
-    //         as_list(as_list(res)[n])[as_list(res)[n]->len++] = at_idx(obj, i);
-    //     }
-
-    //     return res;
-
-    // default:
-    //     drop_obj(cnt);
-    //     throw(ERR_TYPE, "aggr collect: unsupported type: '%s", type_name(val->type));
-    // }
+        return res;
+    default:
+        drop_obj(cnt);
+        throw(ERR_TYPE, "collect: unsupported type: '%s", type_name(val->type));
+    }
 }
 
-obj_p aggr_indices(obj_p val, obj_p index)
+obj_p aggr_ids(obj_p val, obj_p index)
 {
     u64_t i, l, m, n;
     i64_t *cnts;
-    obj_p cnt, res;
+    obj_p cnt, k, v, res;
 
-    // cnt = aggr_count(val, index);
-    // if (is_error(cnt))
-    //     return cnt;
+    cnt = aggr_count(val, index);
+    if (is_error(cnt))
+        return cnt;
 
-    // cnts = as_i64(cnt);
-    // n = cnt->len;
-    // l = ops_count(val);
+    cnts = as_i64(cnt);
+    n = cnt->len;
+    l = index_group_len(index);
 
-    // res = list(n);
+    switch (val->type)
+    {
+    case TYPE_I64:
+    case TYPE_SYMBOL:
+    case TYPE_TIMESTAMP:
+    case TYPE_ENUM:
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, i64, list, {
+            m = cnts[$y];
+            $out[$y] = vector_i64( m);
+            $out[$y]->len = 0; }, as_i64($out[$y])[$out[$y]->len++] = $x);
+        drop_obj(cnt);
 
-    // // alloc vectors for each group
-    // for (i = 0; i < n; i++)
-    // {
-    //     m = cnts[i];
-    //     as_list(res)[i] = vector_i64(m);
-    //     as_list(res)[i]->len = 0;
-    // }
+        return res;
+    case TYPE_F64:
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, f64, list, {
+            m = cnts[$y];
+            $out[$y] = vector_i64( m);
+            $out[$y]->len = 0; }, as_i64($out[$y])[$out[$y]->len++] = $x);
+        drop_obj(cnt);
 
-    // // fill vectors with indices
-    // AGGR_ITER(index, l, 0, as_i64(as_list(res)[$y])[as_list(res)[$y]->len++] = $x);
+        return res;
+    case TYPE_LIST:
+        res = list(n);
+        AGGR_ITER(index, l, 0, val, res, list, list, {
+            m = cnts[$y];
+            $out[$y] = vector_i64(m);
+            $out[$y]->len = 0; }, as_i64($out[$y])[$out[$y]->len++] = $x);
+        drop_obj(cnt);
 
-    // drop_obj(cnt);
-
-    return res;
+        return res;
+    default:
+        drop_obj(cnt);
+        throw(ERR_TYPE, "indices: unsupported type: '%s", type_name(val->type));
+    }
 }

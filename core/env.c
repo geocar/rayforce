@@ -127,6 +127,7 @@ nil_t init_functions(obj_p functions)
     regf(functions,  "sum",                 TYPE_UNARY,    FN_ATOMIC | FN_AGGR,       ray_sum);
     regf(functions,  "avg",                 TYPE_UNARY,    FN_ATOMIC | FN_AGGR,       ray_avg);
     regf(functions,  "med",                 TYPE_UNARY,    FN_ATOMIC | FN_AGGR,       ray_med);
+    regf(functions,  "ids",                 TYPE_UNARY,    FN_AGGR,                   ray_ids);
     regf(functions,  "dev",                 TYPE_UNARY,    FN_ATOMIC | FN_AGGR,       ray_dev);
     regf(functions,  "min",                 TYPE_UNARY,    FN_ATOMIC | FN_AGGR,       ray_min);
     regf(functions,  "max",                 TYPE_UNARY,    FN_ATOMIC | FN_AGGR,       ray_max);

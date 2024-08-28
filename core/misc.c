@@ -32,6 +32,7 @@
 #include "error.h"
 #include "index.h"
 #include "aggr.h"
+#include "compose.h"
 
 obj_p ray_type(obj_p x)
 {
@@ -65,4 +66,18 @@ obj_p ray_rc(obj_p x)
 obj_p ray_quote(obj_p x)
 {
     return clone_obj(x);
+}
+
+obj_p ray_ids(obj_p x)
+{
+    u64_t i, l;
+    obj_p res;
+
+    switch (x->type)
+    {
+    case TYPE_GROUPMAP:
+        return aggr_ids(as_list(x)[0], as_list(x)[1]);
+    default:
+        return ray_til(x);
+    }
 }
