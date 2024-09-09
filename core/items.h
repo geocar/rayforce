@@ -31,6 +31,7 @@ obj_p ray_find(obj_p x, obj_p y);
 obj_p ray_filter(obj_p x, obj_p y);
 obj_p ray_take(obj_p x, obj_p y);
 obj_p ray_in(obj_p x, obj_p y);
+obj_p ray_within(obj_p x, obj_p y);
 obj_p ray_sect(obj_p x, obj_p y);
 obj_p ray_except(obj_p x, obj_p y);
 obj_p ray_union(obj_p x, obj_p y);

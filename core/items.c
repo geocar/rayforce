@@ -784,6 +784,39 @@ obj_p ray_in(obj_p x, obj_p y) {
     return NULL_OBJ;
 }
 
+obj_p ray_within(obj_p x, obj_p y) {
+    i64_t i, l, min, max;
+    obj_p res;
+
+    if (!IS_VECTOR(y) || y->len != 2)
+        return error_str(ERR_TYPE, "within: second argument must be a 2-element vector");
+
+    switch
+        mtype2(x->type, y->type) {
+            case mtype2(-TYPE_I64, TYPE_I64):
+                min = AS_I64(y)[0];
+                max = AS_I64(y)[1];
+
+                return B8(x->i64 >= min && x->i64 <= max);
+
+            case mtype2(TYPE_I64, TYPE_I64):
+                l = x->len;
+                min = AS_I64(y)[0];
+                max = AS_I64(y)[1];
+                res = B8(l);
+
+                for (i = 0; i < l; i++)
+                    AS_B8(res)[i] = AS_I64(x)[i] >= min && AS_I64(x)[i] <= max;
+
+                return res;
+
+            default:
+                THROW(ERR_TYPE, "within: unsupported types: '%s, '%s", type_name(x->type), type_name(y->type));
+        }
+
+    return NULL_OBJ;
+}
+
 obj_p ray_sect(obj_p x, obj_p y) {
     obj_p mask, res;
 
