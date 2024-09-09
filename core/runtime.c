@@ -32,7 +32,7 @@
 runtime_p __RUNTIME = NULL;
 
 nil_t usage(nil_t) {
-    printf("%s%s%s", BOLD, YELLOW, "Usage: rayforce [-f file...] [-p port] [file] [-t threads]\n");
+    printf("%s%s%s", BOLD, YELLOW, "Usage: rayforce [-f file] [-p port] [-t timeit] [-c cores] [file]\n");
     exit(EXIT_FAILURE);
 }
 
