@@ -39,6 +39,7 @@
 #include "unary.h"
 #include "binary.h"
 #include "compose.h"
+#include "items.h"
 
 obj_p ray_hopen(obj_p x) {
     i64_t fd;
@@ -673,6 +674,18 @@ obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
                 drop_obj(col);
                 break;
             case TYPE_C8:
+                // First we need to ckeck if symfile is already exist, if so - we need to merge
+                // it with sym and enumerate symbol columns over the whole new sym file, preserving ids of the old ones
+                s = ray_get(symfile);
+                if (s->type == TYPE_SYMBOL) {
+                    // First retrieve distinct symbols from the new columns not present in current sym file
+                    v = ray_except(sym, s);
+                    drop_obj(sym);
+                    sym = ray_concat(s, v);
+                    drop_obj(v);
+                }
+
+                drop_obj(s);
                 res = binary_set(symfile, sym);
                 break;
             default:

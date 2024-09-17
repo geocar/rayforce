@@ -46,6 +46,7 @@
 #include <fcntl.h>
 
 i64_t fs_fopen(lit_p path, i64_t attrs);
+i64_t fs_fdelete(lit_p path);
 i64_t fs_fsize(i64_t fd);
 i64_t fs_fread(i64_t fd, str_p buf, i64_t size);
 i64_t fs_fwrite(i64_t fd, str_p buf, i64_t size);

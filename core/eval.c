@@ -328,6 +328,7 @@ __attribute__((hot)) obj_p eval(obj_p obj) {
         case -TYPE_SYMBOL:
             if (obj->attrs & ATTR_QUOTED)
                 return symboli64(obj->i64);
+
             val = resolve(obj->i64);
             if (val == NULL)
                 return unwrap(error(ERR_EVAL, "undefined symbol: '%s", str_from_symbol(obj->i64)), (i64_t)obj);

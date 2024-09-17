@@ -52,6 +52,16 @@ i64_t fs_fopen(lit_p path, i64_t attrs) {
                              NULL);
 }
 
+i64_t fs_fdelete(lit_p path) {
+    i64_t res;
+    obj_p s;
+    s = cstring_from_str(path, strlen(path));
+    res = DeleteFile(AS_C8(s));
+    drop_obj(s);
+
+    return res;
+}
+
 i64_t fs_fsize(i64_t fd) {
     LARGE_INTEGER size;
     if (!GetFileSizeEx((HANDLE)fd, &size))
@@ -145,6 +155,16 @@ i64_t fs_fopen(lit_p path, i64_t attrs) {
     return open(path, attrs, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 }
 
+i64_t fs_fdelete(lit_p path) {
+    i64_t res;
+    obj_p s;
+    s = cstring_from_str(path, strlen(path));
+    res = unlink(AS_C8(s));
+    drop_obj(s);
+
+    return res;
+}
+
 i64_t fs_fsize(i64_t fd) {
     struct stat st;
     if (fstat(fd, &st) == -1)
@@ -211,6 +231,16 @@ i64_t fs_fopen(lit_p path, i64_t attrs) {
     drop_obj(s);
 
     return open(path, attrs, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+}
+
+i64_t fs_fdelete(lit_p path) {
+    i64_t res;
+    obj_p s;
+    s = cstring_from_str(path, strlen(path));
+    res = unlink(AS_C8(s));
+    drop_obj(s);
+
+    return res;
 }
 
 i64_t fs_fsize(i64_t fd) {
