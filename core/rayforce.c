@@ -42,6 +42,7 @@
 #include "sys.h"
 #include "unary.h"
 #include "util.h"
+#include "fdmap.h"
 
 CASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
@@ -1116,22 +1117,60 @@ obj_p pop_obj(obj_p *obj) {
             return c8(AS_C8(*obj)[--(*obj)->len]);
         case TYPE_LIST:
             return AS_LIST(*obj)[--(*obj)->len];
-
         default:
             PANIC("pop_obj: invalid type: %d", (*obj)->type);
     }
 }
 
 obj_p remove_idx(obj_p *obj, i64_t idx) {
-    UNUSED(idx);
+    obj_p res;
 
-    return *obj;
+    switch ((*obj)->type) {
+        case TYPE_I64:
+        case TYPE_SYMBOL:
+        case TYPE_TIMESTAMP:
+            if (idx < 0 || idx >= (i64_t)(*obj)->len)
+                return NULL_OBJ;
+
+            res = i64(AS_I64(*obj)[idx]);
+            res->type = -(*obj)->type;
+            memmove(AS_I64(*obj) + idx, AS_I64(*obj) + idx + 1, ((*obj)->len - idx - 1) * sizeof(i64_t));
+            resize_obj(obj, (*obj)->len - 1);
+
+            return res;
+        case TYPE_LIST:
+            if (idx < 0 || idx >= (i64_t)(*obj)->len)
+                return NULL_OBJ;
+
+            res = AS_LIST(*obj)[idx];
+            memmove(AS_LIST(*obj) + idx, AS_LIST(*obj) + idx + 1, ((*obj)->len - idx - 1) * sizeof(obj_p));
+            resize_obj(obj, (*obj)->len - 1);
+
+            return res;
+        default:
+            PANIC("remove_idx: invalid type: %d", (*obj)->type);
+    }
 }
 
 obj_p remove_obj(obj_p *obj, obj_p idx) {
-    UNUSED(idx);
+    u64_t i, n, l;
+    obj_p v;
 
-    return *obj;
+    switch ((*obj)->type) {
+        case TYPE_DICT:
+            i = find_obj(AS_LIST(*obj)[0], idx);
+
+            // not found?
+            if (i == AS_LIST(*obj)[0]->len)
+                return *obj;
+
+            v = remove_idx(&AS_LIST(*obj)[0], i);
+            drop_obj(v);
+
+            return remove_idx(&AS_LIST(*obj)[1], i);
+        default:
+            PANIC("remove_obj: invalid type: %d", (*obj)->type);
+    }
 }
 
 b8_t is_null(obj_p obj) {
@@ -1423,7 +1462,7 @@ nil_t __attribute__((hot)) drop_obj(obj_p obj) {
     u32_t rc;
     u64_t i, l;
     i64_t *fds;
-    obj_p id, k;
+    obj_p fdmap, k;
 
     if (!__RC_SYNC) {
         (obj)->rc -= 1;
@@ -1447,11 +1486,13 @@ nil_t __attribute__((hot)) drop_obj(obj_p obj) {
             else
                 heap_free(obj);
             return;
-        case TYPE_FILEMAP:
-            l = obj->len;
-            return;
         case TYPE_FDMAP:
-            l = AS_LIST(obj)[0]->len;
+            fdmap_destroy(obj);
+            l = obj->len;
+            for (i = 0; i < l; i++)
+                drop_obj(AS_LIST(obj)[i]);
+
+            heap_free(obj);
             return;
         case TYPE_ENUM:
             if (IS_EXTERNAL_COMPOUND(obj))
@@ -1488,16 +1529,8 @@ nil_t __attribute__((hot)) drop_obj(obj_p obj) {
             return;
         default:
             if (IS_EXTERNAL_SIMPLE(obj)) {
-                mmap_free(obj, size_of(obj));
-                id = i64((i64_t)obj);
-                k = at_obj(runtime_get()->fds, id);
-                if (!is_null(k)) {
-                    fs_fclose(k->i64);
-                    drop_obj(k);
-                    set_obj(&runtime_get()->fds, id, null(TYPE_I64));
-                }
-
-                drop_obj(id);
+                fdmap = runtime_fdmap_pop(runtime_get(), obj);
+                drop_obj(fdmap);
             } else
                 heap_free(obj);
 

@@ -47,6 +47,7 @@
 #include "string.h"
 #include "pool.h"
 #include "io.h"
+#include "fdmap.h"
 
 // Atomic unary functions (iterates through list of argument items down to atoms)
 obj_p unary_call_atomic(unary_f f, obj_p x) {
@@ -147,7 +148,7 @@ obj_p unary_call(u8_t attrs, unary_f f, obj_p x) {
 
 obj_p ray_get(obj_p x) {
     i64_t fd;
-    obj_p res, col, keys, s, v, id, *sym, path;
+    obj_p res, col, keys, s, v, *sym, path, fdmap;
     u64_t size;
 
     switch (x->type) {
@@ -195,10 +196,9 @@ obj_p ray_get(obj_p x) {
                     fs_fclose(fd);
                     return v;
                 } else {
-                    // insert fd into runtime fds
-                    id = i64((i64_t)res);
-                    set_obj(&runtime_get()->fds, id, i64(fd));
-                    drop_obj(id);
+                    fdmap = fdmap_create(1);
+                    fdmap_add_fd(fdmap, res, fd, size);
+                    runtime_fdmap_push(runtime_get(), res, fdmap);
                 }
 
                 if (IS_EXTERNAL_COMPOUND(res))

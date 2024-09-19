@@ -266,6 +266,7 @@ nil_t init_typenames(obj_p typenames)
     REGISTER_TYPE(typenames,    TYPE_LAMBDA,    "Lambda");
     REGISTER_TYPE(typenames,    TYPE_FILTERMAP, "Filtermap");
     REGISTER_TYPE(typenames,    TYPE_GROUPMAP,  "Groupmap");
+    REGISTER_TYPE(typenames,    TYPE_FDMAP,     "Fdmap");
     REGISTER_TYPE(typenames,    TYPE_NULL,      "Null");
     REGISTER_TYPE(typenames,    TYPE_ERROR,     "Error");
 }

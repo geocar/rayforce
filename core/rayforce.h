@@ -44,8 +44,7 @@ extern "C"
 #define TYPE_ANYMAP 77
 #define TYPE_FILTERMAP 78
 #define TYPE_GROUPMAP 79
-#define TYPE_FILEMAP 80
-#define TYPE_FDMAP 81
+#define TYPE_FDMAP 80
 #define TYPE_TABLE 98
 #define TYPE_DICT 99
 #define TYPE_LAMBDA 100
@@ -201,7 +200,9 @@ extern obj_p push_sym(obj_p *obj, lit_p str); // push interned string to a symbo
 extern obj_p append_list(obj_p *obj, obj_p vals);  
 
 // Pop a value from the end of a list
-extern obj_p pop_obj(obj_p *obj); // pop object from a list
+extern obj_p pop_obj(obj_p *obj);               // pop object from a list
+extern obj_p remove_idx(obj_p *obj, i64_t idx); // remove value from a obj by index
+extern obj_p remove_obj(obj_p *obj, obj_p idx); // remove value from a obj by obj
 
 // Insert a value into a list by an index (doesn't call a drop)
 extern obj_p ins_raw(obj_p *obj, i64_t idx, raw_p val); // write raw value into a list

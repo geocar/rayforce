@@ -120,7 +120,7 @@ i32_t runtime_create(i32_t argc, str_p argv[]) {
     __RUNTIME->symbols = symbols;
     __RUNTIME->env = env_create();
     __RUNTIME->addr = (sock_addr_t){{0}, 0};
-    __RUNTIME->fds = dict(I64(0), I64(0));
+    __RUNTIME->fdmaps = dict(I64(0), LIST(0));
     __RUNTIME->args = NULL_OBJ;
     __RUNTIME->pool = NULL;
 
@@ -197,7 +197,7 @@ nil_t runtime_destroy(nil_t) {
     symbols_destroy(__RUNTIME->symbols);
     heap_unmap(__RUNTIME->symbols, sizeof(struct symbols_t));
     env_destroy(&__RUNTIME->env);
-    drop_obj(__RUNTIME->fds);
+    drop_obj(__RUNTIME->fdmaps);
     interpreter_destroy();
     if (__RUNTIME->pool)
         pool_destroy(__RUNTIME->pool);
@@ -207,8 +207,29 @@ nil_t runtime_destroy(nil_t) {
 }
 
 obj_p runtime_get_arg(lit_p key) {
-    i64_t i = find_sym(AS_LIST(__RUNTIME->args)[0], key);
+    i64_t i;
+
+    i = find_sym(AS_LIST(__RUNTIME->args)[0], key);
     if (i < (i64_t)AS_LIST(__RUNTIME->args)[0]->len)
         return at_idx(AS_LIST(__RUNTIME->args)[1], i);
+
     return NULL_OBJ;
+}
+
+nil_t runtime_fdmap_push(runtime_p runtime, obj_p assoc, obj_p fdmap) {
+    obj_p id;
+
+    id = i64((i64_t)assoc);
+    set_obj(&runtime->fdmaps, id, fdmap);
+    drop_obj(id);
+}
+
+obj_p runtime_fdmap_pop(runtime_p runtime, obj_p assoc) {
+    obj_p id, fdmap;
+
+    id = i64((i64_t)assoc);
+    fdmap = remove_obj(&runtime->fdmaps, id);
+    drop_obj(id);
+
+    return fdmap;
 }

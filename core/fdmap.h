@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2023 Anton Kundenko <singaraiona@gmail.com>
+ *   Copyright (c) 2024 Anton Kundenko <singaraiona@gmail.com>
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,41 +21,13 @@
  *   SOFTWARE.
  */
 
-#ifndef RUNTIME_H
-#define RUNTIME_H
+#ifndef FDMAP_H
+#define FDMAP_H
 
 #include "rayforce.h"
-#include "symbols.h"
-#include "heap.h"
-#include "env.h"
-#include "eval.h"
-#include "poll.h"
-#include "sock.h"
-#include "pool.h"
-#include "sys.h"
 
-/*
- * Runtime structure.
- */
-typedef struct runtime_t {
-    obj_p args;           // Command line arguments.
-    sys_info_t sys_info;  // System information.
-    env_t env;            // Environment.
-    symbols_p symbols;    // vector_symbols pool.
-    poll_p poll;          // I/O event loop handle.
-    obj_p fdmaps;         // File descriptors mappings.
-    sock_addr_t addr;     // Socket address that a process listen.
-    pool_p pool;          // Executors pool.
-} *runtime_p;
+obj_p fdmap_create(u64_t size);
+nil_t fdmap_add_fd(obj_p fdmap, obj_p obj, i64_t fd, i64_t size);
+nil_t fdmap_destroy(obj_p fdmap);
 
-extern runtime_p __RUNTIME;
-
-i32_t runtime_create(i32_t argc, str_p argv[]);
-i32_t runtime_run(nil_t);
-nil_t runtime_destroy(nil_t);
-obj_p runtime_get_arg(lit_p key);
-nil_t runtime_fdmap_push(runtime_p runtime, obj_p assoc, obj_p fdmap);
-obj_p runtime_fdmap_pop(runtime_p runtime, obj_p assoc);
-inline __attribute__((always_inline)) runtime_p runtime_get(nil_t) { return __RUNTIME; }
-
-#endif  // RUNTIME_H
+#endif  // FDMAP_H
