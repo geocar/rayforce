@@ -157,7 +157,6 @@ nil_t init_functions(obj_p functions)
     REGISTER_FN(functions,  "rc",                  TYPE_UNARY,    FN_NONE,                   ray_rc);
     REGISTER_FN(functions,  "select",              TYPE_UNARY,    FN_NONE,                   ray_select);
     REGISTER_FN(functions,  "timeit",              TYPE_UNARY,    FN_NONE | FN_SPECIAL_FORM, ray_timeit);
-    REGISTER_FN(functions,  "bins",                TYPE_UNARY,    FN_NONE,                   ray_bins);
     REGISTER_FN(functions,  "update",              TYPE_UNARY,    FN_NONE,                   ray_update);
     REGISTER_FN(functions,  "timestamp",           TYPE_UNARY,    FN_NONE,                   ray_timestamp);
     REGISTER_FN(functions,  "use-unicode-format",  TYPE_UNARY,    FN_NONE,                   ray_unicode_format);

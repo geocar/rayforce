@@ -241,39 +241,6 @@ obj_p ray_resolve(obj_p x) {
     return (res == NULL) ? NULL_OBJ : clone_obj(*res);
 }
 
-obj_p ray_bins(obj_p x) {
-    obj_p bins, res;
-
-    switch (x->type) {
-        // case TYPE_B8:
-        // case TYPE_U8:
-        // case TYPE_C8:
-        //     bins = index_group_i8((i8_t *)AS_U8(x), NULL, x->len);
-        //     break;
-        // case TYPE_I64:
-        // case TYPE_SYMBOL:
-        // case TYPE_TIMESTAMP:
-        //     bins = index_group_i64(AS_I64(x), NULL, x->len);
-        //     break;
-        // case TYPE_F64:
-        //     bins = index_group_i64((i64_t *)AS_F64(x), NULL, x->len);
-        //     break;
-        // case TYPE_LIST:
-        //     bins = index_group_obj(AS_LIST(x), NULL, x->len);
-        //     break;
-        // case TYPE_GUID:
-        //     bins = index_group_guid(AS_GUID(x), NULL, x->len);
-        //     break;
-        default:
-            THROW(ERR_TYPE, "bins: unsupported type: '%s", type_name(x->type));
-    }
-
-    res = clone_obj(AS_LIST(bins)[1]);
-    drop_obj(bins);
-
-    return res;
-}
-
 obj_p ray_unicode_format(obj_p x) {
     if (x->type != -TYPE_B8)
         return error(ERR_TYPE, "graphic_format: expected bool, got: '%s'", type_name(x->type));
