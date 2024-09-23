@@ -559,25 +559,19 @@ obj_p ray_take(obj_p x, obj_p y) {
             s = ray_get(k);
             drop_obj(k);
 
-            if (IS_ERROR(s))
-                return s;
-
             v = ENUM_VAL(y);
-
             l = ABSI64(x->i64);
             m = v->len;
 
-            if (!s || s->type != TYPE_SYMBOL) {
+            if (s->type != TYPE_SYMBOL) {
                 res = I64(l);
 
                 if (x->i64 >= 0) {
                     for (i = 0; i < l; i++)
-                        AS_I64(res)
-                    [i] = AS_I64(v)[i % m];
+                        AS_I64(res)[i] = AS_I64(v)[i % m];
                 } else {
                     for (i = 0; i < l; i++)
-                        AS_I64(res)
-                    [i] = AS_I64(v)[m - 1 - (i % m)];
+                        AS_I64(res)[i] = AS_I64(v)[m - 1 - (i % m)];
                 }
 
                 drop_obj(s);

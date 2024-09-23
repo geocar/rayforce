@@ -748,6 +748,9 @@ i64_t enum_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj) {
 
     s = ray_key(obj);
 
+    if (IS_ERROR(s))
+        return error_fmt_into(dst, limit, s);
+
     if (ENUM_VAL(obj)->len >= TABLE_MAX_HEIGHT) {
         limit = TABLE_MAX_HEIGHT;
         idx = i64(TABLE_MAX_HEIGHT);
@@ -755,6 +758,11 @@ i64_t enum_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj) {
         drop_obj(idx);
     } else
         e = ray_value(obj);
+
+    if (IS_ERROR(e)) {
+        drop_obj(s);
+        return error_fmt_into(dst, limit, e);
+    }
 
     n = str_fmt_into(dst, 2, "'");
     n += obj_fmt_into(dst, indent, limit, B8_FALSE, s);
