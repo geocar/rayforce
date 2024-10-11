@@ -742,6 +742,22 @@ i64_t list_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj)
     return n;
 }
 
+i64_t filemap_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj) {
+    i64_t i, l, n;
+
+    n = str_fmt_into(dst, 12, "Filemap@:\n");
+
+    l = obj->len;
+
+    for (i = 0; i < l; i++) {
+        n += str_fmt_into_n(dst, limit, indent, " ");
+        n += str_fmt_into(dst, limit, "> %.*s: %lld\n", (i32_t)AS_LIST(AS_LIST(obj)[i])[0]->len,
+                          AS_C8(AS_LIST(AS_LIST(obj)[i])[0]), AS_LIST(AS_LIST(obj)[i])[1]->i64);
+    }
+
+    return n;
+}
+
 i64_t enum_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj) {
     i64_t n;
     obj_p s, e, idx;
@@ -1106,6 +1122,8 @@ i64_t obj_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj) 
             return string_fmt_into(dst, limit, obj);
         case TYPE_LIST:
             return list_fmt_into(dst, indent, limit, full, obj);
+        case TYPE_FILEMAP:
+            return filemap_fmt_into(dst, indent, limit, obj);
         case TYPE_ENUM:
             return enum_fmt_into(dst, indent, limit, obj);
         case TYPE_ANYMAP:

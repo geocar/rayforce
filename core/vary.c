@@ -278,15 +278,15 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
                 THROW(ERR_LENGTH, "get parted: partition may not have zero columns");
             }
 
-            fmaps = LIST(l);
-            for (i = 0; i < l; i++)
+            fmaps = LIST(wide);
+            for (i = 0; i < wide; i++)
                 AS_LIST(fmaps)[i] = LIST(0);
 
             // Create filemaps over columns of the 1st partition
             for (i = 0; i < wide; i++) {
                 colpath = str_fmt(-1, "%s%s", AS_C8(path), str_from_symbol(AS_SYMBOL(AS_LIST(t1)[0])[i]));
                 fdmap = runtime_fdmap_get(runtime, AS_LIST(AS_LIST(t1)[1])[i]);
-                push_obj(AS_LIST(fmaps), vn_list(2, colpath, i64(AS_I64(AS_LIST(fdmap)[0])[2])));
+                push_obj(AS_LIST(fmaps) + i, vn_list(2, colpath, i64(AS_I64(AS_LIST(fdmap)[0])[2])));
                 drop_obj(fdmap);
             }
 
@@ -347,7 +347,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
                 for (j = 0; j < wide; j++) {
                     colpath = str_fmt(-1, "%s%s", AS_C8(path), str_from_symbol(AS_SYMBOL(AS_LIST(t2)[0])[j]));
                     fdmap = runtime_fdmap_get(runtime, AS_LIST(AS_LIST(t2)[1])[j]);
-                    push_obj(AS_LIST(fmaps), vn_list(2, colpath, i64(AS_I64(AS_LIST(fdmap)[0])[2])));
+                    push_obj(AS_LIST(fmaps) + j, vn_list(2, colpath, i64(AS_I64(AS_LIST(fdmap)[0])[2])));
                     drop_obj(fdmap);
                 }
 
@@ -357,6 +357,9 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
 
             drop_obj(t1);
             drop_obj(res);
+
+            for (i = 0; i < wide; i++)
+                AS_LIST(fmaps)[i]->type = TYPE_FILEMAP;
 
             return vn_list(2, gcol, fmaps);
 
