@@ -179,6 +179,9 @@ u64_t ops_count(obj_p x) {
         case TYPE_TIMESTAMP:
         case TYPE_GUID:
         case TYPE_LIST:
+        case TYPE_FILEMAP:
+        case TYPE_FDMAP:
+        case TYPE_VIRTMAP:
             return x->len;
         case TYPE_TABLE:
             return AS_LIST(x)[1]->len ? ops_count(AS_LIST(AS_LIST(x)[1])[0]) : 0;

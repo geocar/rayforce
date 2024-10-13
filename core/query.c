@@ -393,6 +393,11 @@ obj_p select_apply_mappings(obj_p obj, query_ctx_p ctx) {
     return NULL_OBJ;
 }
 
+obj_p virtmap_materialize(obj_p virtmap) {
+    DEBUG_PRINT("L: %lld", virtmap->len);
+    return I64(virtmap->len);
+}
+
 obj_p filemap_materialize(obj_p filemap) {
     DEBUG_PRINT("L: %lld", filemap->len);
     return I64(filemap->len);

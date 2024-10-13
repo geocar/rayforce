@@ -192,7 +192,7 @@ obj_p ray_set_parted(obj_p *x, u64_t n) {
 
 obj_p ray_get_parted(obj_p *x, u64_t n) {
     u64_t i, j, l, wide;
-    obj_p path, colpath, dir, sym, dirs, gcol, ord, t1, t2, eq, fmaps, fdmap, keys, vals, res;
+    obj_p path, colpath, dir, sym, dirs, gcol, ord, t1, t2, eq, fmaps, fdmap, virtmap, keys, vals, res;
     runtime_p runtime;
 
     runtime = runtime_get();
@@ -267,6 +267,10 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
                 drop_obj(path);
                 return t1;
             }
+
+            // Create virtmap for virtual column
+            virtmap = LIST(0);
+            push_obj(&virtmap, vn_list(2, at_idx(gcol, 0), i64((i64_t)ops_count(t1))));
 
             wide = AS_LIST(t1)[1]->len;
 
@@ -351,23 +355,29 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
                     drop_obj(fdmap);
                 }
 
+                push_obj(&virtmap, vn_list(2, at_idx(gcol, i), i64((i64_t)ops_count(t2))));
+
                 drop_obj(t2);
                 drop_obj(path);
             }
 
             sym = (gcol->type == TYPE_TIMESTAMP) ? symbol("Date", 4) : symbol("Id", 2);
             keys = ray_concat(sym, AS_LIST(t1)[0]);
-            vals = ray_concat(gcol, fmaps);
+
+            l = wide + 1;
+            vals = LIST(l);
+            virtmap->type = TYPE_VIRTMAP;
+            AS_LIST(vals)[0] = virtmap;
+            for (i = 0; i < wide; i++) {
+                AS_LIST(vals)[i + 1] = clone_obj(AS_LIST(fmaps)[i]);
+                AS_LIST(vals)[i + 1]->type = TYPE_FILEMAP;
+            }
 
             drop_obj(sym);
             drop_obj(res);
             drop_obj(t1);
             drop_obj(gcol);
             drop_obj(fmaps);
-
-            l = wide + 1;
-            for (i = 1; i < l; i++)
-                AS_LIST(vals)[i]->type = TYPE_FILEMAP;
 
             return table(keys, vals);
 
