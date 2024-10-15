@@ -652,10 +652,10 @@ obj_p at_idx(obj_p obj, i64_t idx) {
 }
 
 obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
-    u64_t i, l, xl;
-    i64_t *iinp, *iout;
+    u64_t i, mapid, xl;
+    i64_t *iinp, *iout, n, m;
     f64_t *finp, *fout;
-    obj_p k, v, cols, *oinp, *oout, res;
+    obj_p k, v, cols, res;
 
     switch (obj->type) {
         case TYPE_I64:
@@ -729,19 +729,56 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             return table(clone_obj(AS_LIST(obj)[0]), cols);
         case TYPE_MAPB8:
         case TYPE_MAPU8:
-        case TYPE_MAPI64:
-        case TYPE_MAPTIMESTAMP:
-        case TYPE_MAPF64:
-        case TYPE_MAPGUID:
-        case TYPE_MAPENUM:
-            res = LIST(len);
-            res->type = obj->type;
-            oinp = AS_LIST(obj);
-            oout = AS_LIST(res);
-            for (i = 0; i < len; i++)
-                oout[i] = clone_obj(oinp[ids[i]]);
+            res = vector(obj->type - TYPE_ANYMAP, len);
+            n = AS_LIST(obj)[0]->len;
+            for (i = 0, mapid = 0, m = 0; i < len; i++) {
+                while (ids[i] >= n) {
+                    m = n;
+                    n += ops_count(AS_LIST(obj)[++mapid]);
+                }
+                AS_U8(res)[i] = AS_U8(AS_LIST(obj)[mapid])[ids[i] - m];
+            }
 
             return res;
+        case TYPE_MAPI64:
+        case TYPE_MAPTIMESTAMP:
+        case TYPE_MAPENUM:
+            res = vector(obj->type - TYPE_ANYMAP, len);
+            n = AS_LIST(obj)[0]->len;
+            for (i = 0, mapid = 0, m = 0; i < len; i++) {
+                while (ids[i] >= n) {
+                    m = n;
+                    n += AS_LIST(obj)[++mapid]->len;
+                }
+                AS_I64(res)[i] = AS_I64(AS_LIST(obj)[mapid])[ids[i] - m];
+            }
+
+            return res;
+        case TYPE_MAPF64:
+            res = F64(len);
+            n = AS_LIST(obj)[0]->len;
+            for (i = 0, mapid = 0, m = 0; i < len; i++) {
+                while (ids[i] >= n) {
+                    m = n;
+                    n += AS_LIST(obj)[++mapid]->len;
+                }
+                AS_F64(res)[i] = AS_F64(AS_LIST(obj)[mapid])[ids[i] - m];
+            }
+
+            return res;
+        case TYPE_MAPGUID:
+            res = GUID(len);
+            n = AS_LIST(obj)[0]->len;
+            for (i = 0, mapid = 0, m = 0; i < len; i++) {
+                while (ids[i] >= n) {
+                    m = n;
+                    n += AS_LIST(obj)[++mapid]->len;
+                }
+                memcpy(AS_GUID(res)[i], AS_GUID(AS_LIST(obj)[mapid])[ids[i] - m], sizeof(guid_t));
+            }
+
+            return res;
+
         default:
             res = vector(TYPE_LIST, len);
             for (i = 0; i < len; i++)
