@@ -94,11 +94,12 @@ obj_p ray_eq_partial(u64_t len, u64_t offset, obj_p lhs, obj_p rhs, obj_p res) {
                 THROW(ERR_TYPE, "eq: invalid enum");
             }
 
-            xi = AS_I64(sym) + offset;
+            xi = AS_I64(sym);
             ei = AS_I64(e) + offset;
+            si = rhs->i64;
 
             for (i = 0; i < len; i++)
-                out[i] = xi[ei[i]] == rhs->i64;
+                out[i] = xi[ei[i]] == si;
 
             drop_obj(sym);
             break;
