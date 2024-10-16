@@ -97,9 +97,9 @@ raw_p mmap_alloc(u64_t size) {
     return ptr;
 }
 
-raw_p mmap_file(i64_t fd, raw_p addr, u64_t size, i32_t shared) {
+raw_p mmap_file(i64_t fd, raw_p addr, u64_t size, i64_t offset, i32_t shared) {
     i32_t flags = (shared) ? MAP_SHARED : MAP_PRIVATE;
-    raw_p ptr = mmap(addr, size, PROT_READ | PROT_WRITE | MAP_POPULATE | MAP_NONBLOCK, flags, fd, 0);
+    raw_p ptr = mmap(addr, size, PROT_READ | PROT_WRITE | MAP_POPULATE | MAP_NONBLOCK, flags, fd, offset);
 
     if (ptr == MAP_FAILED)
         return NULL;
