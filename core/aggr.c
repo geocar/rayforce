@@ -60,38 +60,42 @@
         for ($y = 0; $y < $n; $y++) {                                           \
             ini;                                                                \
         }                                                                       \
-        if (AS_LIST(index)[3] != NULL_OBJ) {                                    \
-            source = AS_I64(AS_LIST(index)[3]);                                 \
-            shift = AS_LIST(index)[2]->i64;                                     \
-            if (AS_LIST(index)[4] != NULL_OBJ) {                                \
-                filter = AS_I64(AS_LIST(index)[4]);                             \
-                for ($i = 0; $i < len; $i++) {                                  \
-                    $x = filter[$i + offset];                                   \
-                    $y = group_ids[source[$x] - shift];                         \
-                    aggr;                                                       \
+        filter = index_group_filter(index);                                     \
+        switch (index_group_type(index)) {                                      \
+            case INDEX_TYPE_SHIFT:                                              \
+                source = index_group_source(index);                             \
+                shift = index_group_shift(index);                               \
+                if (filter != NULL) {                                           \
+                    for ($i = 0; $i < len; $i++) {                              \
+                        $x = filter[$i + offset];                               \
+                        $y = group_ids[source[$x] - shift];                     \
+                        aggr;                                                   \
+                    }                                                           \
+                } else {                                                        \
+                    for ($i = 0; $i < len; $i++) {                              \
+                        $x = $i + offset;                                       \
+                        $y = group_ids[source[$x] - shift];                     \
+                        aggr;                                                   \
+                    }                                                           \
                 }                                                               \
-            } else {                                                            \
-                for ($i = 0; $i < len; $i++) {                                  \
-                    $x = $i + offset;                                           \
-                    $y = group_ids[source[$x] - shift];                         \
-                    aggr;                                                       \
+                break;                                                          \
+            case INDEX_TYPE_IDS:                                                \
+                if (filter != NULL) {                                           \
+                    for ($i = 0; $i < len; $i++) {                              \
+                        $x = filter[$i + offset];                               \
+                        $y = group_ids[$i + offset];                            \
+                        aggr;                                                   \
+                    }                                                           \
+                } else {                                                        \
+                    for ($i = 0; $i < len; $i++) {                              \
+                        $x = $i + offset;                                       \
+                        $y = group_ids[$x];                                     \
+                        aggr;                                                   \
+                    }                                                           \
                 }                                                               \
-            }                                                                   \
-        } else {                                                                \
-            if (AS_LIST(index)[4] != NULL_OBJ) {                                \
-                filter = AS_I64(AS_LIST(index)[4]);                             \
-                for ($i = 0; $i < len; $i++) {                                  \
-                    $x = filter[$i + offset];                                   \
-                    $y = group_ids[$i + offset];                                \
-                    aggr;                                                       \
-                }                                                               \
-            } else {                                                            \
-                for ($i = 0; $i < len; $i++) {                                  \
-                    $x = $i + offset;                                           \
-                    $y = group_ids[$x];                                         \
-                    aggr;                                                       \
-                }                                                               \
-            }                                                                   \
+                break;                                                          \
+            case INDEX_TYPE_GENERATOR:                                          \
+                break;                                                          \
         }                                                                       \
     })
 

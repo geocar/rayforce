@@ -624,6 +624,13 @@ obj_p index_find_obj(obj_p x[], u64_t xl, obj_p y[], u64_t yl) {
 
 u64_t index_group_count(obj_p index) { return (u64_t)AS_LIST(index)[0]->i64; }
 
+i64_t *index_group_filter(obj_p index) {
+    if (AS_LIST(index)[4] != NULL_OBJ)
+        return AS_I64(AS_LIST(index)[4]);
+
+    return NULL;
+}
+
 u64_t index_group_len(obj_p index) {
     if (AS_LIST(index)[4] != NULL_OBJ)  // filter
         return AS_LIST(index)[4]->len;
@@ -633,6 +640,17 @@ u64_t index_group_len(obj_p index) {
 
     return AS_LIST(index)[1]->len;  // group_ids
 }
+
+index_type_t index_group_type(obj_p index) {
+    if (AS_LIST(index)[3] != NULL_OBJ)
+        return INDEX_TYPE_SHIFT;
+
+    return INDEX_TYPE_IDS;
+}
+
+i64_t *index_group_source(obj_p index) { return AS_I64(AS_LIST(index)[3]); }
+
+i64_t index_group_shift(obj_p index) { return AS_LIST(index)[2]->i64; }
 
 obj_p index_group_build(u64_t groups_count, obj_p group_ids, i64_t index_min, obj_p source, obj_p filter) {
     return vn_list(5, i64(groups_count), group_ids, i64(index_min), source, filter);
@@ -998,6 +1016,7 @@ obj_p index_group_obj(obj_p obj, obj_p filter) {
 }
 
 obj_p index_group(obj_p val, obj_p filter) {
+    i64_t i, l, n;
     obj_p bins, v;
 
     switch (val->type) {
@@ -1022,6 +1041,9 @@ obj_p index_group(obj_p val, obj_p filter) {
             bins = index_group_obj(v, filter);
             drop_obj(v);
             return bins;
+        // case TYPE_MAPGENERATOR:
+        // obj_p index_group_build(u64_t groups_count, obj_p group_ids, i64_t index_min, obj_p source, obj_p filter)
+        // return vn_list(5, i64(AS_LIST(val)[0]->len), group_ids, i64(index_min), source, filter);
         default:
             THROW(ERR_TYPE, "'index group' unable to group by: %s", type_name(val->type));
     }
