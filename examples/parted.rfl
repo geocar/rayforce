@@ -19,7 +19,7 @@
     )
 )
 
-(map gen-tab (til 30))
+(map gen-tab (til 50))
 
 (println "Done.")
 (exit 0)
