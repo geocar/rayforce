@@ -345,8 +345,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MULI64(x->i64, yivals[i]);
+                AS_I64(vec)[i] = MULI64(x->i64, yivals[i]);
 
             return vec;
         case MTYPE2(-TYPE_I64, TYPE_F64):
@@ -354,8 +353,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MULF64((f64_t)x->i64, yfvals[i]);
+                AS_I64(vec)[i] = MULF64((f64_t)x->i64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_F64):
@@ -363,8 +361,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MULF64(x->f64, yfvals[i]);
+                AS_F64(vec)[i] = MULF64(x->f64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_I64):
@@ -372,8 +369,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MULF64(x->f64, (f64_t)yivals[i]);
+                AS_F64(vec)[i] = MULF64(x->f64, (f64_t)yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_I64):
@@ -381,8 +377,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MULI64(xivals[i], y->i64);
+                AS_I64(vec)[i] = MULI64(xivals[i], y->i64);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_F64):
@@ -390,8 +385,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MULF64((f64_t)xivals[i], y->f64);
+                AS_I64(vec)[i] = MULF64((f64_t)xivals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_I64):
@@ -403,8 +397,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MULI64(xivals[i], yivals[i]);
+                AS_I64(vec)[i] = MULI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_F64):
@@ -416,8 +409,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MULI64(xivals[i], yivals[i]);
+                AS_I64(vec)[i] = MULI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_F64):
@@ -425,8 +417,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MULF64(xfvals[i], y->f64);
+                AS_F64(vec)[i] = MULF64(xfvals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_I64):
@@ -434,8 +425,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MULF64(xfvals[i], (f64_t)y->i64);
+                AS_F64(vec)[i] = MULF64(xfvals[i], (f64_t)y->i64);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_F64):
@@ -447,8 +437,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MULF64(xfvals[i], yfvals[i]);
+                AS_F64(vec)[i] = MULF64(xfvals[i], yfvals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_I64):
@@ -460,8 +449,7 @@ obj_p ray_mul(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MULF64(xfvals[i], (f64_t)yivals[i]);
+                AS_F64(vec)[i] = MULF64(xfvals[i], (f64_t)yivals[i]);
 
             return vec;
         default:
@@ -489,8 +477,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = DIVI64(x->i64, yivals[i]);
+                AS_I64(vec)[i] = DIVI64(x->i64, yivals[i]);
 
             return vec;
         case MTYPE2(-TYPE_I64, TYPE_F64):
@@ -498,8 +485,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = DIVF64((f64_t)x->i64, yfvals[i]);
+                AS_I64(vec)[i] = DIVF64((f64_t)x->i64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_F64):
@@ -507,8 +493,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = DIVF64(x->f64, yfvals[i]);
+                AS_F64(vec)[i] = DIVF64(x->f64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_I64):
@@ -516,8 +501,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = DIVF64(x->f64, (f64_t)yivals[i]);
+                AS_F64(vec)[i] = DIVF64(x->f64, (f64_t)yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_I64):
@@ -525,8 +509,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = DIVI64(xivals[i], y->i64);
+                AS_I64(vec)[i] = DIVI64(xivals[i], y->i64);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_F64):
@@ -534,8 +517,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = DIVF64((f64_t)xivals[i], y->f64);
+                AS_I64(vec)[i] = DIVF64((f64_t)xivals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_I64):
@@ -547,8 +529,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = DIVI64(xivals[i], yivals[i]);
+                AS_I64(vec)[i] = DIVI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_F64):
@@ -560,8 +541,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = DIVI64(xivals[i], yivals[i]);
+                AS_I64(vec)[i] = DIVI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_F64):
@@ -569,8 +549,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = DIVF64(xfvals[i], y->f64);
+                AS_F64(vec)[i] = DIVF64(xfvals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_I64):
@@ -578,8 +557,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = DIVF64(xfvals[i], (f64_t)y->i64);
+                AS_F64(vec)[i] = DIVF64(xfvals[i], (f64_t)y->i64);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_F64):
@@ -591,8 +569,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = DIVF64(xfvals[i], yfvals[i]);
+                AS_F64(vec)[i] = DIVF64(xfvals[i], yfvals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_I64):
@@ -604,8 +581,7 @@ obj_p ray_div(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = DIVF64(xfvals[i], (f64_t)yivals[i]);
+                AS_F64(vec)[i] = DIVF64(xfvals[i], (f64_t)yivals[i]);
 
             return vec;
         default:
@@ -633,8 +609,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(x->i64, yivals[i]);
+                AS_F64(vec)[i] = FDIVI64(x->i64, yivals[i]);
 
             return vec;
         case MTYPE2(-TYPE_I64, TYPE_F64):
@@ -642,8 +617,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(x->i64, yfvals[i]);
+                AS_F64(vec)[i] = FDIVI64(x->i64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_F64):
@@ -651,8 +625,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVF64(x->f64, yfvals[i]);
+                AS_F64(vec)[i] = FDIVF64(x->f64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_I64):
@@ -660,8 +633,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(x->f64, yivals[i]);
+                AS_F64(vec)[i] = FDIVI64(x->f64, yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_I64):
@@ -669,8 +641,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(xivals[i], y->i64);
+                AS_F64(vec)[i] = FDIVI64(xivals[i], y->i64);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_F64):
@@ -678,8 +649,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(xivals[i], y->f64);
+                AS_F64(vec)[i] = FDIVI64(xivals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_I64):
@@ -691,8 +661,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(xivals[i], yivals[i]);
+                AS_F64(vec)[i] = FDIVI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_F64):
@@ -704,8 +673,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(xivals[i], yivals[i]);
+                AS_F64(vec)[i] = FDIVI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_F64):
@@ -713,8 +681,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVF64(xfvals[i], y->f64);
+                AS_F64(vec)[i] = FDIVF64(xfvals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_I64):
@@ -722,8 +689,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(xfvals[i], y->i64);
+                AS_F64(vec)[i] = FDIVI64(xfvals[i], y->i64);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_F64):
@@ -735,8 +701,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVF64(xfvals[i], yfvals[i]);
+                AS_F64(vec)[i] = FDIVF64(xfvals[i], yfvals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_I64):
@@ -748,8 +713,7 @@ obj_p ray_fdiv(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = FDIVI64(xfvals[i], yivals[i]);
+                AS_F64(vec)[i] = FDIVI64(xfvals[i], yivals[i]);
 
             return vec;
         default:
@@ -777,8 +741,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODI64(x->i64, yivals[i]);
+                AS_I64(vec)[i] = MODI64(x->i64, yivals[i]);
 
             return vec;
         case MTYPE2(-TYPE_I64, TYPE_F64):
@@ -786,8 +749,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODF64((f64_t)x->i64, yfvals[i]);
+                AS_I64(vec)[i] = MODF64((f64_t)x->i64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_F64):
@@ -795,8 +757,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODF64(x->f64, yfvals[i]);
+                AS_I64(vec)[i] = MODF64(x->f64, yfvals[i]);
 
             return vec;
         case MTYPE2(-TYPE_F64, TYPE_I64):
@@ -804,8 +765,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODF64(x->f64, (f64_t)yivals[i]);
+                AS_I64(vec)[i] = MODF64(x->f64, (f64_t)yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_I64):
@@ -813,8 +773,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODI64(xivals[i], y->i64);
+                AS_I64(vec)[i] = MODI64(xivals[i], y->i64);
 
             return vec;
         case MTYPE2(TYPE_I64, -TYPE_F64):
@@ -822,8 +781,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             xivals = AS_I64(x);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODF64((f64_t)xivals[i], y->f64);
+                AS_I64(vec)[i] = MODF64((f64_t)xivals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_I64):
@@ -835,8 +793,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODI64(xivals[i], yivals[i]);
+                AS_I64(vec)[i] = MODI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_I64, TYPE_F64):
@@ -848,8 +805,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = I64(l);
             for (i = 0; i < l; i++)
-                AS_I64(vec)
-            [i] = MODI64(xivals[i], yivals[i]);
+                AS_I64(vec)[i] = MODI64(xivals[i], yivals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_F64):
@@ -857,8 +813,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MODF64(xfvals[i], y->f64);
+                AS_F64(vec)[i] = MODF64(xfvals[i], y->f64);
 
             return vec;
         case MTYPE2(TYPE_F64, -TYPE_I64):
@@ -866,8 +821,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             xfvals = AS_F64(x);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MODI64(xfvals[i], y->i64);
+                AS_F64(vec)[i] = MODI64(xfvals[i], y->i64);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_F64):
@@ -879,8 +833,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yfvals = AS_F64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MODF64(xfvals[i], yfvals[i]);
+                AS_F64(vec)[i] = MODF64(xfvals[i], yfvals[i]);
 
             return vec;
         case MTYPE2(TYPE_F64, TYPE_I64):
@@ -892,8 +845,7 @@ obj_p ray_mod(obj_p x, obj_p y) {
             yivals = AS_I64(y);
             vec = F64(l);
             for (i = 0; i < l; i++)
-                AS_F64(vec)
-            [i] = MODI64(xfvals[i], yivals[i]);
+                AS_F64(vec)[i] = MODI64(xfvals[i], yivals[i]);
 
             return vec;
         default:
