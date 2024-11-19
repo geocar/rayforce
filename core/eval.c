@@ -354,8 +354,7 @@ obj_p amend(obj_p sym, obj_p val) {
         set_obj(env, sym, clone_obj(val));
     else {
         *env = dict(vector(TYPE_SYMBOL, 1), vn_list(1, clone_obj(val)));
-        AS_SYMBOL(AS_LIST(*env)[0])
-        [0] = sym->i64;
+        AS_SYMBOL(AS_LIST(*env)[0])[0] = sym->i64;
     }
 
     return val;
@@ -382,17 +381,13 @@ obj_p mount_env(obj_p obj) {
         vals = LIST(l);
 
         for (i = 0; i < l1; i++) {
-            AS_SYMBOL(keys)
-            [i] = AS_SYMBOL(AS_LIST(*env)[0])[i];
-            AS_LIST(vals)
-            [i] = clone_obj(AS_LIST(AS_LIST(*env)[1])[i]);
+            AS_SYMBOL(keys)[i] = AS_SYMBOL(AS_LIST(*env)[0])[i];
+            AS_LIST(vals)[i] = clone_obj(AS_LIST(AS_LIST(*env)[1])[i]);
         }
 
         for (i = 0; i < l2; i++) {
-            AS_SYMBOL(keys)
-            [i + l1] = AS_SYMBOL(AS_LIST(obj)[0])[i];
-            AS_LIST(vals)
-            [i + l1] = clone_obj(AS_LIST(AS_LIST(obj)[1])[i]);
+            AS_SYMBOL(keys)[i + l1] = AS_SYMBOL(AS_LIST(obj)[0])[i];
+            AS_LIST(vals)[i + l1] = clone_obj(AS_LIST(AS_LIST(obj)[1])[i]);
         }
 
         drop_obj(*env);

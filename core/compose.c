@@ -200,6 +200,11 @@ obj_p ray_table(obj_p x, obj_p y) {
 
                 cl = j;
                 break;
+            case TYPE_MAPGENERATOR:
+                j = AS_LIST(AS_LIST(y)[i])[0]->len;
+                if (cl != 0 && j != cl)
+                    return error(ERR_LENGTH, "table: values must be of the same length");
+                break;
             default:
                 return error(ERR_TYPE, "table: unsupported type: '%s' in a values list",
                              type_name(AS_LIST(y)[i]->type));
@@ -234,6 +239,9 @@ obj_p ray_table(obj_p x, obj_p y) {
                 break;
             case TYPE_ENUM:
                 AS_LIST(lst)[i] = ray_value(AS_LIST(y)[i]);
+                break;
+            case TYPE_MAPGENERATOR:
+                AS_LIST(lst)[i] = clone_obj(AS_LIST(AS_LIST(y)[i])[0]);
                 break;
             default:
                 AS_LIST(lst)[i] = clone_obj(AS_LIST(y)[i]);
