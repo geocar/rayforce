@@ -191,6 +191,7 @@ obj_p ray_set_parted(obj_p *x, u64_t n) {
 }
 
 obj_p ray_get_parted(obj_p *x, u64_t n) {
+    i8_t type;
     u64_t i, j, l, wide;
     obj_p path, dir, sym, dirs, gcol, ord, t1, t2, eq, fmaps, virtcol, keys, vals, res;
 
@@ -364,7 +365,14 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
             AS_LIST(vals)[0] = virtcol;
             for (i = 0; i < wide; i++) {
                 AS_LIST(vals)[i + 1] = clone_obj(AS_LIST(fmaps)[i]);
-                AS_LIST(vals)[i + 1]->type = TYPE_MAPLIST + AS_LIST(AS_LIST(t1)[1])[i]->type;
+
+                type = AS_LIST(AS_LIST(t1)[1])[i]->type;
+                if ((type >= TYPE_B8 && type <= TYPE_GUID) || type == TYPE_ENUM)
+                    type += TYPE_PARTEDLIST;
+                else
+                    type = TYPE_PARTEDLIST;
+                printf("TYPE: %d\n", type);
+                AS_LIST(vals)[i + 1]->type = type;
             }
 
             drop_obj(sym);

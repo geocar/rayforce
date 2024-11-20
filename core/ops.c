@@ -190,14 +190,14 @@ u64_t ops_count(obj_p x) {
         case TYPE_ENUM:
             return ENUM_VAL(x)->len;
         case TYPE_MAPLIST:
-            return ANYMAP_VAL(x)->len;
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
-        case TYPE_MAPI64:
-        case TYPE_MAPENUM:
-        case TYPE_MAPTIMESTAMP:
-        case TYPE_MAPF64:
-        case TYPE_MAPGUID:
+            return MAPLIST_VAL(x)->len;
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDENUM:
+        case TYPE_PARTEDTIMESTAMP:
+        case TYPE_PARTEDF64:
+        case TYPE_PARTEDGUID:
             l = x->len;
             for (i = 0, c = 0; i < l; i++)
                 c += ops_count(AS_LIST(x)[i]);

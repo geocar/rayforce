@@ -659,13 +659,14 @@ i64_t raw_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj, i64_t i) {
             n = obj_fmt_into(dst, indent, limit, B8_FALSE, res);
             drop_obj(res);
             return n;
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
-        case TYPE_MAPI64:
-        case TYPE_MAPTIMESTAMP:
-        case TYPE_MAPF64:
-        case TYPE_MAPGUID:
-        case TYPE_MAPENUM:
+        case TYPE_PARTEDLIST:
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDTIMESTAMP:
+        case TYPE_PARTEDF64:
+        case TYPE_PARTEDGUID:
+        case TYPE_PARTEDENUM:
         case TYPE_MAPGENERATOR:
             res = at_idx(obj, i);
             n = obj_fmt_into(dst, indent, limit, B8_FALSE, res);
@@ -795,7 +796,7 @@ i64_t anymap_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p ob
     i64_t n;
     obj_p a, idx;
 
-    if (ANYMAP_VAL(obj)->len >= TABLE_MAX_HEIGHT) {
+    if (MAPLIST_VAL(obj)->len >= TABLE_MAX_HEIGHT) {
         limit = TABLE_MAX_HEIGHT;
         idx = i64(TABLE_MAX_HEIGHT);
         a = ray_take(idx, obj);

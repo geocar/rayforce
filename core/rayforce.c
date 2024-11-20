@@ -609,8 +609,8 @@ obj_p at_idx(obj_p obj, i64_t idx) {
             return symboli64(NULL_I64);
 
         case TYPE_MAPLIST:
-            k = ANYMAP_KEY(obj);
-            v = ANYMAP_VAL(obj);
+            k = MAPLIST_KEY(obj);
+            v = MAPLIST_VAL(obj);
             if (idx < 0)
                 idx = obj->len + idx;
             if (idx >= 0 && idx < (i64_t)v->len) {
@@ -646,8 +646,19 @@ obj_p at_idx(obj_p obj, i64_t idx) {
 
             return dict(clone_obj(AS_LIST(obj)[0]), v);
 
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
+        case TYPE_PARTEDLIST:
+            l = obj->len;
+            for (i = 0, n = 0; i < l; i++) {
+                m = AS_LIST(obj)[i]->len;
+                n += m;
+                if (idx < n)
+                    return at_idx(AS_LIST(obj)[i], m - (n - idx));
+            }
+
+            return NULL_OBJ;
+
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
             l = obj->len;
             for (i = 0, n = 0; i < l; i++) {
                 m = AS_LIST(obj)[i]->len;
@@ -658,22 +669,22 @@ obj_p at_idx(obj_p obj, i64_t idx) {
 
             return b8(B8_FALSE);
 
-        case TYPE_MAPI64:
-        case TYPE_MAPTIMESTAMP:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDTIMESTAMP:
             l = obj->len;
             for (i = 0, n = 0; i < l; i++) {
                 m = AS_LIST(obj)[i]->len;
                 n += m;
                 if (idx < n) {
-                    res = atom(obj->type - TYPE_MAPLIST);
+                    res = atom(obj->type - TYPE_PARTEDLIST);
                     res->i64 = AS_I64(AS_LIST(obj)[i])[m - (n - idx)];
                     return res;
                 }
             }
 
-            return null(obj->type - TYPE_MAPLIST);
+            return null(obj->type - TYPE_PARTEDLIST);
 
-        case TYPE_MAPENUM:
+        case TYPE_PARTEDENUM:
             l = obj->len;
             for (i = 0, n = 0; i < l; i++) {
                 m = AS_LIST(obj)[i]->len;
@@ -695,7 +706,7 @@ obj_p at_idx(obj_p obj, i64_t idx) {
 
             return symboli64(NULL_I64);
 
-        case TYPE_MAPF64:
+        case TYPE_PARTEDF64:
             l = obj->len;
             for (i = 0, n = 0; i < l; i++) {
                 m = AS_LIST(obj)[i]->len;
@@ -706,7 +717,7 @@ obj_p at_idx(obj_p obj, i64_t idx) {
 
             return f64(NULL_F64);
 
-        case TYPE_MAPGUID:
+        case TYPE_PARTEDGUID:
             l = obj->len;
             for (i = 0, n = 0; i < l; i++) {
                 m = AS_LIST(obj)[i]->len;
@@ -809,8 +820,8 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             }
 
             return table(clone_obj(AS_LIST(obj)[0]), cols);
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
             res = vector(obj->type - TYPE_MAPLIST, len);
             n = AS_LIST(obj)[0]->len;
             for (i = 0, mapid = 0, m = 0; i < len; i++) {
@@ -822,8 +833,8 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             }
 
             return res;
-        case TYPE_MAPI64:
-        case TYPE_MAPTIMESTAMP:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDTIMESTAMP:
             res = vector(obj->type - TYPE_MAPLIST, len);
             n = AS_LIST(obj)[0]->len;
             for (i = 0, mapid = 0, m = 0; i < len; i++) {
@@ -835,7 +846,7 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             }
 
             return res;
-        case TYPE_MAPF64:
+        case TYPE_PARTEDF64:
             res = F64(len);
             n = AS_LIST(obj)[0]->len;
             for (i = 0, mapid = 0, m = 0; i < len; i++) {
@@ -847,7 +858,7 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             }
 
             return res;
-        case TYPE_MAPENUM:
+        case TYPE_PARTEDENUM:
             k = ray_key(AS_LIST(obj)[0]);
             if (IS_ERROR(k))
                 return k;
@@ -873,7 +884,7 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
 
             drop_obj(v);
             return res;
-        case TYPE_MAPGUID:
+        case TYPE_PARTEDGUID:
             res = GUID(len);
             n = AS_LIST(obj)[0]->len;
             for (i = 0, mapid = 0, m = 0; i < len; i++) {
@@ -1636,16 +1647,17 @@ nil_t __attribute__((hot)) drop_obj(obj_p obj) {
 
     switch (obj->type) {
         case TYPE_LIST:
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
-        case TYPE_MAPI64:
-        case TYPE_MAPF64:
-        case TYPE_MAPGUID:
-        case TYPE_MAPENUM:
-        case TYPE_MAPTIMESTAMP:
         case TYPE_MAPFILTER:
         case TYPE_MAPGROUP:
         case TYPE_MAPGENERATOR:
+        case TYPE_PARTEDLIST:
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDF64:
+        case TYPE_PARTEDGUID:
+        case TYPE_PARTEDTIMESTAMP:
+        case TYPE_PARTEDENUM:
             l = obj->len;
             for (i = 0; i < l; i++)
                 drop_obj(AS_LIST(obj)[i]);
@@ -1675,11 +1687,11 @@ nil_t __attribute__((hot)) drop_obj(obj_p obj) {
             }
             return;
         case TYPE_MAPLIST:
-            fdmap = runtime_fdmap_pop(runtime_get(), ANYMAP_KEY(obj));
+            fdmap = runtime_fdmap_pop(runtime_get(), MAPLIST_KEY(obj));
             drop_obj(fdmap);
             fdmap = runtime_fdmap_pop(runtime_get(), obj);
             drop_obj(fdmap);
-            // mmap_free(ANYMAP_KEY(obj), size_of(obj));
+            // mmap_free(MAPLIST_KEY(obj), size_of(obj));
             // mmap_free((str_p)obj - RAY_PAGE_SIZE, size_of(obj) + RAY_PAGE_SIZE);
             return;
         case TYPE_TABLE:

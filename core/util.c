@@ -126,15 +126,16 @@ u64_t next_power_of_two_u64(u64_t n) {
 
 b8_t is_valid(obj_p obj) {
     // clang-format off
-    return (obj->type >= -TYPE_C8            && obj->type <= TYPE_C8)
-           || obj->type == TYPE_TABLE        || obj->type == TYPE_DICT   
-           || obj->type == TYPE_LAMBDA       || obj->type == TYPE_UNARY 
-           || obj->type == TYPE_BINARY       || obj->type == TYPE_VARY   
-           || obj->type == TYPE_ENUM         || obj->type == TYPE_MAPLIST       
-           || obj->type == TYPE_MAPFILTER    || obj->type == TYPE_MAPGROUP
-           || obj->type == TYPE_MAPFD        || (obj->type >= TYPE_MAPB8 && obj->type <= TYPE_MAPGUID)
-           || obj->type == TYPE_LIST         || obj->type == TYPE_MAPENUM
-           || obj->type == TYPE_MAPTIMESTAMP || obj->type == TYPE_MAPGENERATOR
-           || obj->type == TYPE_NULL         || obj->type == TYPE_ERROR;
+    return (obj->type >= -TYPE_C8               && obj->type <= TYPE_C8)
+           || obj->type == TYPE_TABLE           || obj->type == TYPE_DICT   
+           || obj->type == TYPE_LAMBDA          || obj->type == TYPE_UNARY 
+           || obj->type == TYPE_BINARY          || obj->type == TYPE_VARY   
+           || obj->type == TYPE_ENUM            || obj->type == TYPE_MAPLIST       
+           || obj->type == TYPE_MAPFILTER       || obj->type == TYPE_MAPGROUP
+           || obj->type == TYPE_MAPFD           || (obj->type >= TYPE_PARTEDB8 && obj->type <= TYPE_PARTEDGUID)
+           || obj->type == TYPE_LIST            || obj->type == TYPE_PARTEDLIST
+           || obj->type == TYPE_PARTEDTIMESTAMP || obj->type == TYPE_MAPGENERATOR
+           || obj->type == TYPE_PARTEDENUM      || obj->type == TYPE_ERROR
+           || obj->type == TYPE_NULL;
     // clang-format on
 }

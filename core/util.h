@@ -107,8 +107,8 @@ nil_t dump_stack(nil_t);
     (x->mmod == MMOD_INTERNAL ? str_from_symbol(AS_LIST(x)[0]->i64) : AS_C8((obj_p)((str_p)x - RAY_PAGE_SIZE)))
 #define ENUM_VAL(x) (x->mmod == MMOD_INTERNAL ? AS_LIST(x)[1] : x)
 
-#define ANYMAP_KEY(x) (((obj_p)((str_p)x - RAY_PAGE_SIZE))->obj)
-#define ANYMAP_VAL(x) (x)
+#define MAPLIST_KEY(x) (((obj_p)((str_p)x - RAY_PAGE_SIZE))->obj)
+#define MAPLIST_VAL(x) (x)
 
 #define UNWRAP_LIST(x)                            \
     {                                             \

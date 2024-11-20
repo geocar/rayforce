@@ -275,24 +275,24 @@ obj_p aggr_first(obj_p val, obj_p index) {
         //     res = AGGR_COLLECT(parts, n, list, list, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
         //     drop_obj(parts);
         //     return res;
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
             res = vector(AS_LIST(val)[0]->type, n);
             for (i = 0; i < n; i++)
                 AS_B8(res)[i] = AS_B8(AS_LIST(val)[i])[0];
             return res;
-        case TYPE_MAPI64:
-        case TYPE_MAPTIMESTAMP:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDTIMESTAMP:
             res = vector(AS_LIST(val)[0]->type, n);
             for (i = 0; i < n; i++)
                 AS_I64(res)[i] = AS_I64(AS_LIST(val)[i])[0];
             return res;
-        case TYPE_MAPF64:
+        case TYPE_PARTEDF64:
             res = vector(AS_LIST(val)[0]->type, n);
             for (i = 0; i < n; i++)
                 AS_F64(res)[i] = AS_F64(AS_LIST(val)[i])[0];
             return res;
-        case TYPE_MAPGUID:
+        case TYPE_PARTEDGUID:
             res = vector(AS_LIST(val)[0]->type, n);
             for (i = 0; i < n; i++)
                 memcpy(AS_GUID(res) + i, AS_GUID(AS_LIST(val)[i])[0], sizeof(guid_t));
@@ -432,7 +432,7 @@ obj_p aggr_sum(obj_p val, obj_p index) {
             res = AGGR_COLLECT(parts, n, f64, f64, $out[$y] = ADDF64($out[$y], $in[$x]));
             drop_obj(parts);
             return res;
-        case TYPE_MAPI64:
+        case TYPE_PARTEDI64:
             res = AGGR_COLLECT(parts, n, i64, i64, $out[$y] = ADDI64($out[$y], $in[$x]));
             drop_obj(parts);
             return res;

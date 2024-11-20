@@ -223,8 +223,7 @@ obj_p ray_at(obj_p x, obj_p y) {
                         THROW(ERR_INDEX, "at: enum can not be resolved: index out of range");
                     }
 
-                    AS_I64(res)
-                    [i] = AS_I64(v)[AS_I64(y)[i]];
+                    AS_I64(res)[i] = AS_I64(v)[AS_I64(y)[i]];
                 }
 
                 drop_obj(s);
@@ -249,8 +248,8 @@ obj_p ray_at(obj_p x, obj_p y) {
             return res;
 
         case MTYPE2(TYPE_MAPLIST, -TYPE_I64):
-            k = ANYMAP_KEY(x);
-            v = ANYMAP_VAL(x);
+            k = MAPLIST_KEY(x);
+            v = MAPLIST_VAL(x);
 
             xl = k->len;
             yl = v->len;
@@ -263,8 +262,8 @@ obj_p ray_at(obj_p x, obj_p y) {
             return load_obj(&buf, xl);
 
         case MTYPE2(TYPE_MAPLIST, TYPE_I64):
-            k = ANYMAP_KEY(x);
-            v = ANYMAP_VAL(x);
+            k = MAPLIST_KEY(x);
+            v = MAPLIST_VAL(x);
 
             n = v->len;
             yl = y->len;
@@ -614,8 +613,8 @@ obj_p ray_take(obj_p x, obj_p y) {
             l = ABSI64(x->i64);
             res = vector(TYPE_LIST, l);
 
-            k = ANYMAP_KEY(y);
-            s = ANYMAP_VAL(y);
+            k = MAPLIST_KEY(y);
+            s = MAPLIST_VAL(y);
 
             m = k->len;
             n = s->len;
@@ -931,7 +930,7 @@ obj_p ray_key(obj_p x) {
             l = strlen(k);
             return symbol(k, l);
         case TYPE_MAPLIST:
-            return clone_obj(ANYMAP_KEY(x));
+            return clone_obj(MAPLIST_KEY(x));
         default:
             return clone_obj(x);
     }
@@ -981,8 +980,8 @@ obj_p ray_value(obj_p x) {
             return res;
 
         case TYPE_MAPLIST:
-            k = ANYMAP_KEY(x);
-            e = ANYMAP_VAL(x);
+            k = MAPLIST_KEY(x);
+            e = MAPLIST_VAL(x);
 
             xl = e->len;
             sl = k->len;
@@ -1028,8 +1027,8 @@ obj_p ray_value(obj_p x) {
         case TYPE_DICT:
             return clone_obj(AS_LIST(x)[1]);
 
-        case TYPE_MAPB8:
-        case TYPE_MAPU8:
+        case TYPE_PARTEDB8:
+        case TYPE_PARTEDU8:
             l = x->len;
             n = ops_count(x);
             res = vector(AS_LIST(x)[0]->type, n);
@@ -1042,8 +1041,8 @@ obj_p ray_value(obj_p x) {
             }
 
             return res;
-        case TYPE_MAPI64:
-        case TYPE_MAPTIMESTAMP:
+        case TYPE_PARTEDI64:
+        case TYPE_PARTEDTIMESTAMP:
             l = x->len;
             n = ops_count(x);
             res = vector(AS_LIST(x)[0]->type, n);
@@ -1056,7 +1055,7 @@ obj_p ray_value(obj_p x) {
             }
 
             return res;
-        case TYPE_MAPF64:
+        case TYPE_PARTEDF64:
             l = x->len;
             n = ops_count(x);
             res = vector(AS_LIST(x)[0]->type, n);
@@ -1069,7 +1068,7 @@ obj_p ray_value(obj_p x) {
             }
 
             return res;
-        case TYPE_MAPGUID:
+        case TYPE_PARTEDGUID:
             l = x->len;
             n = ops_count(x);
             res = vector(AS_LIST(x)[0]->type, n);
@@ -1082,7 +1081,7 @@ obj_p ray_value(obj_p x) {
             }
 
             return res;
-        case TYPE_MAPENUM:
+        case TYPE_PARTEDENUM:
             l = x->len;
             n = ops_count(x);
             res = SYMBOL(n);
