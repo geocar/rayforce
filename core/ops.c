@@ -191,6 +191,7 @@ u64_t ops_count(obj_p x) {
             return ENUM_VAL(x)->len;
         case TYPE_MAPLIST:
             return MAPLIST_VAL(x)->len;
+        case TYPE_PARTEDLIST:
         case TYPE_PARTEDB8:
         case TYPE_PARTEDU8:
         case TYPE_PARTEDI64:

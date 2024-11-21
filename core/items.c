@@ -937,9 +937,9 @@ obj_p ray_key(obj_p x) {
 }
 
 obj_p ray_value(obj_p x) {
-    obj_p sym, k, v, res, e;
+    obj_p sym, k, v, res, e, *objptr;
     u8_t *u8ptr, *buf;
-    i64_t i, l, n, sl, xl, *i64ptr;
+    i64_t i, j, l, n, sl, xl, *i64ptr;
     f64_t *f64ptr;
     guid_t *guidptr;
 
@@ -1019,13 +1019,34 @@ obj_p ray_value(obj_p x) {
                     return res;
                 }
 
-                AS_LIST(v)
-                [i] = res;
+                AS_LIST(v)[i] = res;
             }
             return table(clone_obj(AS_LIST(x)[0]), v);
 
         case TYPE_DICT:
             return clone_obj(AS_LIST(x)[1]);
+
+        case TYPE_PARTEDLIST:
+            l = x->len;
+            n = ops_count(x);
+            res = LIST(n);
+            objptr = AS_LIST(res);
+
+            // WARNING: here is assumed that inside parted list there are only map lists
+            for (i = 0; i < l; i++) {
+                n = ops_count(AS_LIST(x)[i]);
+                k = MAPLIST_KEY(AS_LIST(x)[i]);
+                v = MAPLIST_VAL(AS_LIST(x)[i]);
+
+                for (j = 0; j < n; j++) {
+                    buf = AS_U8(k) + AS_I64(v)[j];
+                    objptr[j] = load_obj(&buf, k->len);
+                }
+
+                objptr += n;
+            }
+
+            return res;
 
         case TYPE_PARTEDB8:
         case TYPE_PARTEDU8:
