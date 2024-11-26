@@ -278,6 +278,11 @@ obj_p aggr_first(obj_p val, obj_p index) {
         //     res = AGGR_COLLECT(parts, n, list, list, if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
         //     drop_obj(parts);
         //     return res;
+        case TYPE_PARTEDLIST:
+            res = LIST(n);
+            for (i = 0; i < n; i++)
+                AS_LIST(res)[i] = at_idx(AS_LIST(val)[i], 0);
+            return res;
         case TYPE_PARTEDB8:
         case TYPE_PARTEDU8:
             res = vector(AS_LIST(val)[0]->type, n);
@@ -442,13 +447,22 @@ obj_p aggr_sum(obj_p val, obj_p index) {
             res = I64(l);
             for (i = 0; i < l; i++) {
                 parts = aggr_map((raw_p)aggr_sum_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
-                // UNWRAP_LIST(parts);
                 v = AGGR_COLLECT(parts, 1, i64, i64, $out[$y] = ADDI64($out[$y], $in[$x]));
                 drop_obj(parts);
                 AS_I64(res)[i] = AS_I64(v)[0];
                 drop_obj(v);
             }
-
+            return res;
+        case TYPE_PARTEDF64:
+            l = val->len;
+            res = F64(l);
+            for (i = 0; i < l; i++) {
+                parts = aggr_map((raw_p)aggr_sum_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
+                v = AGGR_COLLECT(parts, 1, f64, f64, $out[$y] = ADDF64($out[$y], $in[$x]));
+                drop_obj(parts);
+                AS_F64(res)[i] = AS_F64(v)[0];
+                drop_obj(v);
+            }
             return res;
         default:
             return error(ERR_TYPE, "sum: unsupported type: '%s'", type_name(val->type));
@@ -474,24 +488,47 @@ obj_p aggr_max_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
 }
 
 obj_p aggr_max(obj_p val, obj_p index) {
-    u64_t n;
-    obj_p parts, res;
+    u64_t i, l, n;
+    obj_p parts, v, res;
 
     n = index_group_count(index);
-    parts = aggr_map((raw_p)aggr_max_partial, val, val->type, index);
-    UNWRAP_LIST(parts);
 
     switch (val->type) {
         case TYPE_I64:
+            parts = aggr_map((raw_p)aggr_max_partial, val, val->type, index);
+            UNWRAP_LIST(parts);
             res = AGGR_COLLECT(parts, n, i64, i64, $out[$y] = MAXI64($out[$y], $in[$x]));
             drop_obj(parts);
             return res;
         case TYPE_F64:
+            parts = aggr_map((raw_p)aggr_max_partial, val, val->type, index);
+            UNWRAP_LIST(parts);
             res = AGGR_COLLECT(parts, n, f64, f64, $out[$y] = MAXF64($out[$y], $in[$x]));
             drop_obj(parts);
             return res;
+        case TYPE_PARTEDI64:
+            l = val->len;
+            res = I64(l);
+            for (i = 0; i < l; i++) {
+                parts = aggr_map((raw_p)aggr_max_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
+                v = AGGR_COLLECT(parts, 1, i64, i64, $out[$y] = MAXI64($out[$y], $in[$x]));
+                drop_obj(parts);
+                AS_I64(res)[i] = AS_I64(v)[0];
+                drop_obj(v);
+            }
+            return res;
+        case TYPE_PARTEDF64:
+            l = val->len;
+            res = F64(l);
+            for (i = 0; i < l; i++) {
+                parts = aggr_map((raw_p)aggr_max_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
+                v = AGGR_COLLECT(parts, 1, f64, f64, $out[$y] = MAXF64($out[$y], $in[$x]));
+                drop_obj(parts);
+                AS_F64(res)[i] = AS_F64(v)[0];
+                drop_obj(v);
+            }
+            return res;
         default:
-            drop_obj(parts);
             return error(ERR_TYPE, "max: unsupported type: '%s'", type_name(val->type));
     }
 }
