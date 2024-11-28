@@ -202,7 +202,7 @@ obj_p aggr_first_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p a
 }
 
 obj_p aggr_first(obj_p val, obj_p index) {
-    u64_t i, j, n;
+    u64_t i, j, n, l;
     i64_t *xo, *xe;
     obj_p parts, res, ek, filter, sym;
 
@@ -313,13 +313,12 @@ obj_p aggr_first(obj_p val, obj_p index) {
                 return clone_obj(AS_LIST(val)[0]);
 
             res = vector(AS_LIST(val)[0]->type, n);
+            l = filter->len;
 
-            for (i = 0, j = 0; i < n; i++) {
+            for (i = 0, j = 0; i < l; i++) {
                 if (AS_LIST(filter)[i] != NULL_OBJ)
                     AS_I64(res)[j++] = AS_I64(AS_LIST(val)[0])[i];
             }
-
-            resize_obj(&res, j);
 
             return res;
         default:
@@ -450,8 +449,8 @@ obj_p aggr_sum_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
 }
 
 obj_p aggr_sum(obj_p val, obj_p index) {
-    u64_t i, n, l;
-    obj_p parts, v, res;
+    u64_t i, j, n, l;
+    obj_p parts, v, filter, res;
 
     n = index_group_count(index);
 
@@ -470,14 +469,19 @@ obj_p aggr_sum(obj_p val, obj_p index) {
             return res;
         case TYPE_PARTEDI64:
             l = val->len;
-            res = I64(l);
-            for (i = 0; i < l; i++) {
+            filter = index_group_filter(index);
+            res = I64(n);
+            for (i = 0, j = 0; i < l; i++) {
+                if (AS_LIST(filter)[i] == NULL_OBJ)
+                    continue;
+
                 parts = aggr_map((raw_p)aggr_sum_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
                 v = AGGR_COLLECT(parts, 1, i64, i64, $out[$y] = ADDI64($out[$y], $in[$x]));
                 drop_obj(parts);
-                AS_I64(res)[i] = AS_I64(v)[0];
+                AS_I64(res)[j++] = AS_I64(v)[0];
                 drop_obj(v);
             }
+
             return res;
         case TYPE_PARTEDF64:
             l = val->len;

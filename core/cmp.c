@@ -556,7 +556,7 @@ obj_p ray_gt(obj_p x, obj_p y) {
 
 obj_p ray_ge(obj_p x, obj_p y) {
     i64_t i, l;
-    obj_p vec;
+    obj_p vec, map;
 
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I64, -TYPE_I64):
@@ -621,6 +621,36 @@ obj_p ray_ge(obj_p x, obj_p y) {
             return vec;
 
         default:
+            if (x->type == TYPE_MAPCOMMON) {
+                vec = ray_ge(AS_LIST(x)[0], y);
+                if (IS_ERROR(vec))
+                    return vec;
+
+                l = vec->len;
+                map = LIST(l);
+                map->type = TYPE_PARTEDB8;
+
+                for (i = 0; i < l; i++)
+                    AS_LIST(map)[i] = AS_B8(vec)[i] ? b8(B8_TRUE) : NULL_OBJ;
+
+                drop_obj(vec);
+
+                return map;
+            } else if (y->type == TYPE_MAPCOMMON) {
+                vec = ray_ge(x, AS_LIST(y)[0]);
+                if (IS_ERROR(vec))
+                    return vec;
+
+                l = vec->len;
+                map = LIST(l);
+
+                for (i = 0; i < l; i++)
+                    AS_LIST(map)[i] = AS_B8(vec)[i] ? b8(B8_TRUE) : NULL_OBJ;
+
+                drop_obj(vec);
+
+                return map;
+            }
             THROW(ERR_TYPE, "ge: unsupported types: '%s, '%s", type_name(x->type), type_name(y->type));
     }
 }
