@@ -37,6 +37,16 @@
 #include "cmp.h"
 #include "pool.h"
 
+#define __i8(x) I8(x)
+#define __u8(x) U8(x)
+#define __b8(x) B8(x)
+#define __c8(x) C8(x)
+#define __symbol(x) SYMBOL(x)
+#define __i64(x) I64(x)
+#define __f64(x) F64(x)
+#define __guid(x) GUID(x)
+#define __list(x) LIST(x)
+
 #define __AS_i8(x) AS_I8(x)
 #define __AS_u8(x) AS_U8(x)
 #define __AS_b8(x) AS_B8(x)
@@ -124,6 +134,25 @@
             }                                                  \
         }                                                      \
         $res;                                                  \
+    })
+
+#define PARTED_MAP(groups, val, index, preaggr, incoerse, outcoerse, postaggr)                  \
+    ({                                                                                          \
+        u64_t $$i, $$j, $$l;                                                                    \
+        obj_p $$parts, $$res, $$filter, $$v;                                                    \
+        $$l = val->len;                                                                         \
+        $$filter = index_group_filter(index);                                                   \
+        $$res = __##outcoerse(groups);                                                          \
+        for ($$i = 0, $$j = 0; $$i < $$l; $$i++) {                                              \
+            if (AS_LIST($$filter)[$$i] != NULL_OBJ) {                                           \
+                $$parts = aggr_map(preaggr, AS_LIST(val)[$$i], AS_LIST(val)[$$i]->type, index); \
+                $$v = AGGR_COLLECT($$parts, 1, incoerse, outcoerse, postaggr);                  \
+                drop_obj($$parts);                                                              \
+                __AS_##outcoerse($$res)[$$j++] = __AS_##incoerse($$v)[0];                       \
+                drop_obj($$v);                                                                  \
+            }                                                                                   \
+        }                                                                                       \
+        $$res;                                                                                  \
     })
 
 obj_p aggr_map(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
@@ -449,8 +478,8 @@ obj_p aggr_sum_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
 }
 
 obj_p aggr_sum(obj_p val, obj_p index) {
-    u64_t i, j, n, l;
-    obj_p parts, v, filter, res;
+    u64_t n, l;
+    obj_p parts, res;
 
     n = index_group_count(index);
 
@@ -468,32 +497,9 @@ obj_p aggr_sum(obj_p val, obj_p index) {
             drop_obj(parts);
             return res;
         case TYPE_PARTEDI64:
-            l = val->len;
-            filter = index_group_filter(index);
-            res = I64(n);
-            for (i = 0, j = 0; i < l; i++) {
-                if (AS_LIST(filter)[i] == NULL_OBJ)
-                    continue;
-
-                parts = aggr_map((raw_p)aggr_sum_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
-                v = AGGR_COLLECT(parts, 1, i64, i64, $out[$y] = ADDI64($out[$y], $in[$x]));
-                drop_obj(parts);
-                AS_I64(res)[j++] = AS_I64(v)[0];
-                drop_obj(v);
-            }
-
-            return res;
+            return PARTED_MAP(n, val, index, (raw_p)aggr_sum_partial, i64, i64, $out[$y] = ADDI64($out[$y], $in[$x]));
         case TYPE_PARTEDF64:
-            l = val->len;
-            res = F64(l);
-            for (i = 0; i < l; i++) {
-                parts = aggr_map((raw_p)aggr_sum_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
-                v = AGGR_COLLECT(parts, 1, f64, f64, $out[$y] = ADDF64($out[$y], $in[$x]));
-                drop_obj(parts);
-                AS_F64(res)[i] = AS_F64(v)[0];
-                drop_obj(v);
-            }
-            return res;
+            return PARTED_MAP(n, val, index, (raw_p)aggr_sum_partial, f64, f64, $out[$y] = ADDF64($out[$y], $in[$x]));
         default:
             return error(ERR_TYPE, "sum: unsupported type: '%s'", type_name(val->type));
     }
@@ -537,27 +543,9 @@ obj_p aggr_max(obj_p val, obj_p index) {
             drop_obj(parts);
             return res;
         case TYPE_PARTEDI64:
-            l = val->len;
-            res = I64(l);
-            for (i = 0; i < l; i++) {
-                parts = aggr_map((raw_p)aggr_max_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
-                v = AGGR_COLLECT(parts, 1, i64, i64, $out[$y] = MAXI64($out[$y], $in[$x]));
-                drop_obj(parts);
-                AS_I64(res)[i] = AS_I64(v)[0];
-                drop_obj(v);
-            }
-            return res;
+            return PARTED_MAP(n, val, index, (raw_p)aggr_max_partial, i64, i64, $out[$y] = MAXI64($out[$y], $in[$x]));
         case TYPE_PARTEDF64:
-            l = val->len;
-            res = F64(l);
-            for (i = 0; i < l; i++) {
-                parts = aggr_map((raw_p)aggr_max_partial, AS_LIST(val)[i], AS_LIST(val)[i]->type, index);
-                v = AGGR_COLLECT(parts, 1, f64, f64, $out[$y] = MAXF64($out[$y], $in[$x]));
-                drop_obj(parts);
-                AS_F64(res)[i] = AS_F64(v)[0];
-                drop_obj(v);
-            }
-            return res;
+            return PARTED_MAP(n, val, index, (raw_p)aggr_max_partial, f64, f64, $out[$y] = MAXF64($out[$y], $in[$x]));
         default:
             return error(ERR_TYPE, "max: unsupported type: '%s'", type_name(val->type));
     }
