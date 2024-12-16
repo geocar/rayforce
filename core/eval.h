@@ -25,7 +25,7 @@
 #define EVAL_H
 
 #include <setjmp.h>
-#include "clock.h"
+#include "chrono.h"
 #include "rayforce.h"
 #include "lambda.h"
 #include "mmap.h"

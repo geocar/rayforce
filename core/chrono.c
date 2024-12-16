@@ -21,7 +21,7 @@
  *   SOFTWARE.
  */
 
-#include "clock.h"
+#include "chrono.h"
 #include "heap.h"
 #include "runtime.h"
 #include "error.h"
