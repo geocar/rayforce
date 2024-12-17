@@ -23,37 +23,16 @@
 
 #include <errno.h>
 #include <limits.h>
+#include "date.h"
 #include "timestamp.h"
 #include "ops.h"
 #include "util.h"
 #include "error.h"
 #include "string.h"
 #include "parse.h"
+#include "temporal.h"
 
-CASSERT(sizeof(struct timestamp_t) == 16, timestamp_h)
-
-// An EPOCH starts from 2000.01.01T00:00:00.000
-#define EPOCH 2000
-#define UT_EPOCH_SHIFT 946684800ll
-// secs between UT epoch and our
-#define SECS_IN_DAY (i64_t)(24 * 60 * 60)
-#define MSECS_IN_DAY (SECS_IN_DAY * 1000)
-#define NSECS_IN_DAY (SECS_IN_DAY * 1000000000)
-
-const u32_t MONTHDAYS_FWD[2][13] = {
-    {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
-    {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366},
-};
-const u32_t MONTHDAYS_ABS[2][12] = {
-    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-};
-
-typedef struct date_t {
-    u16_t year;
-    u8_t month;
-    u8_t day;
-} date_t;
+RAYASSERT(sizeof(struct timestamp_t) == 16, timestamp_h)
 
 typedef struct timespan_t {
     u8_t hours;
@@ -71,7 +50,7 @@ u8_t days_in_month(u16_t year, u8_t month) {
     return (MONTHDAYS_ABS[leap][month > 0 ? month - 1 : 0]);
 }
 
-date_t date_from_days(i64_t v) {
+datestruct_t date_from_days(i64_t v) {
     v += years_by_days(EPOCH - 1);
     i64_t years = ROUNDF64(((f64_t)v / 365.2425));
 
@@ -93,7 +72,7 @@ date_t date_from_days(i64_t v) {
     i64_t mm = (1 + mid % 12);
     i64_t dd = (1 + days - MONTHDAYS_FWD[leap][mid]);
 
-    return (date_t){
+    return (datestruct_t){
         .year = (u16_t)yy,
         .month = (u8_t)mm,
         .day = (u8_t)dd,
@@ -122,7 +101,7 @@ i64_t timespan_into_nanos(timespan_t ts) {
     return ((hrs + mns + (i64_t)ts.secs) * 1000000000 + ts.nanos);
 }
 
-i64_t date_into_days(date_t dt) {
+i64_t date_into_days(datestruct_t dt) {
     i64_t ydays = years_by_days(dt.year > 0 ? dt.year - 1 : dt.year);
     u8_t leap = leap_year(dt.year);
     u32_t mdays = MONTHDAYS_FWD[leap][dt.month > 0 ? dt.month - 1 : 0];
@@ -139,7 +118,7 @@ timestamp_t timestamp_from_i64(i64_t offset) {
         span += NSECS_IN_DAY;
     }
 
-    date_t dt = date_from_days(days);
+    datestruct_t dt = date_from_days(days);
     timespan_t sp = timespan_from_nanos(span);
 
     timestamp_t ts = {
@@ -160,7 +139,7 @@ i64_t timestamp_into_i64(timestamp_t ts) {
     if (ts.null)
         return NULL_I64;
 
-    date_t dt = {
+    datestruct_t dt = {
         .year = ts.year,
         .month = ts.month,
         .day = ts.day,

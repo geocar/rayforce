@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2023 Anton Kundenko <singaraiona@gmail.com>
+ *   Copyright (c) 2024 Anton Kundenko <singaraiona@gmail.com>
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,26 +21,26 @@
  *   SOFTWARE.
  */
 
-#ifndef TIMESTAMP_H
-#define TIMESTAMP_H
+#ifndef TEMPORAL_H
+#define TEMPORAL_H
 
-#include <time.h>
 #include "rayforce.h"
 
-typedef struct timestamp_t {
-    b8_t null;
-    u16_t year;
-    u8_t month;
-    u8_t day;
-    u8_t hours;
-    u8_t mins;
-    u8_t secs;
-    u32_t nanos;
-} timestamp_t;
+// An EPOCH starts from 2000.01.01T00:00:00.000
+#define EPOCH 2000
+#define UT_EPOCH_SHIFT 946684800ll
+// secs between UT epoch and our
+#define SECS_IN_DAY (i64_t)(24 * 60 * 60)
+#define MSECS_IN_DAY (SECS_IN_DAY * 1000)
+#define NSECS_IN_DAY (SECS_IN_DAY * 1000000000)
 
-timestamp_t timestamp_from_i64(i64_t offset);
-timestamp_t timestamp_from_str(str_p src, u64_t len);
-i64_t timestamp_into_i64(timestamp_t ts);
-obj_p ray_timestamp(obj_p arg);
+const u32_t MONTHDAYS_FWD[2][13] = {
+    {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+    {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366},
+};
+const u32_t MONTHDAYS_ABS[2][12] = {
+    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+};
 
-#endif  // TIMESTAMP_H
+#endif  // TEMPORAL_H

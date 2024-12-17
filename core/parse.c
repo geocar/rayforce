@@ -35,6 +35,8 @@
 #include "runtime.h"
 #include "ops.h"
 #include "eval.h"
+#include "date.h"
+#include "time.h"
 #include "timestamp.h"
 #include "error.h"
 
@@ -245,7 +247,7 @@ obj_p parse_timestamp(parser_t *parser) {
     // just date passed
     if (*current != 'D') {
         shift(parser, current - parser->current);
-        res = timestamp(timestamp_into_i64(ts));
+        res = adate(123);
 
         span_extend(parser, &span);
         nfo_insert(parser->nfo, (i64_t)res, span);

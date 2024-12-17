@@ -32,7 +32,7 @@
 #include "format.h"
 
 // A compile time assertion check
-#define CASSERT(predicate, file) _IMPL_CASSERT_LINE(predicate, __LINE__, file)
+#define RAYASSERT(predicate, file) _IMPL_CASSERT_LINE(predicate, __LINE__, file)
 #define _IMPL_PASTE(a, b) a##b
 #define _IMPL_CASSERT_LINE(predicate, line, file) \
     typedef char _IMPL_PASTE(assertion_failed_##file##_, line)[2 * !!(predicate) - 1];
@@ -123,6 +123,70 @@ nil_t dump_stack(nil_t);
             }                                     \
         }                                         \
     }
+
+#define __TYPE_u8 TYPE_U8
+#define __TYPE_b8 TYPE_B8
+#define __TYPE_c8 TYPE_C8
+#define __TYPE_i32 TYPE_I32
+#define __TYPE_date TYPE_DATE
+#define __TYPE_time TYPE_TIME
+#define __TYPE_timestamp TYPE_TIMESTAMP
+#define __TYPE_i64 TYPE_I64
+#define __TYPE_f64 TYPE_F64
+#define __TYPE_guid TYPE_GUID
+#define __TYPE_symbol TYPE_SYMBOL
+#define __TYPE_list TYPE_LIST
+
+#define __INNER_u8 u8_t
+#define __INNER_b8 b8_t
+#define __INNER_c8 c8_t
+#define __INNER_i32 i32_t
+#define __INNER_date i32_t
+#define __INNER_time i32_t
+#define __INNER_timestamp i64_t
+#define __INNER_i64 i64_t
+#define __INNER_f64 f64_t
+#define __INNER_guid guid_t
+#define __INNER_symbol i64_t
+#define __INNER_list obj_p
+
+#define __v_i8(x) I8(x)
+#define __v_u8(x) U8(x)
+#define __v_b8(x) B8(x)
+#define __v_c8(x) C8(x)
+#define __v_symbol(x) SYMBOL(x)
+#define __v_i64(x) I64(x)
+#define __v_time(x) TIME(x)
+#define __v_date(x) DATE(x)
+#define __v_timestamp(x) TIMESTAMP(x)
+#define __v_f64(x) F64(x)
+#define __v_guid(x) GUID(x)
+#define __v_list(x) LIST(x)
+
+#define __AS_i8(x) AS_I8(x)
+#define __AS_u8(x) AS_U8(x)
+#define __AS_b8(x) AS_B8(x)
+#define __AS_c8(x) AS_C8(x)
+#define __AS_symbol(x) AS_SYMBOL(x)
+#define __AS_i64(x) AS_I64(x)
+#define __AS_time(x) AS_TIME(x)
+#define __AS_date(x) AS_DATE(x)
+#define __AS_timestamp(x) AS_TIMESTAMP(x)
+#define __AS_f64(x) AS_F64(x)
+#define __AS_guid(x) AS_GUID(x)
+#define __AS_list(x) AS_LIST(x)
+
+#define __SIZE_OF_i8 sizeof(i8_t)
+#define __SIZE_OF_u8 sizeof(u8_t)
+#define __SIZE_OF_b8 sizeof(b8_t)
+#define __SIZE_OF_c8 sizeof(c8_t)
+#define __SIZE_OF_i64 sizeof(i64_t)
+#define __SIZE_OF_time sizeof(i32_t)
+#define __SIZE_OF_date sizeof(i32_t)
+#define __SIZE_OF_timestamp sizeof(i64_t)
+#define __SIZE_OF_f64 sizeof(f64_t)
+#define __SIZE_OF_guid sizeof(guid_t)
+#define __SIZE_OF_list sizeof(obj_p)
 
 b8_t is_valid(obj_p obj);
 u32_t next_power_of_two_u32(u32_t n);

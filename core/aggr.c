@@ -37,35 +37,6 @@
 #include "cmp.h"
 #include "pool.h"
 
-#define __v_i8(x) I8(x)
-#define __v_u8(x) U8(x)
-#define __v_b8(x) B8(x)
-#define __v_c8(x) C8(x)
-#define __v_symbol(x) SYMBOL(x)
-#define __v_i64(x) I64(x)
-#define __v_f64(x) F64(x)
-#define __v_guid(x) GUID(x)
-#define __v_list(x) LIST(x)
-
-#define __AS_i8(x) AS_I8(x)
-#define __AS_u8(x) AS_U8(x)
-#define __AS_b8(x) AS_B8(x)
-#define __AS_c8(x) AS_C8(x)
-#define __AS_symbol(x) AS_SYMBOL(x)
-#define __AS_i64(x) AS_I64(x)
-#define __AS_f64(x) AS_F64(x)
-#define __AS_guid(x) AS_GUID(x)
-#define __AS_list(x) AS_LIST(x)
-
-#define __SIZE_OF_i8 sizeof(i8_t)
-#define __SIZE_OF_u8 sizeof(u8_t)
-#define __SIZE_OF_b8 sizeof(b8_t)
-#define __SIZE_OF_c8 sizeof(c8_t)
-#define __SIZE_OF_i64 sizeof(i64_t)
-#define __SIZE_OF_f64 sizeof(f64_t)
-#define __SIZE_OF_guid sizeof(guid_t)
-#define __SIZE_OF_list sizeof(obj_p)
-
 #define AGGR_ITER(index, len, offset, val, res, incoerse, outcoerse, ini, aggr)      \
     ({                                                                               \
         u64_t $i, $x, $y, $n;                                                        \

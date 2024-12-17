@@ -45,7 +45,7 @@
 #include "fdmap.h"
 #include "timestamp.h"
 
-CASSERT(sizeof(struct obj_t) == 16, rayforce_h)
+RAYASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
 // Synchronization flag (use atomics on rc operations).
 __thread i64_t __RC_SYNC = 0;

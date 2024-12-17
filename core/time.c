@@ -22,3 +22,23 @@
  */
 
 #include "time.h"
+#include "util.h"
+
+RAYASSERT(sizeof(struct timestruct_t) == 16, time_h)
+
+timestruct_t time_from_i32(i32_t offset) {
+    if (offset == NULL_I32)
+        return (timestruct_t){.null = 1};
+
+    return (timestruct_t){
+        .null = 0,
+        .sign = offset < 0 ? 1 : 0,
+        .hours = (u8_t)(offset / 10000),
+        .mins = (u8_t)((offset % 10000) / 100),
+        .secs = (u8_t)(offset % 100),
+        .msecs = 0,
+    };
+}
+timestruct_t time_from_str(str_p src, u64_t len) {}
+i64_t time_into_i32(timestruct_t dt) {}
+obj_p ray_time(obj_p arg) {}

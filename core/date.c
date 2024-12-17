@@ -22,3 +22,24 @@
  */
 
 #include "date.h"
+#include "util.h"
+
+RAYASSERT(sizeof(struct datestruct_t) == 16, date_h)
+
+datestruct_t date_from_i32(i32_t offset) {
+    if (offset == NULL_I32)
+        return (datestruct_t){.null = 1};
+
+    return (datestruct_t){
+        .null = 0,
+        .year = (u16_t)(offset / 10000),
+        .month = (u8_t)((offset % 10000) / 100),
+        .day = (u8_t)(offset % 100),
+    };
+}
+
+datestruct_t date_from_str(str_p src, u64_t len) {}
+
+i64_t date_into_i32(datestruct_t dt) {}
+
+obj_p ray_date(obj_p arg) {}

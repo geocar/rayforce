@@ -26,4 +26,17 @@
 
 #include "rayforce.h"
 
+typedef struct datestruct_t {
+    b8_t null;
+    u16_t year;
+    u8_t month;
+    u8_t day;
+    u64_t pad;
+} datestruct_t;
+
+datestruct_t date_from_i32(i32_t offset);
+datestruct_t date_from_str(str_p src, u64_t len);
+i64_t date_into_i32(datestruct_t dt);
+obj_p ray_date(obj_p arg);
+
 #endif  // DATE_H

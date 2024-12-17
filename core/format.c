@@ -32,6 +32,8 @@
 #include "runtime.h"
 #include "ops.h"
 #include "lambda.h"
+#include "date.h"
+#include "time.h"
 #include "timestamp.h"
 #include "unary.h"
 #include "binary.h"
@@ -334,7 +336,34 @@ i64_t f64_fmt_into(obj_p *dst, f64_t val) {
     return str_fmt_into(dst, NO_LIMIT, "%.*f", F64_PRECISION, val);
 }
 
-i64_t ts_fmt_into(obj_p *dst, i64_t val) {
+i64_t date_fmt_into(obj_p *dst, i32_t val) {
+    datestruct_t dt;
+
+    if (val == NULL_I32)
+        return str_fmt_into(dst, 3, "0d");
+
+    dt = date_from_i32(val);
+    return str_fmt_into(dst, NO_LIMIT, "%.4d.%.2d.%.2d", dt.year, dt.month, dt.day);
+}
+
+i64_t time_fmt_into(obj_p *dst, i32_t val) {
+    timestruct_t tm;
+
+    if (val == NULL_I32)
+        return str_fmt_into(dst, 3, "0t");
+
+    tm = time_from_i32(val);
+
+    // if (!ts.hours && !ts.mins && !ts.secs && !ts.nanos)
+    //     n = str_fmt_into(dst, NO_LIMIT, "%.4d.%.2d.%.2d", ts.year, ts.month, ts.day);
+    // else
+    //     n = str_fmt_into(dst, NO_LIMIT, "%.4d.%.2d.%.2dD%.2d:%.2d:%.2d.%.9d", ts.year, ts.month, ts.day, ts.hours,
+    //                      ts.mins, ts.secs, ts.nanos);
+
+    // return n;
+}
+
+i64_t timestamp_fmt_into(obj_p *dst, i64_t val) {
     timestamp_t ts;
     i64_t n;
 
@@ -343,11 +372,8 @@ i64_t ts_fmt_into(obj_p *dst, i64_t val) {
 
     ts = timestamp_from_i64(val);
 
-    if (!ts.hours && !ts.mins && !ts.secs && !ts.nanos)
-        n = str_fmt_into(dst, NO_LIMIT, "%.4d.%.2d.%.2d", ts.year, ts.month, ts.day);
-    else
-        n = str_fmt_into(dst, NO_LIMIT, "%.4d.%.2d.%.2dD%.2d:%.2d:%.2d.%.9d", ts.year, ts.month, ts.day, ts.hours,
-                         ts.mins, ts.secs, ts.nanos);
+    n = str_fmt_into(dst, NO_LIMIT, "%.4d.%.2d.%.2dD%.2d:%.2d:%.2d.%.9d", ts.year, ts.month, ts.day, ts.hours, ts.mins,
+                     ts.secs, ts.nanos);
 
     return n;
 }
@@ -634,8 +660,12 @@ i64_t raw_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj, i64_t i) {
             return f64_fmt_into(dst, AS_F64(obj)[i]);
         case TYPE_SYMBOL:
             return symbol_fmt_into(dst, limit, B8_TRUE, AS_SYMBOL(obj)[i]);
+        case TYPE_DATE:
+            return date_fmt_into(dst, AS_DATE(obj)[i]);
+        case TYPE_TIME:
+            return time_fmt_into(dst, AS_TIME(obj)[i]);
         case TYPE_TIMESTAMP:
-            return ts_fmt_into(dst, AS_TIMESTAMP(obj)[i]);
+            return timestamp_fmt_into(dst, AS_TIMESTAMP(obj)[i]);
         case TYPE_GUID:
             return guid_fmt_into(dst, &AS_GUID(obj)[i]);
         case TYPE_C8:
@@ -1099,24 +1129,24 @@ i64_t obj_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj) 
             return f64_fmt_into(dst, obj->f64);
         case -TYPE_SYMBOL:
             return symbol_fmt_into(dst, limit, full, obj->i64);
+        case -TYPE_DATE:
+            return date_fmt_into(dst, obj->i32);
+        case -TYPE_TIME:
+            return time_fmt_into(dst, obj->i32);
         case -TYPE_TIMESTAMP:
-            return ts_fmt_into(dst, obj->i64);
+            return timestamp_fmt_into(dst, obj->i64);
         case -TYPE_GUID:
             return guid_fmt_into(dst, AS_GUID(obj));
         case -TYPE_C8:
             return c8_fmt_into(dst, full, obj->c8);
         case TYPE_B8:
-            return vector_fmt_into(dst, limit, obj);
         case TYPE_U8:
-            return vector_fmt_into(dst, limit, obj);
         case TYPE_I64:
-            return vector_fmt_into(dst, limit, obj);
-        case TYPE_F64:
-            return vector_fmt_into(dst, limit, obj);
         case TYPE_SYMBOL:
-            return vector_fmt_into(dst, limit, obj);
+        case TYPE_DATE:
+        case TYPE_TIME:
         case TYPE_TIMESTAMP:
-            return vector_fmt_into(dst, limit, obj);
+        case TYPE_F64:
         case TYPE_GUID:
             return vector_fmt_into(dst, limit, obj);
         case TYPE_C8:
