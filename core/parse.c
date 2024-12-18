@@ -188,7 +188,52 @@ obj_p parse_0x(parser_t *parser) {
 }
 
 obj_p parse_time(parser_t *parser) {
-    timestruct_t tm = {.null = B8_FALSE, .hours = 0, .mins = 0, .secs = 0, .msecs = 0};
+    timestruct_t tm = {.null = B8_FALSE, .sign = 1, .hours = 0, .mins = 0, .secs = 0, .msecs = 0};
+    str_p current = parser->current;
+    span_t span = span_start(parser);
+
+    if (is_digit(*current) && is_digit(*(current + 1))) {
+        tm.hours = (*current - '0') * 10 + (*(current + 1) - '0');
+        current += 2;
+    } else
+        return NULL_OBJ;
+
+    if (*current != ':')
+        return NULL_OBJ;
+
+    current++;
+
+    if (is_digit(*current) && is_digit(*(current + 1))) {
+        tm.mins = (*current - '0') * 10 + (*(current + 1) - '0');
+        current += 2;
+    } else
+        return NULL_OBJ;
+
+    if (*current != ':')
+        return NULL_OBJ;
+
+    current++;
+
+    if (is_digit(*current) && is_digit(*(current + 1))) {
+        tm.secs = (*current - '0') * 10 + (*(current + 1) - '0');
+        current += 2;
+    } else
+        return NULL_OBJ;
+
+    if (*current == '.') {
+        current++;
+
+        if (is_digit(*current) && is_digit(*(current + 1)) && is_digit(*(current + 2))) {
+            tm.msecs = (*current - '0') * 100 + (*(current + 1) - '0') * 10 + (*(current + 2) - '0');
+            current += 3;
+        } else
+            return NULL_OBJ;
+    }
+
+    shift(parser, current - parser->current);
+    span_extend(parser, &span);
+
+    return atime(time_into_i32(tm));
 }
 
 obj_p parse_timestamp(parser_t *parser) {
@@ -438,7 +483,7 @@ obj_p parse_char(parser_t *parser) {
     return res;
 }
 
-obj_p parse_C8(parser_t *parser) {
+obj_p parse_string(parser_t *parser) {
     span_t span = span_start(parser);
     str_p pos = parser->current + 1;  // skip '"'
     i32_t len = 0;
@@ -616,8 +661,7 @@ obj_p parse_vector(parser_t *parser) {
             else if (vec->type == TYPE_I64) {
                 vec->type = TYPE_F64;
                 for (i = 0; i < vec->len; i++)
-                    AS_F64(vec)
-                [i] = (f64_t)AS_I64(vec)[i];
+                    AS_F64(vec)[i] = (f64_t)AS_I64(vec)[i];
 
                 push_raw(&vec, &tok->f64);
             } else {
@@ -631,6 +675,28 @@ obj_p parse_vector(parser_t *parser) {
             if (vec->type == TYPE_SYMBOL || (vec->len == 0)) {
                 vec->type = TYPE_SYMBOL;
                 push_raw(&vec, &tok->i64);
+            } else {
+                err = parse_error(parser, (i64_t)tok, str_fmt(-1, "Invalid token in vector"));
+                drop_obj(vec);
+                drop_obj(tok);
+
+                return err;
+            }
+        } else if (tok->type == -TYPE_DATE) {
+            if (vec->type == TYPE_DATE || (vec->len == 0)) {
+                push_raw(&vec, &tok->i32);
+                vec->type = TYPE_DATE;
+            } else {
+                err = parse_error(parser, (i64_t)tok, str_fmt(-1, "Invalid token in vector"));
+                drop_obj(vec);
+                drop_obj(tok);
+
+                return err;
+            }
+        } else if (tok->type == -TYPE_TIME) {
+            if (vec->type == TYPE_TIME || (vec->len == 0)) {
+                push_raw(&vec, &tok->i32);
+                vec->type = TYPE_TIME;
             } else {
                 err = parse_error(parser, (i64_t)tok, str_fmt(-1, "Invalid token in vector"));
                 drop_obj(vec);
@@ -671,7 +737,7 @@ obj_p parse_vector(parser_t *parser) {
     return vec;
 }
 
-obj_p parse_LIST(parser_t *parser) {
+obj_p parse_list(parser_t *parser) {
     obj_p lst = NULL_OBJ, tok, args, body, err;
     span_t span = span_start(parser);
 
@@ -903,13 +969,17 @@ obj_p parser_advance(parser_t *parser) {
         return parse_vector(parser);
 
     if ((*parser->current) == '(')
-        return parse_LIST(parser);
+        return parse_list(parser);
 
     if ((*parser->current) == '{')
         return parse_dict(parser);
 
     if (is_digit(*parser->current)) {
         tok = parse_0x(parser);
+        if (tok != NULL_OBJ)
+            return tok;
+
+        tok = parse_time(parser);
         if (tok != NULL_OBJ)
             return tok;
 
@@ -927,7 +997,7 @@ obj_p parser_advance(parser_t *parser) {
         return parse_char(parser);
 
     if ((*parser->current) == '"')
-        return parse_C8(parser);
+        return parse_string(parser);
 
     if (is_alpha(*parser->current) || is_op(*parser->current))
         return parse_symbol(parser);

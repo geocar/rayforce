@@ -38,7 +38,7 @@ typedef struct timestruct_t {
 
 timestruct_t time_from_i32(i32_t offset);
 timestruct_t time_from_str(str_p src, u64_t len);
-i32_t time_into_i32(timestruct_t dt);
+i32_t time_into_i32(timestruct_t tm);
 obj_p ray_time(obj_p arg);
 
 #endif  // TIME_H

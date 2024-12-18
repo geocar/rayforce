@@ -39,6 +39,10 @@ u64_t size_of_type(i8_t type) {
             return sizeof(b8_t);
         case TYPE_U8:
             return sizeof(u8_t);
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+            return sizeof(i32_t);
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
