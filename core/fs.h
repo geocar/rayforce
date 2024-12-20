@@ -50,6 +50,7 @@ i64_t fs_fdelete(lit_p path);
 i64_t fs_fsize(i64_t fd);
 i64_t fs_fread(i64_t fd, str_p buf, i64_t size);
 i64_t fs_fwrite(i64_t fd, str_p buf, i64_t size);
+i64_t fs_file_extend(i64_t fd, i64_t size);
 i64_t fs_ftruncate(i64_t fd, i64_t size);
 i64_t fs_fclose(i64_t fd);
 i64_t fs_dcreate(lit_p path);

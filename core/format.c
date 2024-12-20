@@ -387,7 +387,7 @@ i64_t timestamp_fmt_into(obj_p *dst, i64_t val) {
 i64_t guid_fmt_into(obj_p *dst, guid_t *val) {
     i64_t n;
 
-    if (memcmp(*val, NULL_GUID, 16) == 0)
+    if (memcmp(*val, NULL_GUID, sizeof(guid_t)) == 0)
         return str_fmt_into(dst, 4, LIT_NULL_GUID);
 
     n = str_fmt_into(dst, 37, "%02hhx%02hhx%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x", (*val)[0],

@@ -35,6 +35,7 @@
 #include "error.h"
 #include "string.h"
 #include "group.h"
+#include "guid.h"
 #include "aggr.h"
 
 obj_p ray_cast_obj(obj_p x, obj_p y) {

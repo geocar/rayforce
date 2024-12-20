@@ -65,39 +65,6 @@ nil_t cursor_hide() { printf("\e[?25l"); }
 
 nil_t cursor_show() { printf("\e[?25h"); }
 
-// Function to extend the file size
-#if defined(OS_WINDOWS)
-
-i64_t extend_file_size(i64_t fd, u64_t new_size) {
-    HANDLE hFile = (HANDLE)fd;
-    LARGE_INTEGER li;
-    li.QuadPart = new_size;
-
-    // Move the file pointer to the desired position
-    if (!SetFilePointerEx(hFile, li, NULL, FILE_BEGIN))
-        return -1;
-
-    // Set the end of the file to the current position of the file pointer
-    if (!SetEndOfFile(hFile))
-        return -1;
-
-    return new_size;
-}
-
-#else
-
-i64_t extend_file_size(i64_t fd, u64_t new_size) {
-    if (lseek(fd, new_size - 1, SEEK_SET) == -1)
-        return -1;
-
-    if (write(fd, "", 1) == -1)
-        return -1;
-
-    return new_size;
-}
-
-#endif
-
 hist_p hist_create() {
     i64_t pos, fd, fsize;
     str_p lines;
@@ -113,7 +80,7 @@ hist_p hist_create() {
     fsize = fs_fsize(fd);
     if (fsize == 0) {
         // Set initial file size if the file is empty
-        if (extend_file_size(fd, HIST_SIZE) == -1) {
+        if (fs_file_extend(fd, HIST_SIZE) == -1) {
             perror("can't truncate history file");
             fs_fclose(fd);
             return NULL;

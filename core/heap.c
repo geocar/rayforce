@@ -27,6 +27,7 @@
 #include "rayforce.h"
 #include "ops.h"
 #include "mmap.h"
+#include "fs.h"
 #include "util.h"
 #include "string.h"
 
@@ -42,6 +43,7 @@ __thread heap_p __HEAP = NULL;
 #define ORDEROF(s) (64ull - __builtin_clzll((s) - 1))
 #define BLOCK2RAW(b) ((raw_p)((u64_t)(b) + sizeof(struct obj_t)))
 #define RAW2BLOCK(r) ((block_p)((u64_t)(r) - sizeof(struct obj_t)))
+#define MMAP_BACKED_PATH "/tmp/"
 
 heap_p heap_create(u64_t id) {
     __HEAP = (heap_p)mmap_alloc(sizeof(struct heap_t));
@@ -108,12 +110,47 @@ memstat_t heap_memstat(nil_t) { return (memstat_t){0}; }
 #else
 
 block_p heap_add_pool(u64_t size) {
-    block_p block = (block_p)mmap_alloc(size);
+    u64_t id;
+    i64_t fd;
+    block_p block;
+    c8_t filename[64];
 
-    if (block == NULL)
-        return NULL;
+    block = (block_p)mmap_alloc(size);
 
-    block->pool = block;
+    if (block == NULL) {
+        // Try to mmap with a file
+        id = ops_rand_u64();
+        snprintf(filename, sizeof(filename), "%svec_%llu.dat", MMAP_BACKED_PATH, id);
+        fd = fs_fopen(filename, ATTR_RDWR | ATTR_CREAT);
+
+        if (fd == -1) {
+            perror("can't create mmap backed file");
+            return NULL;
+        }
+
+        // Set initial file size if the file
+        if (fs_file_extend(fd, size) == -1) {
+            perror("can't truncate mmap backed file");
+            fs_fclose(fd);
+            return NULL;
+        }
+
+        block = (block_p)mmap_file(fd, NULL, size, 0, 1);
+
+        if (block == NULL) {
+            fs_fclose(fd);
+            perror("can't mmap file");
+            return NULL;
+        }
+
+        block->pool = (block_p)fd;
+        block->prev = (block_p)id;
+        block->backed = B8_TRUE;
+    } else {
+        block->pool = block;
+        block->backed = B8_FALSE;
+    }
+
     block->pool_order = ORDEROF(size);
 
     __HEAP->memstat.system += size;
@@ -252,13 +289,16 @@ raw_p __attribute__((hot)) heap_alloc(u64_t size) {
     block->order = order;
     block->used = 1;
     block->heap_id = __HEAP->id;
+    block->backed = B8_FALSE;
 
     return BLOCK2RAW(block);
 }
 
 __attribute__((hot)) nil_t heap_free(raw_p ptr) {
     block_p block, buddy;
-    u64_t order;
+    i64_t fd, res;
+    u64_t id, order;
+    c8_t filename[64];
 
     if (ptr == NULL)
         return;
@@ -269,6 +309,26 @@ __attribute__((hot)) nil_t heap_free(raw_p ptr) {
     if (__HEAP->id != 0 && block->heap_id != __HEAP->id) {
         block->next = __HEAP->foreign_blocks;
         __HEAP->foreign_blocks = block;
+        return;
+    }
+
+    // return block to the system and close file if it is backed
+    if (block->backed) {
+        fd = (i64_t)block->pool;
+        id = (u64_t)block->prev;
+        heap_remove_pool(block, BSIZEOF(order));
+        snprintf(filename, sizeof(filename), "%svec_%llu.dat", MMAP_BACKED_PATH, id);
+        res = fs_fclose(fd);
+        if (res == -1) {
+            perror("can't close backed file");
+            return;
+        }
+        res = fs_fdelete(filename);
+        if (res == -1) {
+            printf("can't delete backed file: %s\n", filename);
+            perror("can't delete backed file");
+            return;
+        }
         return;
     }
 

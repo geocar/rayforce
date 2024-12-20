@@ -80,5 +80,6 @@ obj_p timeit_fmt(nil_t);
 nil_t format_use_unicode(b8_t use);
 obj_p ray_set_fpr(obj_p x);            // set float precision
 obj_p ray_set_display_width(obj_p x);  // set display width
+i64_t guid_fmt_into(obj_p *dst, guid_t *val);
 
 #endif  // FORMAT_H

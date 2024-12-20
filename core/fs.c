@@ -27,6 +27,7 @@
 #include "string.h"
 #include "util.h"
 #include "heap.h"
+#include "guid.h"
 #include "ops.h"
 
 #if defined(OS_WINDOWS)
@@ -84,6 +85,22 @@ i64_t fs_fwrite(i64_t fd, str_p buf, i64_t size) {
         return -1;
 
     return (i64_t)bytesWritten;
+}
+
+i64_t fs_file_extend(i64_t fd, i64_t size) {
+    HANDLE hFile = (HANDLE)fd;
+    LARGE_INTEGER li;
+    li.QuadPart = size;
+
+    // Move the file pointer to the desired position
+    if (!SetFilePointerEx(hFile, li, NULL, FILE_BEGIN))
+        return -1;
+
+    // Set the end of the file to the current position of the file pointer
+    if (!SetEndOfFile(hFile))
+        return -1;
+
+    return size;
 }
 
 i64_t fs_fclose(i64_t fd) { return CloseHandle((HANDLE)fd); }
@@ -272,6 +289,16 @@ i64_t fs_fwrite(i64_t fd, str_p buf, i64_t size) {
 
     if (c == -1)
         return c;
+
+    return size;
+}
+
+i64_t fs_file_extend(i64_t fd, i64_t size) {
+    if (lseek(fd, size - 1, SEEK_SET) == -1)
+        return -1;
+
+    if (write(fd, "", 1) == -1)
+        return -1;
 
     return size;
 }
