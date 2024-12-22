@@ -53,6 +53,7 @@ i64_t fs_fwrite(i64_t fd, str_p buf, i64_t size);
 i64_t fs_file_extend(i64_t fd, i64_t size);
 i64_t fs_ftruncate(i64_t fd, i64_t size);
 i64_t fs_fclose(i64_t fd);
+i64_t fs_get_fname_by_fd(i64_t fd, c8_t buf[], u64_t len);
 i64_t fs_dcreate(lit_p path);
 i64_t fs_dopen(lit_p path);
 i64_t fs_dclose(i64_t fd);

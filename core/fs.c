@@ -147,6 +147,22 @@ obj_p fs_read_dir(lit_p path) {
     return lst;
 }
 
+i64_t fs_get_fname_by_fd(i64_t fd, c8_t buf[], u64_t len) {
+    HANDLE hFile = (HANDLE)_get_osfhandle(fd);  // Convert fd to Windows HANDLE
+    if (hFile == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Invalid file descriptor.\n");
+        return -1;
+    }
+
+    DWORD result = GetFinalPathNameByHandleA(hFile, buf, (DWORD)len, FILE_NAME_NORMALIZED);
+    if (result == 0 || result >= len) {
+        fprintf(stderr, "Failed to get file name or buffer too small: %lu\n", GetLastError());
+        return -1;
+    }
+
+    return 0;
+}
+
 #elif defined(OS_WASM)
 
 // clang-format off
@@ -227,6 +243,8 @@ i64_t fs_dcreate(lit_p path) {
 i64_t fs_dopen(lit_p path) { return fs_dopen_js(path); }
 
 i64_t fs_dclose(i64_t fd) { return closedir((DIR *)fd); }
+
+i64_t fs_get_fname_by_fd(i64_t fd, c8_t buf[], u64_t len) { return -1; }
 
 #else
 
@@ -390,4 +408,22 @@ u64_t fs_filename(lit_p path, lit_p *name) {
     *name = p ? p + 1 : path;
 
     return len - (*name - path);
+}
+
+i64_t fs_get_fname_by_fd(i64_t fd, c8_t buf[], u64_t len) {
+    i64_t l;
+    c8_t path[PATH_MAX];
+
+    snprintf(path, sizeof(path), "/proc/self/fd/%lld", fd);
+
+    // Read symbolic link
+    l = readlink(path, buf, len - 1);
+    if (l == -1) {
+        perror("readlink");
+        return -1;
+    }
+
+    buf[len] = '\0';  // Null-terminate the string
+
+    return 0;
 }

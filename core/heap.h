@@ -50,7 +50,7 @@ typedef struct block_t {
     u8_t mode;
     u16_t heap_id;
     b8_t backed;  // backed by a file
-    b8_t foreign;
+    b8_t pad;
     struct block_t *pool;
     struct block_t *prev;
     struct block_t *next;

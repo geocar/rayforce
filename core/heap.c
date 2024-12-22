@@ -144,7 +144,6 @@ block_p heap_add_pool(u64_t size) {
         }
 
         block->pool = (block_p)fd;
-        block->prev = (block_p)id;
         block->backed = B8_TRUE;
     } else {
         block->pool = block;
@@ -166,8 +165,7 @@ nil_t heap_remove_pool(block_p block, u64_t size) {
     __HEAP->memstat.heap -= size;
 }
 
-// inline __attribute__((always_inline))
-nil_t heap_insert_block(block_p block, u64_t order) {
+inline __attribute__((always_inline)) nil_t heap_insert_block(block_p block, u64_t order) {
     u64_t size = BSIZEOF(order);
 
     block->prev = NULL;
@@ -183,8 +181,7 @@ nil_t heap_insert_block(block_p block, u64_t order) {
     __HEAP->freelist[order] = block;
 }
 
-// inline __attribute__((always_inline))
-nil_t heap_remove_block(block_p block, u64_t order) {
+inline __attribute__((always_inline)) nil_t heap_remove_block(block_p block, u64_t order) {
     if (block->prev)
         block->prev->next = block->next;
     if (block->next)
@@ -197,8 +194,7 @@ nil_t heap_remove_block(block_p block, u64_t order) {
         __HEAP->avail &= ~BSIZEOF(order);
 }
 
-// inline __attribute__((always_inline))
-nil_t heap_split_block(block_p block, u64_t block_order, u64_t order) {
+inline __attribute__((always_inline)) nil_t heap_split_block(block_p block, u64_t block_order, u64_t order) {
     block_p buddy;
 
     while ((order--) > block_order) {
@@ -297,7 +293,7 @@ raw_p __attribute__((hot)) heap_alloc(u64_t size) {
 __attribute__((hot)) nil_t heap_free(raw_p ptr) {
     block_p block, buddy;
     i64_t fd, res;
-    u64_t id, order;
+    u64_t order;
     c8_t filename[64];
 
     if (ptr == NULL)
@@ -306,29 +302,23 @@ __attribute__((hot)) nil_t heap_free(raw_p ptr) {
     block = RAW2BLOCK(ptr);
     order = block->order;
 
-    if (__HEAP->id != 0 && block->heap_id != __HEAP->id) {
-        block->next = __HEAP->foreign_blocks;
-        __HEAP->foreign_blocks = block;
-        return;
-    }
-
     // return block to the system and close file if it is backed
     if (block->backed) {
         fd = (i64_t)block->pool;
-        id = (u64_t)block->prev;
         heap_remove_pool(block, BSIZEOF(order));
-        snprintf(filename, sizeof(filename), "%svec_%llu.dat", MMAP_BACKED_PATH, id);
+        fs_get_fname_by_fd(fd, filename, sizeof(filename));
         res = fs_fclose(fd);
-        if (res == -1) {
+        if (res == -1)
             perror("can't close backed file");
-            return;
-        }
-        res = fs_fdelete(filename);
-        if (res == -1) {
-            printf("can't delete backed file: %s\n", filename);
-            perror("can't delete backed file");
-            return;
-        }
+
+        fs_fdelete(filename);
+
+        return;
+    }
+
+    if (__HEAP->id != 0 && block->heap_id != __HEAP->id) {
+        block->next = __HEAP->foreign_blocks;
+        __HEAP->foreign_blocks = block;
         return;
     }
 
@@ -369,7 +359,7 @@ __attribute__((hot)) raw_p heap_realloc(raw_p ptr, u64_t new_size) {
         return ptr;
 
     // grow or block is not in the same heap
-    if (order > block->order || (__HEAP->id != 0 && block->heap_id != __HEAP->id)) {
+    if (order > block->order || (__HEAP->id != 0 && block->heap_id != __HEAP->id) || block->backed) {
         new_ptr = heap_alloc(new_size);
 
         if (new_ptr == NULL) {
