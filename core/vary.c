@@ -193,7 +193,7 @@ obj_p ray_set_parted(obj_p *x, u64_t n) {
 obj_p ray_get_parted(obj_p *x, u64_t n) {
     i8_t type;
     u64_t i, j, l, wide;
-    obj_p path, dir, sym, dirs, gcol, ord, t1, t2, eq, fmaps, virtcol, keys, vals, res;
+    obj_p path, dir, sym, dirs, gcol, ord, t1, t2, eq, fmaps, virtcol, v, keys, vals, res;
 
     switch (n) {
         case 2:
@@ -228,14 +228,21 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
             // Try to convert dirs to a parted column (one of numeric datatypes)
             res = cast_obj(TYPE_DATE, dirs);
 
-            if (IS_ERROR(res))
+            if (IS_ERROR(res)) {
+                drop_obj(dirs);
                 return res;
+            }
 
-            // Sort parted dirs in an ascending order
-            ord = ray_iasc(res);
+            // TODO: Sort parted dirs in an ascending order
+            v = cast_obj(TYPE_I64, res);
+            ord = ray_iasc(v);
+            drop_obj(v);
 
-            if (IS_ERROR(ord))
+            if (IS_ERROR(ord)) {
+                drop_obj(res);
+                drop_obj(dirs);
                 return ord;
+            }
 
             gcol = ray_at(res, ord);
             drop_obj(res);
@@ -346,7 +353,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
                 drop_obj(path);
             }
 
-            sym = (gcol->type == TYPE_TIMESTAMP) ? symbol("Date", 4) : symbol("Id", 2);
+            sym = (gcol->type == TYPE_DATE) ? symbol("Date", 4) : symbol("Id", 2);
             keys = ray_concat(sym, AS_LIST(t1)[0]);
 
             l = wide + 1;
@@ -358,7 +365,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
             virtcol->type = TYPE_MAPCOMMON;
             for (i = 0; i < l; i++) {
                 n = ops_count(AS_LIST(AS_LIST(fmaps)[0])[i]);
-                AS_I64(AS_LIST(virtcol)[0])[i] = AS_I64(gcol)[i];
+                AS_DATE(AS_LIST(virtcol)[0])[i] = AS_DATE(gcol)[i];
                 AS_I64(AS_LIST(virtcol)[1])[i] = n;
             }
 

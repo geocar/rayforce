@@ -43,6 +43,8 @@
 #include "unary.h"
 #include "util.h"
 #include "fdmap.h"
+#include "date.h"
+#include "time.h"
 #include "timestamp.h"
 
 RAYASSERT(sizeof(struct obj_t) == 16, rayforce_h)
@@ -538,6 +540,16 @@ obj_p ins_obj(obj_p *obj, i64_t idx, obj_p val) {
             ret = ins_raw(obj, idx, &val->u8);
             drop_obj(val);
             break;
+        case TYPE_I16:
+            ret = ins_raw(obj, idx, &val->i16);
+            drop_obj(val);
+            break;
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+            ret = ins_raw(obj, idx, &val->i32);
+            drop_obj(val);
+            break;
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
@@ -573,6 +585,20 @@ obj_p at_idx(obj_p obj, i64_t idx) {
     u8_t *buf;
 
     switch (obj->type) {
+        case TYPE_I16:
+            if (idx < 0)
+                idx = obj->len + idx;
+            if (idx >= 0 && idx < (i64_t)obj->len)
+                return i16(AS_I16(obj)[idx]);
+            return i16(NULL_I16);
+        // case TYPE_I32:
+        case TYPE_DATE:
+            // case TYPE_TIME:
+            if (idx < 0)
+                idx = obj->len + idx;
+            if (idx >= 0 && idx < (i64_t)obj->len)
+                return adate(AS_I32(obj)[idx]);
+            return adate(NULL_I32);
         case TYPE_I64:
             if (idx < 0)
                 idx = obj->len + idx;
@@ -1561,6 +1587,10 @@ obj_p cast_obj(i8_t type, obj_p obj) {
             return symbol(AS_C8(obj), obj->len);
         case MTYPE2(-TYPE_I64, TYPE_C8):
             return i64(i64_from_str(AS_C8(obj), obj->len));
+        case MTYPE2(-TYPE_DATE, TYPE_C8):
+            return adate(date_into_i32(date_from_str(AS_C8(obj), obj->len)));
+        case MTYPE2(-TYPE_TIME, TYPE_C8):
+            return atime(time_into_i32(time_from_str(AS_C8(obj), obj->len)));
         case MTYPE2(-TYPE_TIMESTAMP, TYPE_C8):
             return timestamp(timestamp_into_i64(timestamp_from_str(AS_C8(obj), obj->len)));
         case MTYPE2(-TYPE_F64, TYPE_C8):
@@ -1574,6 +1604,12 @@ obj_p cast_obj(i8_t type, obj_p obj) {
             res = F64(l);
             for (i = 0; i < l; i++)
                 AS_F64(res)[i] = (f64_t)AS_I64(obj)[i];
+            return res;
+        case MTYPE2(TYPE_I64, TYPE_DATE):
+            l = obj->len;
+            res = I64(l);
+            for (i = 0; i < l; i++)
+                AS_I64(res)[i] = (i64_t)AS_DATE(obj)[i];
             return res;
         case MTYPE2(TYPE_I64, TYPE_F64):
             l = obj->len;

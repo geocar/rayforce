@@ -419,7 +419,6 @@ obj_p specify_number(parser_t *parser, str_p current, span_t span, obj_p num) {
             res = cast_obj(-TYPE_F64, num);
             drop_obj(num);
             num = res;
-            DEBUG_OBJ(num);
             break;
         case 'l':
             num->type = -TYPE_I64;

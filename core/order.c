@@ -33,8 +33,6 @@ obj_p ray_iasc(obj_p x) {
     switch (x->type) {
         case TYPE_I64:
         case TYPE_TIMESTAMP:
-            return ray_sort_asc(x);
-
         case TYPE_F64:
             return ray_sort_asc(x);
 
@@ -47,8 +45,6 @@ obj_p ray_idesc(obj_p x) {
     switch (x->type) {
         case TYPE_I64:
         case TYPE_TIMESTAMP:
-            return ray_sort_desc(x);
-
         case TYPE_F64:
             return ray_sort_desc(x);
 

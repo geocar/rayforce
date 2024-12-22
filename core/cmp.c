@@ -30,6 +30,7 @@
 #include "items.h"
 #include "runtime.h"
 #include "pool.h"
+#include "string.h"
 
 typedef obj_p (*ray_cmp_f)(obj_p, obj_p, u64_t, u64_t, obj_p);
 
@@ -93,6 +94,8 @@ typedef obj_p (*ray_cmp_f)(obj_p, obj_p, u64_t, u64_t, obj_p);
         switch (MTYPE2(x->type, y->type)) {                                                                 \
             case MTYPE2(-TYPE_B8, -TYPE_B8):                                                                \
                 return b8(EQB8(x->b8, y->b8));                                                              \
+            case MTYPE2(TYPE_C8, TYPE_C8):                                                                  \
+                return b8(str_cmp(AS_C8(x), x->len, AS_C8(y), y->len) == 0);                                \
             case MTYPE2(-TYPE_I32, -TYPE_I32):                                                              \
             case MTYPE2(-TYPE_DATE, -TYPE_DATE):                                                            \
             case MTYPE2(-TYPE_TIME, -TYPE_TIME):                                                            \
@@ -253,6 +256,9 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
     u64_t i, l, n, chunk;
     obj_p v, res;
     ray_cmp_f cmp_fn = (ray_cmp_f)op;
+
+    if (x->type == TYPE_C8 && y->type == TYPE_C8)
+        return cmp_fn(x, y, 1, 0, NULL_OBJ);
 
     if (IS_VECTOR(x) && IS_VECTOR(y)) {
         if (x->len != y->len)

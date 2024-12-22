@@ -47,6 +47,9 @@ obj_p ray_at(obj_p x, obj_p y) {
 
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(TYPE_B8, -TYPE_I64):
+        case MTYPE2(TYPE_I32, -TYPE_I64):
+        case MTYPE2(TYPE_DATE, -TYPE_I64):
+        case MTYPE2(TYPE_TIME, -TYPE_I64):
         case MTYPE2(TYPE_I64, -TYPE_I64):
         case MTYPE2(TYPE_F64, -TYPE_I64):
         case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
@@ -64,9 +67,24 @@ obj_p ray_at(obj_p x, obj_p y) {
             res = B8(yl);
             for (i = 0; i < yl; i++) {
                 if (AS_B8(y)[i] >= (i64_t)xl)
-                    AS_B8(res)
-                [i] = B8_FALSE;
-                else AS_B8(res)[i] = AS_B8(x)[(i32_t)AS_B8(y)[i]];
+                    AS_B8(res)[i] = B8_FALSE;
+                else
+                    AS_B8(res)[i] = AS_B8(x)[(i32_t)AS_B8(y)[i]];
+            }
+
+            return res;
+
+        case MTYPE2(TYPE_I32, TYPE_I64):
+        case MTYPE2(TYPE_DATE, TYPE_I64):
+        case MTYPE2(TYPE_TIME, TYPE_I64):
+            yl = y->len;
+            xl = x->len;
+            res = vector(x->type, yl);
+            for (i = 0; i < yl; i++) {
+                if (AS_I64(y)[i] >= (i64_t)xl)
+                    AS_I32(res)[i] = NULL_I32;
+                else
+                    AS_I32(res)[i] = AS_I32(x)[(i32_t)AS_I64(y)[i]];
             }
 
             return res;
@@ -79,9 +97,9 @@ obj_p ray_at(obj_p x, obj_p y) {
             res = vector(x->type, yl);
             for (i = 0; i < yl; i++) {
                 if (AS_I64(y)[i] >= (i64_t)xl)
-                    AS_I64(res)
-                [i] = NULL_I64;
-                else AS_I64(res)[i] = AS_I64(x)[AS_I64(y)[i]];
+                    AS_I64(res)[i] = NULL_I64;
+                else
+                    AS_I64(res)[i] = AS_I64(x)[AS_I64(y)[i]];
             }
 
             return res;
@@ -92,9 +110,9 @@ obj_p ray_at(obj_p x, obj_p y) {
             res = F64(yl);
             for (i = 0; i < yl; i++) {
                 if (AS_I64(y)[i] >= (i64_t)xl)
-                    AS_F64(res)
-                [i] = NULL_F64;
-                else AS_F64(res)[i] = AS_F64(x)[AS_I64(y)[i]];
+                    AS_F64(res)[i] = NULL_F64;
+                else
+                    AS_F64(res)[i] = AS_F64(x)[AS_I64(y)[i]];
             }
 
             return res;
