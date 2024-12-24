@@ -90,7 +90,7 @@ hist_p hist_create() {
     }
 
     // Map file to memory
-    lines = (str_p)mmap_file(fd, NULL, fsize, 0, 1);
+    lines = (str_p)mmap_file(fd, NULL, fsize, 0);
     if (lines == NULL) {
         perror("can't map history file");
         fs_fclose(fd);

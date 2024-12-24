@@ -473,7 +473,7 @@ obj_p ray_read_csv(obj_p *x, i64_t n) {
                 return res;
             }
 
-            buf = (str_p)mmap_file(fd, NULL, size, 0, 0);
+            buf = (str_p)mmap_file(fd, NULL, size, 0);
 
             if (buf == NULL) {
                 drop_obj(types);

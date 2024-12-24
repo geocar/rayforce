@@ -143,7 +143,7 @@ block_p heap_add_pool(u64_t size) {
             return NULL;
         }
 
-        block = (block_p)mmap_file(fd, NULL, size, 0, 1);
+        block = (block_p)mmap_file(fd, NULL, size, 0);
 
         if (block == NULL) {
             fs_fclose(fd);

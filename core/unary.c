@@ -187,7 +187,7 @@ obj_p ray_get(obj_p x) {
 
                 drop_obj(path);
 
-                res = (obj_p)mmap_file(fd, NULL, size, 0, 0);
+                res = (obj_p)mmap_file(fd, NULL, size, 0);
 
                 if (IS_EXTERNAL_SERIALIZED(res)) {
                     v = de_raw((u8_t *)res, size);
