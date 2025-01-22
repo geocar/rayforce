@@ -1033,7 +1033,7 @@ nil_t skip_whitespaces(parser_t *parser) {
 }
 
 obj_p parser_advance(parser_t *parser) {
-    obj_p tok, err;
+    obj_p tok = NULL_OBJ, err = NULL_OBJ;
 
     skip_whitespaces(parser);
 
