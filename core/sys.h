@@ -39,5 +39,6 @@ typedef struct sys_info_t {
 } sys_info_t;
 
 sys_info_t sys_info(i32_t threads);
+obj_p ray_system(obj_p cmd);
 
 #endif  // SYS_H

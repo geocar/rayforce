@@ -26,6 +26,16 @@
 #include "string.h"
 #include "format.h"
 #include "runtime.h"
+#include "error.h"
+
+#if defined(OS_WINDOWS)
+#include <windows.h>
+#define popen _popen
+#define pclose _pclose
+#else
+#include <stdlib.h>
+#include <unistd.h>
+#endif
 
 i32_t cpu_cores() {
 #if defined(OS_WASM)
@@ -109,4 +119,37 @@ sys_info_t sys_info(i32_t threads) {
 #endif
 
     return info;
+}
+
+obj_p ray_system(obj_p cmd) {
+    c8_t buf[4096];
+    FILE *fp;
+    i64_t l;
+    obj_p c, res;
+
+    if (cmd->type != TYPE_C8) {
+        THROW(ERR_TYPE, "system: expected a string");
+    }
+
+    c = cstring_from_str((lit_p)AS_U8(cmd), cmd->len);
+
+    fp = popen(AS_C8(c), "r");
+    if (fp == NULL)
+        THROW(ERR_SYS, "popen failed");
+
+    res = LIST(0);
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        l = strlen(buf);
+        if (l > 0 && buf[l - 1] == '\n')
+            buf[l - 1] = '\0';  // Remove the newline
+        l--;
+
+        push_obj(&res, string_from_str(buf, l));
+    }
+
+    drop_obj(c);
+    pclose(fp);
+
+    return res;
 }

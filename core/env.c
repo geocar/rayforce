@@ -176,6 +176,7 @@ nil_t init_functions(obj_p functions)
     REGISTER_FN(functions,  "show",                TYPE_UNARY,    FN_NONE,                   ray_show);
     REGISTER_FN(functions,  "meta",                TYPE_UNARY,    FN_NONE,                   ray_meta);
     REGISTER_FN(functions,  "os-get-var",          TYPE_UNARY,    FN_NONE,                   ray_os_get_var);
+    REGISTER_FN(functions,  "system",              TYPE_UNARY,    FN_NONE,                   ray_system);
     
     // Binary           
     REGISTER_FN(functions,  "try",                 TYPE_BINARY,   FN_NONE | FN_SPECIAL_FORM, try_obj);
