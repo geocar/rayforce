@@ -52,6 +52,7 @@
 #include "util.h"
 #include "vary.h"
 #include "os.h"
+#include "proc.h"
 
 i64_t SYMBOL_FN;
 i64_t SYMBOL_SELF;
@@ -79,6 +80,14 @@ i64_t SYMBOL_SYM;
         i64_t _i = i;                  \
         push_raw(&AS_LIST(r)[0], &_i); \
         push_sym(&AS_LIST(r)[1], s);   \
+    };
+
+#define REGISTER_INTERNAL(r, n, o)               \
+    {                                            \
+        i64_t _k = symbols_intern(n, strlen(n)); \
+        obj_p _v = (o);                          \
+        push_raw(&AS_LIST(r)[0], &_k);           \
+        push_raw(&AS_LIST(r)[1], &_v);           \
     };
 
 obj_p ray_env(obj_p *x, u64_t n) {
@@ -240,6 +249,7 @@ nil_t init_functions(obj_p functions)
     REGISTER_FN(functions,  "get-splayed",         TYPE_VARY,     FN_NONE,                   ray_get_splayed);
     REGISTER_FN(functions,  "set-parted",          TYPE_VARY,     FN_NONE,                   ray_set_parted);
     REGISTER_FN(functions,  "get-parted",          TYPE_VARY,     FN_NONE,                   ray_get_parted);
+    REGISTER_FN(functions,  "internals",           TYPE_VARY,     FN_NONE,                   ray_internals);
 }    
     
 nil_t init_typenames(obj_p typenames)    
@@ -295,6 +305,11 @@ nil_t init_typenames(obj_p typenames)
 }
 // clang-format on
 
+nil_t init_internals(obj_p internals) {
+    REGISTER_INTERNAL(internals, "pid", i64(proc_get_pid()));
+    REGISTER_INTERNAL(internals, "started", timestamp(timestamp_into_i64(timestamp_current("local"))));
+}
+
 nil_t init_keywords(obj_p *keywords) {
     SYMBOL_FN = symbols_intern("fn", 2);
     push_raw(keywords, &SYMBOL_FN);
@@ -323,16 +338,19 @@ env_t env_create(nil_t) {
     obj_p functions = dict(SYMBOL(0), LIST(0));
     obj_p variables = dict(SYMBOL(0), LIST(0));
     obj_p typenames = dict(I64(0), SYMBOL(0));
+    obj_p internals = dict(SYMBOL(0), LIST(0));
 
     init_keywords(&keywords);
     init_functions(functions);
     init_typenames(typenames);
+    init_internals(internals);
 
     env_t env = {
         .keywords = keywords,
         .functions = functions,
         .variables = variables,
         .typenames = typenames,
+        .internals = internals,
     };
 
     return env;
@@ -343,6 +361,7 @@ nil_t env_destroy(env_t *env) {
     drop_obj(env->functions);
     drop_obj(env->variables);
     drop_obj(env->typenames);
+    drop_obj(env->internals);
 }
 
 i64_t env_get_typename_by_type(env_t *env, i8_t type) {
@@ -489,4 +508,10 @@ str_p env_get_global_name(lit_p name, u64_t len, u64_t *index, u64_t *sbidx) {
     }
 
     return NULL;
+}
+
+obj_p ray_internals(obj_p *x, u64_t n) {
+    UNUSED(x);
+    UNUSED(n);
+    return clone_obj(runtime_get()->env.internals);
 }

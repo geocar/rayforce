@@ -113,8 +113,6 @@ poll_p poll_init(i64_t port) {
         }
     }
 
-    poll_set_usr_fd(0);
-
     return poll;
 }
 

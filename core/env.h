@@ -51,6 +51,7 @@ typedef struct env_t {
     obj_p functions;  // dict, containing function primitives
     obj_p variables;  // dict, containing mappings variables names to their values
     obj_p typenames;  // dict, containing mappings type ids to their names
+    obj_p internals;  // dict, containing internal functions, variables, descriptors etc.
 } env_t;
 
 env_t env_create(nil_t);
@@ -68,5 +69,6 @@ str_p env_get_global_name(lit_p name, u64_t len, u64_t *index, u64_t *sbidx);
 obj_p env_set(env_t *env, obj_p key, obj_p val);
 obj_p ray_env(obj_p *x, u64_t n);
 obj_p ray_memstat(obj_p *x, u64_t n);
+obj_p ray_internals(obj_p *x, u64_t n);
 
 #endif  // ENV_H

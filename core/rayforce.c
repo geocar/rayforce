@@ -1911,6 +1911,28 @@ obj_p copy_obj(obj_p obj) {
     obj_p res;
 
     switch (obj->type) {
+        case -TYPE_B8:
+            return b8(obj->b8);
+        case -TYPE_C8:
+            return c8(obj->c8);
+        case -TYPE_U8:
+            return u8(obj->u8);
+        case -TYPE_I16:
+            return i16(obj->i16);
+        case -TYPE_I32:
+            return i32(obj->i32);
+        case -TYPE_DATE:
+            return adate(obj->i32);
+        case -TYPE_TIME:
+            return atime(obj->i32);
+        case -TYPE_I64:
+            return i64(obj->i64);
+        case -TYPE_SYMBOL:
+            return symboli64(obj->i64);
+        case -TYPE_TIMESTAMP:
+            return timestamp(obj->i64);
+        case -TYPE_F64:
+            return f64(obj->f64);
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
@@ -1925,7 +1947,7 @@ obj_p copy_obj(obj_p obj) {
             res = LIST(l);
             res->rc = 1;
             for (i = 0; i < l; i++)
-                AS_LIST(res)[i] = clone_obj(AS_LIST(obj)[i]);
+                AS_LIST(res)[i] = copy_obj(AS_LIST(obj)[i]);
             return res;
         case TYPE_ENUM:
         case TYPE_MAPLIST:
