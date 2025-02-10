@@ -122,6 +122,10 @@ obj_p ray_add_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     i64_t vi64;
 
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return i32(ADDI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return i64(ADDI64(i32_to_i64(x->i32), y->i64));
         case MTYPE2(-TYPE_I32, -TYPE_DATE):
             return adate(ADDI32(x->i32, y->i32));
         case MTYPE2(-TYPE_I32, -TYPE_TIME):
@@ -133,6 +137,8 @@ obj_p ray_add_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
             return i64(ADDI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, -TYPE_F64):
             return f64(ADDF64(x->i64, y->f64));
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(ADDI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_DATE):
             vi64 = i32_to_i64(y->i32);
             return adate(i64_to_i32(ADDI64(x->i64, vi64)));
@@ -237,6 +243,18 @@ obj_p ray_add_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return i32(SUBI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return i64(SUBI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, -TYPE_F64):
+            return f64(SUBF64(x->i32, y->f64));
+        case MTYPE2(-TYPE_TIME, -TYPE_TIME):
+            return i32(SUBI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_DATE, -TYPE_DATE):
+            return i32(SUBI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(SUBI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return i64(SUBI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, -TYPE_F64):
@@ -286,6 +304,14 @@ obj_p ray_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_mul_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return i32(MULI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return i64(MULI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, -TYPE_F64):
+            return f64(MULF64(x->i32, y->f64));
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(MULI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return i64(MULI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, -TYPE_F64):
@@ -325,6 +351,14 @@ obj_p ray_mul_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_div_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return i32(DIVI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return i64(DIVI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, -TYPE_F64):
+            return f64(DIVF64(x->i32, y->f64));
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(DIVI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return i64(DIVI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, -TYPE_F64):
@@ -364,6 +398,14 @@ obj_p ray_div_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_fdiv_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return f64(FDIVI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return f64(FDIVI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, -TYPE_F64):
+            return f64(FDIVF64(x->i32, y->f64));
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return f64(FDIVI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return f64(FDIVI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, -TYPE_F64):
@@ -403,6 +445,22 @@ obj_p ray_fdiv_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_mod_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return i32(MODI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return i64(MODI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, TYPE_I32):
+            return __BINOP_A_V(x, y, i32, i32, i32, MODI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_I32):
+            return __BINOP_V_A(x, y, i32, i32, i32, MODI32, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_I32):
+            return __BINOP_V_V(x, y, i32, i32, i32, MODI32, len, offset, out);
+        case MTYPE2(-TYPE_I64, TYPE_I32):
+            return __BINOP_A_V(x, y, i64, i32, i32, MODI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_I64):
+            return __BINOP_V_A(x, y, i32, i64, i32, MODI64, len, offset, out);
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(MODI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return i64(MODI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, TYPE_I64):
@@ -418,6 +476,22 @@ obj_p ray_mod_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_xbar_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_I32, -TYPE_I32):
+            return i32(XBARI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_I32, -TYPE_I64):
+            return i64(XBARI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, TYPE_I32):
+            return __BINOP_A_V(x, y, i32, i32, i32, XBARI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_I32):
+            return __BINOP_V_A(x, y, i32, i32, i32, XBARI32, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_I32):
+            return __BINOP_V_V(x, y, i32, i32, i32, XBARI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_I64):
+            return __BINOP_V_A(x, y, i32, i64, i32, XBARI64, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_I64):
+            return __BINOP_V_V(x, y, i32, i64, i32, XBARI64, len, offset, out);
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(XBARI64(x->i64, i32_to_i64(y->i32)));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return i64(XBARI64(x->i64, y->i64));
         case MTYPE2(-TYPE_I64, TYPE_I64):

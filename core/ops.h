@@ -108,7 +108,8 @@ extern struct obj_t __NULL_OBJECT;
 #define FDIVI32(x, y) (((x) == NULL_I32 || (y) == NULL_I32) ? NULL_F64 : ((f64_t)(x) / (f64_t)(y)))
 #define FDIVI64(x, y) (((x) == NULL_I64 || (y) == NULL_I64) ? NULL_F64 : ((f64_t)(x) / (f64_t)(y)))
 #define FDIVF64(x, y) ((x) / (y))
-#define MODI32(x, y) (((y) == 0) ? NULL_I32 : (((x) == NULL_I32 || (y) == NULL_I32) ? NULL_I32 : ((x) % (y))))
+#define MODI32(x, y) \
+    (((y) == 0) ? NULL_I32 : (((x) == NULL_I32 || (y) == NULL_I32) ? NULL_I32 : ((i32_t)(x) % (i32_t)(y))))
 #define MODI64(x, y) \
     (((y) == 0) ? NULL_I64 : (((x) == NULL_I64 || (y) == NULL_I64) ? NULL_I64 : (((i64_t)(x)) % ((i64_t)(y)))))
 #define MODF64(x, y) ((x) - (y) * ((i64_t)((x) / (y))))
@@ -155,20 +156,20 @@ static inline i64_t i32_to_i32(i32_t x) { return x; }
 static inline i64_t i32_to_date(i32_t x) { return x; }
 static inline i32_t i32_to_time(i32_t x) { return x; }
 static inline i64_t i32_to_timestamp(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i64_t)x; }
-static inline i64_t i64_to_i64(i64_t x) { return x; }
+static inline i64_t i32_to_i64(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i64_t)x; }
+static inline f64_t i32_to_f64(i32_t x) { return (x == NULL_I32) ? NULL_F64 : (f64_t)x; }
+static inline i32_t i64_to_i32(i64_t x) { return (x == NULL_I64) ? NULL_I32 : (i32_t)x; }
 static inline i64_t i64_to_date(i64_t x) { return (x == NULL_I64) ? NULL_I32 : (i32_t)x; }
 static inline i64_t i64_to_time(i64_t x) { return (x == NULL_I64) ? NULL_I32 : (i32_t)x; }
+static inline i64_t i64_to_i64(i64_t x) { return x; }
 static inline i64_t i64_to_timestamp(i64_t x) { return x; }
-static inline i64_t i32_to_i64(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i64_t)x; }
-static inline i32_t i64_to_i32(i64_t x) { return (x == NULL_I64) ? NULL_I32 : (i32_t)x; }
-static inline i64_t f64_to_i64(f64_t x) { return (x == NULL_F64) ? NULL_I64 : (i64_t)x; }
-static inline i64_t f64_to_timestamp(f64_t x) { return (x == NULL_F64) ? NULL_I64 : (i64_t)x; }
 static inline f64_t i64_to_f64(i64_t x) { return (x == NULL_I64) ? NULL_F64 : (f64_t)x; }
-static inline f64_t f64_to_f64(i64_t x) { return x; }
-static inline f64_t i32_to_f64(i32_t x) { return (x == NULL_I32) ? NULL_F64 : (f64_t)x; }
 static inline i32_t f64_to_i32(f64_t x) { return (x == NULL_F64) ? NULL_I32 : (i32_t)x; }
 static inline i32_t f64_to_date(f64_t x) { return (x == NULL_F64) ? NULL_I32 : (i32_t)x; }
 static inline i32_t f64_to_time(f64_t x) { return (x == NULL_F64) ? NULL_I32 : (i32_t)x; }
+static inline i64_t f64_to_i64(f64_t x) { return (x == NULL_F64) ? NULL_I64 : (i64_t)x; }
+static inline i64_t f64_to_timestamp(f64_t x) { return (x == NULL_F64) ? NULL_I64 : (i64_t)x; }
+static inline f64_t f64_to_f64(i64_t x) { return x; }
 
 #define __BINOP_I32_I64(x, y, op) \
     ({                            \
