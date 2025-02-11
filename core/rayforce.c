@@ -495,6 +495,42 @@ obj_p append_list(obj_p *obj, obj_p vals) {
     }
 }
 
+obj_p unify_list(obj_p *obj) {
+    u64_t i, l;
+    obj_p res;
+    i8_t type;
+
+    switch ((*obj)->type) {
+        case TYPE_LIST:
+            l = (*obj)->len;
+            if (l == 0)
+                return *obj;
+
+            type = AS_LIST(*obj)[0]->type;
+            if (type >= 0)
+                return *obj;
+
+            res = vector(type, l);
+            ins_obj(&res, 0, clone_obj(AS_LIST(*obj)[0]));
+
+            for (i = 1; i < l; i++) {
+                if (AS_LIST(*obj)[i]->type != type) {
+                    drop_obj(res);
+                    return *obj;
+                }
+
+                ins_obj(&res, i, clone_obj(AS_LIST(*obj)[i]));
+            }
+
+            drop_obj(*obj);
+            *obj = res;
+
+            return *obj;
+        default:
+            return *obj;
+    }
+}
+
 obj_p push_sym(obj_p *obj, lit_p str) {
     i64_t sym = symbols_intern(str, strlen(str));
     return push_raw(obj, &sym);

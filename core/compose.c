@@ -628,3 +628,10 @@ obj_p ray_group(obj_p x) {
 
     return dict(k, v);
 }
+
+obj_p ray_unify_list(obj_p x) {
+    obj_p lst;
+
+    lst = clone_obj(x);
+    return unify_list(&lst);
+}

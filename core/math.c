@@ -775,7 +775,7 @@ obj_p ray_med(obj_p x) {
 obj_p unop_fold(raw_p op, obj_p x) {
     pool_p pool;
     u64_t i, l, n, chunk;
-    obj_p v;
+    obj_p v, res;
     raw_p argv[3];
 
     l = x->len;
@@ -803,7 +803,15 @@ obj_p unop_fold(raw_p op, obj_p x) {
     if (IS_ERROR(v))
         return v;
 
-    return __UNOP_FOLD(v, i64, i64, ADDI64);
+    // Fold the results
+    v = unify_list(&v);
+    argv[0] = (raw_p)v;
+    argv[1] = (raw_p)n;
+    argv[2] = (raw_p)0;
+    res = pool_call_task_fn(op, 3, argv);
+    drop_obj(v);
+
+    return res;
 }
 
 obj_p unop_map(raw_p op, obj_p x) {
