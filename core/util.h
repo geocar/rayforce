@@ -176,6 +176,20 @@ nil_t dump_stack(nil_t);
 #define __SIZE_OF_guid sizeof(guid_t)
 #define __SIZE_OF_list sizeof(obj_p)
 
+#define __NULL_X(x) NULL_##x
+#define __NULL_b8 __NULL_X(b8)
+#define __NULL_i8() 0
+#define __NULL_u8 0
+#define __NULL_c8 ""
+#define __NULL_i32 NULL_I32
+#define __NULL_date NULL_I32
+#define __NULL_time NULL_I32
+#define __NULL_i64 __NULL_X(I64)
+#define __NULL_timestamp NULL_I64
+#define __NULL_f64 NULL_F64
+
+#define XFIRST(x, p) ((x->len == 0) ? __NULL_##p : __AS_##p(x)[0])
+
 b8_t is_valid(obj_p obj);
 u32_t next_power_of_two_u32(u32_t n);
 u64_t next_power_of_two_u64(u64_t n);
