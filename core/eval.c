@@ -549,12 +549,11 @@ obj_p ray_eval_str(obj_p str, obj_p file) {
 
 obj_p try_obj(obj_p obj, obj_p ctch) {
     ctx_p ctx;
-    i64_t sp;
-    obj_p fn, res;
+    obj_p fn, *pfn, res;
     b8_t sig;
 
-    fn = lambda(NULL_OBJ, NULL_OBJ, NULL_OBJ);
-    ctx = ctx_push(fn);
+    ctx = ctx_get();
+    fn = ctch;
 
     switch (setjmp(ctx->jmp)) {
         case 0:
@@ -574,36 +573,33 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
             __builtin_unreachable();
     }
 
-    sp = ctx->sp;
-
-    if (__INTERPRETER->cp == 1)
-        drop_obj(AS_LAMBDA(ctx->lambda)->nfo);
-
-    // cleanup stack frame
-    while (__INTERPRETER->sp > sp)
-        drop_obj(stack_pop());
-
-    drop_obj(fn);
-    ctx_pop();
-
     if (IS_ERROR(res) || sig) {
-        if (ctch != NULL_OBJ) {
-            if (ctch->type == TYPE_LAMBDA) {
-                if (AS_LAMBDA(ctch)->args->len != 1) {
-                    drop_obj(res);
-                    THROW(ERR_LENGTH, "catch: expected 1 argument, got %llu", AS_LAMBDA(ctch)->args->len);
-                }
-                if (IS_ERROR(res)) {
-                    stack_push(clone_obj(AS_ERROR(res)->msg));
-                    drop_obj(res);
-                } else
-                    stack_push(res);
+        if (fn != NULL_OBJ) {
+        dispatch:
+            switch (fn->type) {
+                case TYPE_LAMBDA:
+                    if (AS_LAMBDA(fn)->args->len != 1) {
+                        drop_obj(res);
+                        THROW(ERR_LENGTH, "catch: expected 1 argument, got %llu", AS_LAMBDA(fn)->args->len);
+                    }
+                    if (IS_ERROR(res)) {
+                        stack_push(clone_obj(AS_ERROR(res)->msg));
+                        drop_obj(res);
+                    } else
+                        stack_push(res);
 
-                return call(ctch, 1);
+                    return call(fn, 1);
+                case -TYPE_SYMBOL:
+                    pfn = resolve(ctch->i64);
+                    if (pfn != NULL && (*pfn)->type == TYPE_LAMBDA) {
+                        fn = *pfn;
+                        goto dispatch;
+                    }
+                    // Fallthrough
+                default:
+                    drop_obj(res);
+                    return clone_obj(ctch);
             }
-
-            drop_obj(res);
-            return clone_obj(ctch);
         } else {
             drop_obj(res);
             return NULL_OBJ;

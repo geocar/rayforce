@@ -108,7 +108,10 @@ heap_p heap_get(nil_t) { return __HEAP; }
 raw_p heap_alloc(u64_t size) { return malloc(size); }
 raw_p heap_mmap(u64_t size) { return mmap_alloc(size); }
 raw_p heap_stack(u64_t size) { return mmap_stack(size); }
-nil_t heap_free(raw_p ptr) { free(ptr); }
+nil_t heap_free(raw_p ptr) {
+    if (ptr != NULL && ptr != NULL_OBJ)
+        free(ptr);
+}
 raw_p heap_realloc(raw_p ptr, u64_t size) { return realloc(ptr, size); }
 nil_t heap_unmap(raw_p ptr, u64_t size) { mmap_free(ptr, size); }
 i64_t heap_gc(nil_t) { return 0; }
@@ -305,7 +308,7 @@ __attribute__((hot)) nil_t heap_free(raw_p ptr) {
     u64_t order;
     c8_t filename[64];
 
-    if (ptr == NULL)
+    if (ptr == NULL || ptr == NULL_OBJ)
         return;
 
     block = RAW2BLOCK(ptr);
