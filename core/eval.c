@@ -575,9 +575,9 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
 
     if (IS_ERROR(res) || sig) {
         if (fn != NULL_OBJ) {
-        dispatch:
             switch (fn->type) {
                 case TYPE_LAMBDA:
+                call:
                     if (AS_LAMBDA(fn)->args->len != 1) {
                         drop_obj(res);
                         THROW(ERR_LENGTH, "catch: expected 1 argument, got %llu", AS_LAMBDA(fn)->args->len);
@@ -593,7 +593,7 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
                     pfn = resolve(ctch->i64);
                     if (pfn != NULL && (*pfn)->type == TYPE_LAMBDA) {
                         fn = *pfn;
-                        goto dispatch;
+                        goto call;
                     }
                     // Fallthrough
                 default:
