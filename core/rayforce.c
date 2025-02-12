@@ -1698,18 +1698,28 @@ obj_p cast_obj(i8_t type, obj_p obj) {
         return clone_obj(obj);
 
     switch (MTYPE2(type, obj->type)) {
+        case MTYPE2(-TYPE_B8, -TYPE_I16):
+            return b8(obj->i16 != 0);
+        case MTYPE2(-TYPE_B8, -TYPE_I32):
+            return b8(obj->i32 != 0);
+        case MTYPE2(-TYPE_B8, -TYPE_I64):
+            return b8(obj->i64 != 0);
         case MTYPE2(-TYPE_U8, -TYPE_I16):
+            return u8(obj->i16);
         case MTYPE2(-TYPE_U8, -TYPE_I32):
+            return u8(obj->i32);
         case MTYPE2(-TYPE_U8, -TYPE_I64):
-            return u8(obj->u8);
-        case MTYPE2(-TYPE_I16, -TYPE_I16):
+            return u8(obj->i64);
         case MTYPE2(-TYPE_I16, -TYPE_I32):
+            return i16(obj->i32);
         case MTYPE2(-TYPE_I16, -TYPE_I64):
-            return i16(obj->i16);
+            return i16(obj->i64);
         case MTYPE2(-TYPE_I32, -TYPE_U8):
+            return i32(obj->u8);
         case MTYPE2(-TYPE_I32, -TYPE_I16):
+            return i32(obj->i16);
         case MTYPE2(-TYPE_I32, -TYPE_I64):
-            return i32(obj->i32);
+            return i32(obj->i64);
         case MTYPE2(-TYPE_I32, -TYPE_TIME):
         case MTYPE2(-TYPE_I32, -TYPE_DATE):
             return i32(obj->i32);
@@ -1760,6 +1770,8 @@ obj_p cast_obj(i8_t type, obj_p obj) {
             return res;
         case MTYPE2(-TYPE_SYMBOL, TYPE_C8):
             return symbol(AS_C8(obj), obj->len);
+        case MTYPE2(-TYPE_B8, TYPE_C8):
+            return b8(obj->len > 0);
         case MTYPE2(-TYPE_I32, TYPE_C8):
             return i32(i32_from_str(AS_C8(obj), obj->len));
         case MTYPE2(-TYPE_I64, TYPE_C8):
