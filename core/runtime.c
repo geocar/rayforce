@@ -50,7 +50,7 @@ nil_t usage(nil_t) {
 
 obj_p parse_cmdline(i32_t argc, str_p argv[]) {
     i32_t opt;
-    obj_p keys = SYMBOL(0), vals = LIST(0), str, sym;
+    obj_p keys = SYMBOL(0), vals = LIST(0), usr_keys = SYMBOL(0), usr_vals = LIST(0), str, sym;
     b8_t file_handled = B8_FALSE, user_defined = B8_FALSE;
     str_p flag;
 
@@ -58,32 +58,32 @@ obj_p parse_cmdline(i32_t argc, str_p argv[]) {
         if (argv[opt][0] == '-') {
             flag = argv[opt] + 1;  // Skip '-'
 
-            if (strcmp(flag, "f") == 0 || strcmp(flag, "file") == 0) {
+            if (!user_defined && (strcmp(flag, "f") == 0 || strcmp(flag, "file") == 0)) {
                 if (++opt >= argc)
                     usage();
                 push_sym(&keys, "file");
                 str = string_from_str(argv[opt], strlen(argv[opt]));
                 push_obj(&vals, str);
                 file_handled = B8_TRUE;
-            } else if (strcmp(flag, "p") == 0 || strcmp(flag, "port") == 0) {
+            } else if (!user_defined && (strcmp(flag, "p") == 0 || strcmp(flag, "port") == 0)) {
                 if (++opt >= argc)
                     usage();
                 push_sym(&keys, "port");
                 str = string_from_str(argv[opt], strlen(argv[opt]));
                 push_obj(&vals, str);
-            } else if (strcmp(flag, "c") == 0 || strcmp(flag, "cores") == 0) {
+            } else if (!user_defined && (strcmp(flag, "c") == 0 || strcmp(flag, "cores") == 0)) {
                 if (++opt >= argc)
                     usage();
                 push_sym(&keys, "cores");
                 str = string_from_str(argv[opt], strlen(argv[opt]));
                 push_obj(&vals, str);
-            } else if (strcmp(flag, "t") == 0 || strcmp(flag, "timeit") == 0) {
+            } else if (!user_defined && (strcmp(flag, "t") == 0 || strcmp(flag, "timeit") == 0)) {
                 if (++opt >= argc)
                     usage();
                 push_sym(&keys, "timeit");
                 str = string_from_str(argv[opt], strlen(argv[opt]));
                 push_obj(&vals, str);
-            } else if (strcmp(flag, "-") == 0) {
+            } else if (!user_defined && (strcmp(flag, "-") == 0)) {
                 user_defined = B8_TRUE;
             } else {
                 if (!user_defined)
@@ -91,10 +91,11 @@ obj_p parse_cmdline(i32_t argc, str_p argv[]) {
 
                 if (++opt >= argc)
                     usage();
+
                 sym = symbol(flag, strlen(flag));
-                push_obj(&keys, sym);
+                push_obj(&usr_keys, sym);
                 str = string_from_str(argv[opt], strlen(argv[opt]));
-                push_obj(&vals, str);
+                push_obj(&usr_vals, str);
             }
         } else {
             // Handle non-option arguments (files)
@@ -107,6 +108,14 @@ obj_p parse_cmdline(i32_t argc, str_p argv[]) {
                 usage();
             }
         }
+    }
+
+    if (usr_keys->len == 0) {
+        drop_obj(usr_keys);
+        drop_obj(usr_vals);
+    } else {
+        push_sym(&keys, "uargs");
+        push_obj(&vals, dict(usr_keys, usr_vals));
     }
 
     return dict(keys, vals);
