@@ -451,7 +451,7 @@ obj_p ray_raise(obj_p obj) {
     if (obj->type != TYPE_C8)
         THROW(ERR_TYPE, "raise: expected 'string, got '%s", type_name(obj->type));
 
-    e = error_obj(ERR_RAISE, clone_obj(obj));
+    e = error_obj(ERR_RAISE, obj);
     unwrap(e, (i64_t)obj);
 
     if (__INTERPRETER->cp == 1)
@@ -548,11 +548,13 @@ obj_p ray_eval_str(obj_p str, obj_p file) {
 }
 
 obj_p try_obj(obj_p obj, obj_p ctch) {
-    ctx_p ctx;
+    ctx_p curr_ctx, ctx;
     obj_p fn, *pfn, res = NULL_OBJ;
     b8_t sig = B8_FALSE;
 
-    ctx = ctx_get();
+    curr_ctx = ctx_get();
+    ctx = ctx_push(curr_ctx->lambda);
+    ctx->sp = curr_ctx->sp;
     fn = ctch;
 
     switch (setjmp(ctx->jmp)) {
@@ -572,6 +574,8 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
         default:
             __builtin_unreachable();
     }
+
+    ctx_pop();
 
     if (IS_ERROR(res) || sig) {
         if (fn != NULL_OBJ) {
