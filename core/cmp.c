@@ -103,7 +103,7 @@ typedef obj_p (*ray_cmp_f)(obj_p, obj_p, u64_t, u64_t, obj_p);
             case MTYPE2(-TYPE_I64, -TYPE_I64):                                                              \
             case MTYPE2(-TYPE_SYMBOL, -TYPE_SYMBOL):                                                        \
             case MTYPE2(-TYPE_TIMESTAMP, -TYPE_TIMESTAMP):                                                  \
-                return b8(EQI64(x->i64, y->i64));                                                           \
+                return b8(op##I64(x->i64, y->i64));                                                         \
             case MTYPE2(-TYPE_F64, -TYPE_F64):                                                              \
                 return b8(x->f64 == y->f64);                                                                \
             case MTYPE2(-TYPE_I32, TYPE_I32):                                                               \
