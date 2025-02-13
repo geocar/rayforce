@@ -582,13 +582,17 @@ obj_p parse_string(parser_t *parser) {
     str_p pos = parser->current + 1;  // skip '"'
     i32_t len = 0;
     obj_p str, err;
-    c8_t lf = '\n', cr = '\r', tb = '\t';
+    c8_t lf = '\n', cr = '\r', tb = '\t', bs = '\\';
 
     str = C8(0);
 
     while (!at_eof(*pos) && *pos != '\n') {
         if (*pos == '\\') {
             switch (*++pos) {
+                case '\\':
+                    push_raw(&str, &bs);
+                    pos++;
+                    break;
                 case '"':
                     push_raw(&str, pos++);
                     break;

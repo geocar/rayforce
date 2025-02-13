@@ -1217,7 +1217,7 @@ obj_p obj_fmt_n(obj_p *x, u64_t n) {
         return NULL_OBJ;
 
     if (n == 1)
-        return obj_fmt(x[0], B8_TRUE);
+        return obj_fmt(x[0], x[0]->type != TYPE_C8);
 
     if (x[0]->type != TYPE_C8)
         return NULL_OBJ;
