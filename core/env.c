@@ -210,7 +210,7 @@ nil_t init_functions(obj_p functions)
     REGISTER_FN(functions,  "in",                  TYPE_BINARY,   FN_ATOMIC,                 ray_in);
     REGISTER_FN(functions,  "within",              TYPE_BINARY,   FN_NONE,                   ray_within);
     REGISTER_FN(functions,  "sect",                TYPE_BINARY,   FN_ATOMIC,                 ray_sect);
-    REGISTER_FN(functions,  "except",              TYPE_BINARY,   FN_ATOMIC,                 ray_except);
+    REGISTER_FN(functions,  "except",              TYPE_BINARY,   FN_NONE,                   ray_except);
     REGISTER_FN(functions,  "union",               TYPE_BINARY,   FN_NONE,                   ray_union);
     REGISTER_FN(functions,  "rand",                TYPE_BINARY,   FN_ATOMIC,                 ray_rand);
     REGISTER_FN(functions,  "as",                  TYPE_BINARY,   FN_NONE,                   ray_cast_obj);
