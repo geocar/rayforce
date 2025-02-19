@@ -99,6 +99,9 @@ obj_p ray_map(obj_p *x, u64_t n) {
             if (l == 0xfffffffffffffffful)
                 THROW(ERR_LENGTH, "'map': arguments have different lengths");
 
+            if (l < 1)
+                return vector(x[0]->type, 0);
+
             // first item to get type of res
             for (j = 0; j < n; j++) {
                 b = x + j;
