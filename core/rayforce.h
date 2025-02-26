@@ -197,7 +197,7 @@ extern obj_p dict(obj_p keys,  obj_p vals); // dict
 // Reference counting         
 extern obj_p clone_obj(obj_p obj); // clone_obj
 extern obj_p copy_obj(obj_p obj);  // copy
-extern obj_p cow_obj(obj_p obj);   // clone_obj if refcount > 1
+extern obj_p cow_obj(obj_p obj);   // copy-on-write 
 extern u32_t rc_obj(obj_p obj);    // get refcount
 
 // Errors

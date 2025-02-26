@@ -166,74 +166,56 @@ obj_p ray_alter(obj_p *x, u64_t n) {
     return __commit(x[0], obj, val);
 }
 
-obj_p __modify(obj_p *obj, obj_p *x, u64_t n) {
-    i64_t i, l;
-    obj_p v, idx, args[n], cur, res;
+obj_p at_obj_ref(obj_p obj, obj_p idx) {
+    u64_t i, n, l;
+    i64_t j, *ids;
+    obj_p v;
 
-    // this is the same as __alter
-    if (!IS_VECTOR(x[2]))
-        return __alter(obj, x, n);
+    switch (MTYPE2(obj->type, idx->type)) {
+        case MTYPE2(TYPE_LIST, -TYPE_I64):
+            return AS_LIST(obj)[idx->i64];
+        default:
+            if (obj->type == TYPE_DICT) {
+                j = find_obj_idx(AS_LIST(obj)[0], idx);
+                return (j == NULL_I64) ? NULL : cow_obj(AS_LIST(AS_LIST(obj)[1])[j]);
+            }
 
-    if (n != 4)
-        THROW(ERR_LENGTH, "modify: set expected a value");
+            return NULL;
+    }
+}
 
-    // Drill down to the value
-    l = x[2]->len - 1;
-    v = NULL_OBJ;
-    idx = NULL_OBJ;
-    cur = *obj;
+obj_p dot_obj(obj_p obj, obj_p idx) {
+    u64_t i, l;
 
-    for (i = 0; i < l; i++) {
-        drop_obj(v);
-        drop_obj(idx);
+    // DEBUG_PRINT("dot_obj: ");
+    // DEBUG_OBJ(obj);
+    // DEBUG_OBJ(idx);
+    // DEBUG_PRINT("----");
 
-        idx = at_idx(x[2], i);
+    if (idx->type == TYPE_NULL)
+        return obj;
 
-        if (IS_ERROR(idx))
-            return idx;
+    if (IS_VECTOR(idx)) {
+        l = idx->len;
+        if (l == 0)
+            return obj;
 
-        if (is_null(idx)) {
-            drop_obj(idx);
-            THROW(ERR_TYPE, "modify: expected index, got NULL");
+        l--;  // skip last element
+
+        for (i = 0; i < l; i++) {
+            obj = dot_obj(cow_obj(obj), AS_LIST(idx)[i]);
+            if (obj == NULL)
+                return obj;
         }
 
-        v = at_obj(cur, idx);
-
-        if (IS_ERROR(v)) {
-            drop_obj(idx);
-            return v;
-        }
-
-        cur = v;
+        return obj;
     }
 
-    idx = at_idx(x[2], l);
-
-    if (IS_ERROR(idx)) {
-        drop_obj(v);
-        return idx;
-    }
-
-    if (is_null(idx)) {
-        drop_obj(v);
-        drop_obj(idx);
-        THROW(ERR_TYPE, "modify: expected index, got NULL");
-    }
-
-    args[0] = v;
-    args[1] = x[1];
-    args[2] = idx;
-    args[3] = x[3];
-
-    res = ray_alter(args, n);
-    // drop_obj(v);
-    // drop_obj(idx);
-
-    return res;
+    return at_obj_ref(cow_obj(obj), idx);
 }
 
 obj_p ray_modify(obj_p *x, u64_t n) {
-    obj_p *val = NULL, obj, res;
+    obj_p *val = NULL, obj, res, *v, idx;
 
     if (n < 3)
         THROW(ERR_LENGTH, "modify: expected at least 3 arguments, got %lld", n);
@@ -241,16 +223,23 @@ obj_p ray_modify(obj_p *x, u64_t n) {
     if (x[1]->type < TYPE_LAMBDA || x[1]->type > TYPE_VARY)
         THROW(ERR_TYPE, "modify: expected function as 2nd argument, got '%s'", type_name(x[1]->type));
 
-    obj = __fetch(x[0], &val);
+    // v = dot_obj(&runtime_get()->env.variables, x[0]);
 
-    if (IS_ERROR(obj))
-        return obj;
+    // if (IS_ERROR(*v))
+    // return *v;
 
-    res = __modify(&obj, x, n);
-    if (IS_ERROR(res))
-        UNCOW_OBJ(obj, val, res);
+    v = dot_obj(x[0], x[2]);
 
-    return __commit(x[0], obj, val);
+    idx = ray_last(x[2]);
+    if (IS_ERROR(idx)) {
+        drop_obj(*v);
+        return idx;
+    }
+
+    v = set_obj(&v, idx, clone_obj(x[3]));
+    // drop_obj(*v);
+
+    return clone_obj(x[0]);
 }
 
 /*
