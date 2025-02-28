@@ -2080,22 +2080,12 @@ obj_p cast_obj(i8_t type, obj_p obj) {
 obj_p __attribute__((hot)) clone_obj(obj_p obj) {
     DEBUG_ASSERT(is_valid(obj), "invalid object type: %d", obj->type);
 
-    u64_t i, l;
-
     if (!__RC_SYNC)
         (obj)->rc += 1;
     else
         __atomic_fetch_add(&obj->rc, 1, __ATOMIC_RELAXED);
 
-    // switch (obj->type) {
-    //     case TYPE_LIST:
-    //         l = obj->len;
-    //         for (i = 0; i < l; i++)
-    //             clone_obj(AS_LIST(obj)[i]);
-    //         return obj;
-    //     default:
-    //         return obj;
-    // }
+    return obj;
 }
 
 nil_t __attribute__((hot)) drop_obj(obj_p obj) {
@@ -2241,9 +2231,9 @@ obj_p copy_obj(obj_p obj) {
         case TYPE_MAPLIST:
             return ray_value(obj);
         case TYPE_TABLE:
-            return table(clone_obj(AS_LIST(obj)[0]), clone_obj(AS_LIST(obj)[1]));
+            return table(copy_obj(AS_LIST(obj)[0]), copy_obj(AS_LIST(obj)[1]));
         case TYPE_DICT:
-            return dict(clone_obj(AS_LIST(obj)[0]), clone_obj(AS_LIST(obj)[1]));
+            return dict(copy_obj(AS_LIST(obj)[0]), copy_obj(AS_LIST(obj)[1]));
         default:
             THROW(ERR_NOT_IMPLEMENTED, "cow: not implemented for type: '%s", type_name(obj->type));
     }
@@ -2251,10 +2241,7 @@ obj_p copy_obj(obj_p obj) {
 
 obj_p cow_obj(obj_p obj) {
     u32_t rc;
-    DEBUG_PRINT("cow_obj: ");
-    DEBUG_OBJ(obj);
-    DEBUG_PRINT("RC: %d", rc_obj(obj));
-    DEBUG_PRINT("----");
+
     // Complex types like enumerations or anymap may not be modified inplace
     if (obj->type == TYPE_ENUM || obj->type == TYPE_MAPLIST)
         return copy_obj(obj);

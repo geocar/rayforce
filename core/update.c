@@ -169,7 +169,7 @@ obj_p ray_alter(obj_p *x, u64_t n) {
 obj_p at_obj_ref(obj_p obj, obj_p idx) {
     u64_t i, n, l;
     i64_t j, *ids;
-    obj_p v;
+    obj_p v, *p;
 
     switch (MTYPE2(obj->type, idx->type)) {
         case MTYPE2(TYPE_LIST, -TYPE_I64):
@@ -177,20 +177,26 @@ obj_p at_obj_ref(obj_p obj, obj_p idx) {
         default:
             if (obj->type == TYPE_DICT) {
                 j = find_obj_idx(AS_LIST(obj)[0], idx);
-                return (j == NULL_I64) ? NULL : cow_obj(AS_LIST(AS_LIST(obj)[1])[j]);
+                if (j == NULL_I64)
+                    return NULL;
+                else {
+                    p = AS_LIST(AS_LIST(obj)[1]) + j;
+                    v = cow_obj(*p);
+                    if (v != *p) {
+                        drop_obj(*p);
+                        *p = v;
+                    }
+
+                    return v;
+                }
             }
 
-            return NULL;
+            THROW(ERR_NOT_FOUND, "dot: symbol not found");
     }
 }
 
 obj_p dot_obj(obj_p obj, obj_p idx) {
     u64_t i, l;
-
-    // DEBUG_PRINT("dot_obj: ");
-    // DEBUG_OBJ(obj);
-    // DEBUG_OBJ(idx);
-    // DEBUG_PRINT("----");
 
     if (idx->type == TYPE_NULL)
         return obj;
@@ -203,9 +209,10 @@ obj_p dot_obj(obj_p obj, obj_p idx) {
         l--;  // skip last element
 
         for (i = 0; i < l; i++) {
-            obj = dot_obj(cow_obj(obj), AS_LIST(idx)[i]);
+            obj = cow_obj(obj);
+            obj = dot_obj(obj, AS_LIST(idx)[i]);
             if (obj == NULL)
-                return obj;
+                THROW(ERR_NOT_FOUND, "dot: symbol not found");
         }
 
         return obj;
@@ -215,7 +222,7 @@ obj_p dot_obj(obj_p obj, obj_p idx) {
 }
 
 obj_p ray_modify(obj_p *x, u64_t n) {
-    obj_p *val = NULL, obj, res, *v, idx;
+    obj_p obj, res, *cur, idx;
 
     if (n < 3)
         THROW(ERR_LENGTH, "modify: expected at least 3 arguments, got %lld", n);
@@ -223,21 +230,31 @@ obj_p ray_modify(obj_p *x, u64_t n) {
     if (x[1]->type < TYPE_LAMBDA || x[1]->type > TYPE_VARY)
         THROW(ERR_TYPE, "modify: expected function as 2nd argument, got '%s'", type_name(x[1]->type));
 
-    // v = dot_obj(&runtime_get()->env.variables, x[0]);
-
-    // if (IS_ERROR(*v))
-    // return *v;
-
-    v = dot_obj(x[0], x[2]);
-
-    idx = ray_last(x[2]);
-    if (IS_ERROR(idx)) {
-        drop_obj(*v);
-        return idx;
+    if (x[0]->type == -TYPE_SYMBOL) {
+        cur = resolve(x[0]->i64);
+        if (cur == NULL)
+            THROW(ERR_NOT_FOUND, "modify: symbol not found");
+        obj = cow_obj(*cur);
+    } else {
+        obj = cow_obj(x[0]);
     }
 
-    v = set_obj(&v, idx, clone_obj(x[3]));
-    // drop_obj(*v);
+    res = dot_obj(obj, x[2]);
+    if (IS_ERROR(res))
+        return res;
+
+    idx = ray_last(x[2]);
+    if (IS_ERROR(idx))
+        return idx;
+
+    res = set_obj(&res, idx, clone_obj(x[3]));
+    drop_obj(idx);
+
+    if (IS_ERROR(res))
+        return res;
+
+    if (x[0]->type != -TYPE_SYMBOL)
+        return obj;
 
     return clone_obj(x[0]);
 }
