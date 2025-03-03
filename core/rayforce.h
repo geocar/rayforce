@@ -238,8 +238,9 @@ extern obj_p push_sym(obj_p *obj, lit_p str); // push interned string to a symbo
 // Append list to a list
 extern obj_p append_list(obj_p *obj, obj_p vals);
 
-// Unify list to a vector (if possible)
-extern obj_p unify_list(obj_p *obj);
+
+extern obj_p unify_list(obj_p *obj);  // Unify list to a vector (if possible)
+extern obj_p diverse_obj(obj_p *obj); // Diverse object to a list
 
 // Pop a value from the end of a list
 extern obj_p pop_obj(obj_p *obj);                            // pop object from a list

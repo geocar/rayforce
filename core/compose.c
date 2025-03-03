@@ -645,11 +645,18 @@ obj_p ray_group(obj_p x) {
     return dict(k, v);
 }
 
-obj_p ray_unify_list(obj_p x) {
-    obj_p lst;
+obj_p ray_diverse(obj_p x) {
+    obj_p res;
 
-    lst = clone_obj(x);
-    return unify_list(&lst);
+    res = cow_obj(x);
+    return diverse_obj(&res);
+}
+
+obj_p ray_unify(obj_p x) {
+    obj_p res;
+
+    res = cow_obj(x);
+    return unify_list(&res);
 }
 
 obj_p ray_row_index(obj_p *x, u64_t n) {

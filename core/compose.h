@@ -40,7 +40,8 @@ obj_p ray_group(obj_p x);
 obj_p ray_guid(obj_p x);
 obj_p ray_list(obj_p *x, u64_t n);
 obj_p ray_enlist(obj_p *x, u64_t n);
-obj_p ray_unify_list(obj_p x);
 obj_p ray_row_index(obj_p *x, u64_t n);
+obj_p ray_diverse(obj_p x);
+obj_p ray_unify(obj_p x);
 
 #endif  // COMPOSE_H

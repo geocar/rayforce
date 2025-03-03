@@ -177,7 +177,8 @@ nil_t init_functions(obj_p functions)
     REGISTER_FN(functions,  "meta",                TYPE_UNARY,    FN_NONE,                   ray_meta);
     REGISTER_FN(functions,  "os-get-var",          TYPE_UNARY,    FN_NONE,                   ray_os_get_var);
     REGISTER_FN(functions,  "system",              TYPE_UNARY,    FN_NONE,                   ray_system);
-    REGISTER_FN(functions,  "unify-list",          TYPE_UNARY,    FN_NONE,                   ray_unify_list);
+    REGISTER_FN(functions,  "unify",               TYPE_UNARY,    FN_NONE,                   ray_unify);
+    REGISTER_FN(functions,  "diverse",             TYPE_UNARY,    FN_NONE,                   ray_diverse);
     
     // Binary           
     REGISTER_FN(functions,  "try",                 TYPE_BINARY,   FN_NONE | FN_SPECIAL_FORM, try_obj);

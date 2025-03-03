@@ -537,6 +537,40 @@ obj_p unify_list(obj_p *obj) {
     }
 }
 
+obj_p diverse_obj(obj_p *obj) {
+    i8_t type;
+    u64_t i, l;
+    obj_p res;
+
+    switch ((*obj)->type) {
+        case TYPE_U8:
+        case TYPE_B8:
+        case TYPE_I16:
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+        case TYPE_I64:
+        case TYPE_TIMESTAMP:
+        case TYPE_SYMBOL:
+        case TYPE_F64:
+        case TYPE_C8:
+        case TYPE_GUID:
+            l = (*obj)->len;
+            res = LIST(l);
+            for (i = 0; i < l; i++)
+                AS_LIST(res)[i] = at_idx(*obj, i);
+
+            drop_obj(*obj);
+            *obj = res;
+            return res;
+        default:
+            res = LIST(1);
+            AS_LIST(res)[0] = *obj;
+            *obj = res;
+            return res;
+    }
+}
+
 obj_p push_sym(obj_p *obj, lit_p str) {
     i64_t sym;
 
