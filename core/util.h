@@ -136,6 +136,18 @@ nil_t dump_stack(nil_t);
 #define __INNER_symbol i64_t
 #define __INNER_list obj_p
 
+#define __BASE_u8 u8
+#define __BASE_b8 b8
+#define __BASE_c8 c8
+#define __BASE_i32 i32
+#define __BASE_date i32
+#define __BASE_time i32
+#define __BASE_timestamp i64
+#define __BASE_i64 i64
+#define __BASE_f64 f64
+#define __BASE_guid guid
+#define __BASE_symbol i64
+
 #define __v_i8(x) I8(x)
 #define __v_u8(x) U8(x)
 #define __v_b8(x) B8(x)

@@ -69,191 +69,320 @@
 
 #define __BINOP_A_V(x, y, lt, rt, ot, op, ln, of, ov)            \
     ({                                                           \
-        rt##_t *$rhs;                                            \
+        __INNER_##rt *$rhs;                                      \
         __INNER_##ot *$out;                                      \
         $rhs = __AS_##rt(y) + of;                                \
         $out = __AS_##ot(ov) + of;                               \
         for (u64_t $i = 0; $i < ln; $i++)                        \
-            __DISPATCH_BINOP(x->lt, $rhs[$i], op, ot, $out[$i]); \
+            $out[$i] = op(lt##_to_##ot(x->__BASE_##lt),          \
+                          rt##_to_##ot($rhs[$i]));               \
         NULL_OBJ;                                                \
     })
 
 #define __BINOP_V_A(x, y, lt, rt, ot, op, ln, of, ov)            \
     ({                                                           \
-        lt##_t *$lhs;                                            \
+        __INNER_##lt *$lhs;                                      \
         __INNER_##ot *$out;                                      \
         $lhs = __AS_##lt(x) + of;                                \
         $out = __AS_##ot(ov) + of;                               \
         for (u64_t $i = 0; $i < ln; $i++)                        \
-            __DISPATCH_BINOP($lhs[$i], y->rt, op, ot, $out[$i]); \
+            $out[$i] = op(lt##_to_##ot($lhs[$i]),                \
+                          rt##_to_##ot(y->__BASE_##rt));         \
         NULL_OBJ;                                                \
     })
 
 #define __BINOP_V_V(x, y, lt, rt, ot, op, ln, of, ov)               \
     ({                                                              \
-        lt##_t *$lhs;                                               \
-        rt##_t *$rhs;                                               \
+        __INNER_##lt *$lhs;                                         \
+        __INNER_##rt *$rhs;                                         \
         __INNER_##ot *$out;                                         \
         $lhs = __AS_##lt(x) + of;                                   \
         $rhs = __AS_##rt(y) + of;                                   \
         $out = __AS_##ot(ov) + of;                                  \
         for (u64_t $i = 0; $i < ln; $i++)                           \
-            __DISPATCH_BINOP($lhs[$i], $rhs[$i], op, ot, $out[$i]); \
+            $out[$i] = op(lt##_to_##ot($lhs[$i]),                   \
+                          rt##_to_##ot($rhs[$i]));                  \
         NULL_OBJ;                                                   \
     })
 
 i8_t infer_math_type(obj_p x, obj_p y) {
     switch (MTYPE2(ABSI8(x->type), ABSI8(y->type))) {
         case MTYPE2(TYPE_I32, TYPE_I32):
+        case MTYPE2(TYPE_DATE, TYPE_DATE):
             return TYPE_I32;
         case MTYPE2(TYPE_I32, TYPE_I64):
         case MTYPE2(TYPE_I64, TYPE_I32):
+        case MTYPE2(TYPE_I64, TYPE_I64):
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_TIMESTAMP):
             return TYPE_I64;
         case MTYPE2(TYPE_I32, TYPE_F64):
-        case MTYPE2(TYPE_F64, TYPE_I32):
-            return TYPE_F64;
-        case MTYPE2(TYPE_I32, TYPE_DATE):
-        case MTYPE2(TYPE_DATE, TYPE_I32):
-        case MTYPE2(TYPE_DATE, TYPE_I64):
-        case MTYPE2(TYPE_I64, TYPE_DATE):
-            return TYPE_DATE;
-        case MTYPE2(TYPE_I32, TYPE_TIME):
-        case MTYPE2(TYPE_TIME, TYPE_I32):
-            return TYPE_TIME;
-        case MTYPE2(TYPE_I32, TYPE_TIMESTAMP):
-        case MTYPE2(TYPE_TIMESTAMP, TYPE_I32):
-        case MTYPE2(TYPE_I64, TYPE_TIMESTAMP):
-        case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
-            return TYPE_TIMESTAMP;
-        case MTYPE2(TYPE_I64, TYPE_I64):
-            return TYPE_I64;
         case MTYPE2(TYPE_I64, TYPE_F64):
+        case MTYPE2(TYPE_F64, TYPE_I32):
         case MTYPE2(TYPE_F64, TYPE_I64):
         case MTYPE2(TYPE_F64, TYPE_F64):
             return TYPE_F64;
+        case MTYPE2(TYPE_I32, TYPE_DATE):
+        case MTYPE2(TYPE_I64, TYPE_DATE):
+        case MTYPE2(TYPE_DATE, TYPE_I32):
+        case MTYPE2(TYPE_DATE, TYPE_I64):
+            return TYPE_DATE;
+        case MTYPE2(TYPE_I32, TYPE_TIME):
+        case MTYPE2(TYPE_I64, TYPE_TIME):
+        case MTYPE2(TYPE_TIME, TYPE_I32):
+        case MTYPE2(TYPE_TIME, TYPE_I64):
+        case MTYPE2(TYPE_TIME, TYPE_TIME):
+            return TYPE_TIME;
+        case MTYPE2(TYPE_I32, TYPE_TIMESTAMP):
+        case MTYPE2(TYPE_I64, TYPE_TIMESTAMP):
+        case MTYPE2(TYPE_DATE, TYPE_TIME):
+        case MTYPE2(TYPE_TIME, TYPE_DATE):
+        case MTYPE2(TYPE_TIME, TYPE_TIMESTAMP):
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_I32):
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_TIME):
+            return TYPE_TIMESTAMP;
         default:
             return TYPE_I64;
     }
 }
 
 obj_p ray_add_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
-    i64_t vi64;
-
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(ADDI32(x->i32, y->i32));
         case MTYPE2(-TYPE_I32, -TYPE_I64):
             return i64(ADDI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, -TYPE_F64):
+            return f64(ADDF64((f64_t)x->i32, y->f64));
         case MTYPE2(-TYPE_I32, -TYPE_DATE):
             return adate(ADDI32(x->i32, y->i32));
         case MTYPE2(-TYPE_I32, -TYPE_TIME):
             return atime(ADDI32(x->i32, y->i32));
         case MTYPE2(-TYPE_I32, -TYPE_TIMESTAMP):
-            vi64 = i32_to_i64(x->i32);
-            return timestamp(ADDI64(vi64, y->i64));
-        case MTYPE2(-TYPE_I64, -TYPE_I64):
-            return i64(ADDI64(x->i64, y->i64));
-        case MTYPE2(-TYPE_I64, -TYPE_F64):
-            return f64(ADDF64(x->i64, y->f64));
-        case MTYPE2(-TYPE_I64, -TYPE_I32):
-            return i64(ADDI64(x->i64, i32_to_i64(y->i32)));
-        case MTYPE2(-TYPE_I64, -TYPE_DATE):
-            vi64 = i32_to_i64(y->i32);
-            return adate(i64_to_i32(ADDI64(x->i64, vi64)));
-        case MTYPE2(-TYPE_I64, -TYPE_TIME):
-            vi64 = i32_to_i64(y->i32);
-            return atime(i64_to_i32(ADDI64(x->i64, vi64)));
-        case MTYPE2(-TYPE_I64, -TYPE_TIMESTAMP):
-            return timestamp(ADDI64(x->i64, y->i64));
-        case MTYPE2(-TYPE_F64, -TYPE_F64):
-            return f64(ADDF64(x->f64, y->f64));
-        case MTYPE2(-TYPE_F64, -TYPE_I64):
-            return f64(ADDF64(x->f64, (f64_t)y->i64));
-        case MTYPE2(-TYPE_DATE, -TYPE_I64):
-            return adate(i64_to_i32(ADDI64(i32_to_i64(x->i32), y->i64)));
-        case MTYPE2(-TYPE_DATE, -TYPE_I32):
-            return adate(ADDI32(x->i32, y->i32));
-        case MTYPE2(-TYPE_TIME, -TYPE_I64):
-            vi64 = i32_to_i64(y->i32);
-            return atime(i64_to_i32(ADDI64(vi64, y->i64)));
-        case MTYPE2(-TYPE_TIME, -TYPE_I32):
-            return atime(ADDI32(x->i32, y->i32));
-        case MTYPE2(-TYPE_TIMESTAMP, -TYPE_I64):
-            return timestamp(ADDI64(x->i64, y->i64));
+            return timestamp(ADDI64(i32_to_i64(x->i32), y->i64));
         case MTYPE2(-TYPE_I32, TYPE_I32):
             return __BINOP_A_V(x, y, i32, i32, i32, ADDI32, len, offset, out);
         case MTYPE2(-TYPE_I32, TYPE_I64):
             return __BINOP_A_V(x, y, i32, i64, i64, ADDI64, len, offset, out);
-        case MTYPE2(-TYPE_DATE, TYPE_I64):
-            return __BINOP_A_V(x, y, i32, i64, date, ADDI64, len, offset, out);
-        case MTYPE2(-TYPE_TIME, TYPE_I64):
-            return __BINOP_A_V(x, y, i32, i64, time, ADDI64, len, offset, out);
         case MTYPE2(-TYPE_I32, TYPE_F64):
             return __BINOP_A_V(x, y, i32, f64, f64, ADDF64, len, offset, out);
-        case MTYPE2(-TYPE_I64, TYPE_I32):
-            return __BINOP_A_V(x, y, i64, i32, i64, ADDI64, len, offset, out);
         case MTYPE2(-TYPE_I32, TYPE_DATE):
             return __BINOP_A_V(x, y, i32, i32, date, ADDI32, len, offset, out);
         case MTYPE2(-TYPE_I32, TYPE_TIME):
             return __BINOP_A_V(x, y, i32, i32, time, ADDI32, len, offset, out);
         case MTYPE2(-TYPE_I32, TYPE_TIMESTAMP):
             return __BINOP_A_V(x, y, i32, i64, timestamp, ADDI64, len, offset, out);
-        case MTYPE2(-TYPE_I64, TYPE_DATE):
-            return __BINOP_A_V(x, y, i64, i32, date, ADDI64, len, offset, out);
-        case MTYPE2(-TYPE_I64, TYPE_TIME):
-            return __BINOP_A_V(x, y, i64, i32, time, ADDI64, len, offset, out);
+
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i64(ADDI64(x->i64, i32_to_i64(y->i32)));
+        case MTYPE2(-TYPE_I64, -TYPE_I64):
+            return i64(ADDI64(x->i64, y->i64));
+        case MTYPE2(-TYPE_I64, -TYPE_F64):
+            return f64(ADDF64((f64_t)x->i64, y->f64));
+        case MTYPE2(-TYPE_I64, -TYPE_DATE):
+            return adate(ADDI32(i64_to_i32(x->i64), y->i32));
+        case MTYPE2(-TYPE_I64, -TYPE_TIME):
+            return atime(ADDI32(i64_to_i32(x->i64), y->i32));
+        case MTYPE2(-TYPE_I64, -TYPE_TIMESTAMP):
+            return timestamp(ADDI64(x->i64, y->i64));
+        case MTYPE2(-TYPE_I64, TYPE_I32):
+            return __BINOP_A_V(x, y, i64, i32, i64, ADDI64, len, offset, out);
         case MTYPE2(-TYPE_I64, TYPE_I64):
             return __BINOP_A_V(x, y, i64, i64, i64, ADDI64, len, offset, out);
         case MTYPE2(-TYPE_I64, TYPE_F64):
             return __BINOP_A_V(x, y, i64, f64, f64, ADDF64, len, offset, out);
-        case MTYPE2(-TYPE_F64, TYPE_F64):
-            return __BINOP_A_V(x, y, f64, f64, f64, ADDF64, len, offset, out);
+        case MTYPE2(-TYPE_I64, TYPE_DATE):
+            return __BINOP_A_V(x, y, i64, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_I64, TYPE_TIME):
+            return __BINOP_A_V(x, y, i64, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_I64, TYPE_TIMESTAMP):
+            return __BINOP_A_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(-TYPE_F64, -TYPE_I32):
+            return f64(ADDF64(x->f64, (f64_t)y->i32));
+        case MTYPE2(-TYPE_F64, -TYPE_I64):
+            return f64(ADDF64(x->f64, (f64_t)y->i64));
+        case MTYPE2(-TYPE_F64, -TYPE_F64):
+            return f64(ADDF64(x->f64, y->f64));
+        case MTYPE2(-TYPE_F64, TYPE_I32):
+            return __BINOP_A_V(x, y, f64, i32, f64, ADDF64, len, offset, out);
         case MTYPE2(-TYPE_F64, TYPE_I64):
             return __BINOP_A_V(x, y, f64, i64, f64, ADDF64, len, offset, out);
+        case MTYPE2(-TYPE_F64, TYPE_F64):
+            return __BINOP_A_V(x, y, f64, f64, f64, ADDF64, len, offset, out);
+
+        case MTYPE2(-TYPE_DATE, -TYPE_I32):
+            return adate(ADDI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_DATE, -TYPE_I64):
+            return adate(ADDI32(x->i32, i64_to_i32(y->i64)));
+        case MTYPE2(-TYPE_DATE, -TYPE_DATE):
+            return i32(ADDI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_DATE, -TYPE_TIME):
+            return timestamp(ADDI64(date_to_timestamp(x->i32), time_to_timestamp(y->i32)));
+        case MTYPE2(-TYPE_DATE, TYPE_I32):
+            return __BINOP_A_V(x, y, i32, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_DATE, TYPE_I64):
+            return __BINOP_A_V(x, y, i32, i64, date, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_DATE, TYPE_DATE):
+            return __BINOP_A_V(x, y, i32, i32, i32, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_DATE, TYPE_TIME):
+            return __BINOP_A_V(x, y, date, time, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(-TYPE_TIME, -TYPE_I32):
+            return atime(ADDI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_TIME, -TYPE_I64):
+            return atime(ADDI32(x->i32, i64_to_i32(y->i64)));
+        case MTYPE2(-TYPE_TIME, -TYPE_DATE):
+            return timestamp(ADDI64(time_to_timestamp(x->i32), date_to_timestamp(y->i32)));
+        case MTYPE2(-TYPE_TIME, -TYPE_TIME):
+            return atime(ADDI32(x->i32, y->i32));
+        case MTYPE2(-TYPE_TIME, -TYPE_TIMESTAMP):
+            return timestamp(ADDI64(time_to_timestamp(x->i32), y->i64));
+        case MTYPE2(-TYPE_TIME, TYPE_I32):
+            return __BINOP_A_V(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_TIME, TYPE_I64):
+            return __BINOP_A_V(x, y, i32, i64, time, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_TIME, TYPE_DATE):
+            return __BINOP_A_V(x, y, time, date, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(-TYPE_TIME, TYPE_TIME):
+            return __BINOP_A_V(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(-TYPE_TIME, TYPE_TIMESTAMP):
+            return __BINOP_A_V(x, y, time, timestamp, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(-TYPE_TIMESTAMP, -TYPE_I32):
+            return timestamp(ADDI64(x->i64, i32_to_i64(y->i32)));
+        case MTYPE2(-TYPE_TIMESTAMP, -TYPE_I64):
+            return timestamp(ADDI64(x->i64, y->i64));
+        case MTYPE2(-TYPE_TIMESTAMP, -TYPE_TIME):
+            return timestamp(ADDI64(x->i64, time_to_timestamp(y->i32)));
+        case MTYPE2(-TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+            return i64(ADDI64(x->i64, y->i64));
+        case MTYPE2(-TYPE_TIMESTAMP, TYPE_I32):
+            return __BINOP_A_V(x, y, i64, i32, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(-TYPE_TIMESTAMP, TYPE_I64):
+            return __BINOP_A_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(-TYPE_TIMESTAMP, TYPE_TIME):
+            return __BINOP_A_V(x, y, i64, time, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(-TYPE_TIMESTAMP, TYPE_TIMESTAMP):
+            return __BINOP_A_V(x, y, i64, i64, i64, ADDI64, len, offset, out);
+
+        case MTYPE2(TYPE_I32, -TYPE_I32):
+            return __BINOP_V_A(x, y, i32, i32, i32, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_I64):
+            return __BINOP_V_A(x, y, i32, i64, i64, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_F64):
+            return __BINOP_V_A(x, y, i32, f64, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_DATE):
+            return __BINOP_V_A(x, y, i32, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_TIME):
+            return __BINOP_V_A(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_TIMESTAMP):
+            return __BINOP_V_A(x, y, i32, i64, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_I32):
+            return __BINOP_V_V(x, y, i32, i32, i32, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_I64):
+            return __BINOP_V_V(x, y, i32, i64, i64, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_F64):
+            return __BINOP_V_V(x, y, i32, f64, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_DATE):
+            return __BINOP_V_V(x, y, i32, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_TIME):
+            return __BINOP_V_V(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_TIMESTAMP):
+            return __BINOP_V_V(x, y, i32, i64, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(TYPE_I64, -TYPE_I32):
+            return __BINOP_V_A(x, y, i64, i64, i64, ADDI64, len, offset, out);
         case MTYPE2(TYPE_I64, -TYPE_I64):
             return __BINOP_V_A(x, y, i64, i64, i64, ADDI64, len, offset, out);
         case MTYPE2(TYPE_I64, -TYPE_F64):
             return __BINOP_V_A(x, y, i64, f64, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_I64, -TYPE_DATE):
+            return __BINOP_V_A(x, y, i64, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I64, -TYPE_TIME):
+            return __BINOP_V_A(x, y, i64, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I64, -TYPE_TIMESTAMP):
+            return __BINOP_V_A(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_I64, TYPE_I32):
+            return __BINOP_V_V(x, y, i64, i32, i64, ADDI64, len, offset, out);
         case MTYPE2(TYPE_I64, TYPE_I64):
             return __BINOP_V_V(x, y, i64, i64, i64, ADDI64, len, offset, out);
         case MTYPE2(TYPE_I64, TYPE_F64):
             return __BINOP_V_V(x, y, i64, f64, f64, ADDF64, len, offset, out);
-        case MTYPE2(TYPE_F64, -TYPE_F64):
-            return __BINOP_V_A(x, y, f64, f64, f64, ADDF64, len, offset, out);
-        case MTYPE2(TYPE_F64, -TYPE_I64):
-            return __BINOP_V_A(x, y, f64, i64, f64, ADDF64, len, offset, out);
-        case MTYPE2(TYPE_F64, TYPE_F64):
-            return __BINOP_V_V(x, y, f64, f64, f64, ADDF64, len, offset, out);
-        case MTYPE2(TYPE_F64, TYPE_I64):
-            return __BINOP_V_V(x, y, f64, i64, f64, ADDF64, len, offset, out);
-        case MTYPE2(TYPE_DATE, -TYPE_I64):
-            return __BINOP_V_A(x, y, i32, i64, date, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_DATE, TYPE_I32):
-            return __BINOP_V_A(x, y, i32, i32, date, ADDI32, len, offset, out);
-        case MTYPE2(TYPE_DATE, TYPE_I64):
-            return __BINOP_V_V(x, y, i32, i64, date, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_TIME, -TYPE_I64):
-            return __BINOP_V_A(x, y, i32, i64, time, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_TIME, TYPE_I32):
-            return __BINOP_V_A(x, y, i32, i32, time, ADDI32, len, offset, out);
-        case MTYPE2(TYPE_TIME, TYPE_I64):
-            return __BINOP_V_V(x, y, i32, i64, time, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
-            return __BINOP_V_A(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
-            return __BINOP_V_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_TIMESTAMP, TYPE_TIMESTAMP):
-            return __BINOP_V_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_TIMESTAMP, TYPE_F64):
-            return __BINOP_V_A(x, y, i64, f64, timestamp, ADDF64, len, offset, out);
-        case MTYPE2(TYPE_TIMESTAMP, -TYPE_F64):
-            return __BINOP_V_A(x, y, i64, f64, timestamp, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_I64, TYPE_DATE):
+            return __BINOP_V_V(x, y, i64, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_I64, TYPE_TIME):
+            return __BINOP_V_V(x, y, i64, i32, time, ADDI32, len, offset, out);
         case MTYPE2(TYPE_I64, TYPE_TIMESTAMP):
             return __BINOP_V_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
-        case MTYPE2(TYPE_F64, TYPE_TIMESTAMP):
-            return __BINOP_V_V(x, y, f64, i64, timestamp, ADDF64, len, offset, out);
-        case MTYPE2(-TYPE_I64, TYPE_TIMESTAMP):
-            return __BINOP_A_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(TYPE_F64, -TYPE_I32):
+            return __BINOP_V_A(x, y, f64, i32, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_F64, -TYPE_I64):
+            return __BINOP_V_A(x, y, f64, i64, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_F64, -TYPE_F64):
+            return __BINOP_V_A(x, y, f64, f64, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_F64, TYPE_I32):
+            return __BINOP_V_V(x, y, f64, i32, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_F64, TYPE_I64):
+            return __BINOP_V_V(x, y, f64, i64, f64, ADDF64, len, offset, out);
+        case MTYPE2(TYPE_F64, TYPE_F64):
+            return __BINOP_V_V(x, y, f64, f64, f64, ADDF64, len, offset, out);
+
+        case MTYPE2(TYPE_DATE, -TYPE_I32):
+            return __BINOP_V_A(x, y, i32, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_DATE, -TYPE_I64):
+            return __BINOP_V_A(x, y, i32, i64, date, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_DATE, -TYPE_DATE):
+            return __BINOP_V_A(x, y, i32, i32, i32, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_DATE, -TYPE_TIME):
+            return __BINOP_V_A(x, y, date, time, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_DATE, TYPE_I32):
+            return __BINOP_V_V(x, y, i32, i32, date, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_DATE, TYPE_I64):
+            return __BINOP_V_V(x, y, i32, i64, date, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_DATE, TYPE_DATE):
+            return __BINOP_V_V(x, y, i32, i32, i32, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_DATE, TYPE_TIME):
+            return __BINOP_V_V(x, y, date, time, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(TYPE_TIME, -TYPE_I32):
+            return __BINOP_V_A(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_TIME, -TYPE_I64):
+            return __BINOP_V_A(x, y, i32, i64, time, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIME, -TYPE_DATE):
+            return __BINOP_V_A(x, y, time, date, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIME, -TYPE_TIME):
+            return __BINOP_V_A(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_TIME, -TYPE_TIMESTAMP):
+            return __BINOP_V_A(x, y, time, i64, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIME, TYPE_I32):
+            return __BINOP_V_V(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_TIME, TYPE_I64):
+            return __BINOP_V_V(x, y, i32, i64, time, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIME, TYPE_DATE):
+            return __BINOP_V_V(x, y, time, date, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIME, TYPE_TIME):
+            return __BINOP_V_V(x, y, i32, i32, time, ADDI32, len, offset, out);
+        case MTYPE2(TYPE_TIME, TYPE_TIMESTAMP):
+            return __BINOP_V_V(x, y, time, timestamp, timestamp, ADDI64, len, offset, out);
+
+        case MTYPE2(TYPE_TIMESTAMP, -TYPE_I32):
+            return __BINOP_V_A(x, y, i64, i32, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, -TYPE_I64):
+            return __BINOP_V_A(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIME):
+            return __BINOP_V_A(x, y, timestamp, time, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+            return __BINOP_V_A(x, y, i64, i64, i64, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_I32):
+            return __BINOP_V_V(x, y, i64, i32, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_I64):
+            return __BINOP_V_V(x, y, i64, i64, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_TIME):
+            return __BINOP_V_V(x, y, i64, time, timestamp, ADDI64, len, offset, out);
+        case MTYPE2(TYPE_TIMESTAMP, TYPE_TIMESTAMP):
+            return __BINOP_V_V(x, y, i64, i64, i64, ADDI64, len, offset, out);
         default:
             THROW(ERR_TYPE, "add: unsupported types: '%s, '%s", type_name(x->type), type_name(y->type));
     }
