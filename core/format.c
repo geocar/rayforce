@@ -370,6 +370,8 @@ i64_t time_fmt_into(obj_p *dst, i32_t val) {
         return str_fmt_into(dst, 4, LIT_NULL_TIME);
 
     tm = time_from_i32(val);
+    if (tm.sign == -1)
+        return str_fmt_into(dst, NO_LIMIT, "-%.2d:%.2d:%.2d.%.3d", tm.hours, tm.mins, tm.secs, tm.msecs);
 
     return str_fmt_into(dst, NO_LIMIT, "%.2d:%.2d:%.2d.%.3d", tm.hours, tm.mins, tm.secs, tm.msecs);
 }
