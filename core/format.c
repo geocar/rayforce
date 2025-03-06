@@ -770,16 +770,16 @@ i64_t list_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj)
 
     if (!full) {
         for (i = 0; i < list_height - 1; i++) {
-            MAXN(n, obj_fmt_into(dst, indent, limit, B8_FALSE, AS_LIST(obj)[i]));
-            MAXN(n, str_fmt_into(dst, 2, " "));
+            n += obj_fmt_into(dst, indent, limit, B8_FALSE, AS_LIST(obj)[i]);
+            n += str_fmt_into(dst, 2, " ");
         }
 
-        MAXN(n, obj_fmt_into(dst, indent, limit, B8_FALSE, AS_LIST(obj)[i]));
+        n += obj_fmt_into(dst, indent, limit, B8_FALSE, AS_LIST(obj)[i]);
 
         if (list_height < (i64_t)obj->len)
-            MAXN(n, str_fmt_into(dst, 3, ".."));
+            n += str_fmt_into(dst, 3, "..");
 
-        MAXN(n, str_fmt_into(dst, 2, ")"));
+        n += str_fmt_into(dst, 2, ")");
 
         return n;
     }
@@ -787,22 +787,22 @@ i64_t list_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj)
     indent += 2;
 
     for (i = 0; i < list_height; i++) {
-        MAXN(n, str_fmt_into(dst, 2, "\n"));
-        MAXN(n, str_fmt_into_n(dst, NO_LIMIT, indent, " "));
-        MAXN(n, obj_fmt_into(dst, indent, limit, B8_FALSE, AS_LIST(obj)[i]));
+        n += str_fmt_into(dst, 2, "\n");
+        n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
+        n += obj_fmt_into(dst, indent, limit, B8_FALSE, AS_LIST(obj)[i]);
     }
 
     if (list_height < (i64_t)obj->len) {
-        MAXN(n, str_fmt_into(dst, 2, "\n"));
-        MAXN(n, str_fmt_into_n(dst, NO_LIMIT, indent, " "));
-        MAXN(n, str_fmt_into(dst, 3, ".."));
+        n += str_fmt_into(dst, 2, "\n");
+        n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
+        n += str_fmt_into(dst, 3, "..");
     }
 
     indent -= 2;
 
-    MAXN(n, str_fmt_into(dst, 2, "\n"));
-    MAXN(n, str_fmt_into_n(dst, NO_LIMIT, indent, " "));
-    MAXN(n, str_fmt_into(dst, 2, ")"));
+    n += str_fmt_into(dst, 2, "\n");
+    n += str_fmt_into_n(dst, NO_LIMIT, indent, " ");
+    n += str_fmt_into(dst, 2, ")");
 
     return n;
 }
@@ -962,10 +962,7 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj) {
             s = NULL_OBJ;
             m = raw_fmt_into(&s, 0, 38, column, j);
             formatted_columns[i][j] = s;
-            DEBUG_PRINT("M: %lld", m);
-            DEBUG_PRINT("L: %lld", l);
             MAXN(l, m);
-            DEBUG_PRINT("L: %lld", l);
         }
 
         // Traverse the rest of the column
