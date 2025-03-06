@@ -458,6 +458,9 @@ i64_t poll_run(poll_p poll) {
 
     while (poll->code == NULL_I64) {
         nfds = epoll_wait(poll->poll_fd, events, MAX_EVENTS, timeout);
+        if (nfds == -1 && errno == EINTR)
+            continue;
+
         if (nfds == -1)
             return 1;
 
