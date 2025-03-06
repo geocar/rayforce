@@ -146,19 +146,6 @@ obj_p ray_args(obj_p *x, u64_t n) {
     return clone_obj(runtime_get()->args);
 }
 
-obj_p ray_exit(obj_p *x, u64_t n) {
-    i64_t code;
-
-    if (n == 0)
-        code = 0;
-    else
-        code = (x[0]->type == -TYPE_I64) ? x[0]->i64 : (i64_t)n;
-
-    poll_exit(runtime_get()->poll, code);
-
-    return NULL_OBJ;
-}
-
 obj_p ray_set_splayed(obj_p *x, u64_t n) {
     switch (n) {
         case 2:

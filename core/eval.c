@@ -673,3 +673,20 @@ obj_p *resolve(i64_t sym) {
 
     return &AS_LIST(AS_LIST(runtime_get()->env.variables)[1])[j];
 }
+
+obj_p ray_exit(obj_p *x, u64_t n) {
+    i64_t code;
+
+    if (n == 0)
+        code = 0;
+    else
+        code = (x[0]->type == -TYPE_I64) ? x[0]->i64 : (i64_t)n;
+
+    poll_exit(runtime_get()->poll, code);
+
+    stack_push(NULL_OBJ);
+
+    longjmp(ctx_get()->jmp, 2);
+
+    __builtin_unreachable();
+}
