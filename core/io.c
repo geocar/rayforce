@@ -150,11 +150,8 @@ obj_p ray_read(obj_p x) {
                 val = load_obj(&cur, &sz);
 
                 if (IS_ERROR(val)) {
-                    // Return the error with additional context
-                    err = error_str(ERR_IO, "read: error loading object");
                     drop_obj(val);
-                    mmap_free(map, size);
-                    return err;
+                    break;
                 }
 
                 res = eval_obj(val);
