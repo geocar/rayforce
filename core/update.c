@@ -201,7 +201,7 @@ obj_p __alter(obj_p *obj, obj_p func, obj_p idx, obj_p val) {
 }
 
 obj_p ray_alter(obj_p *x, u64_t n) {
-    obj_p obj, res, *cur;
+    obj_p obj, res, *cur = NULL;
 
     if (n < 3)
         THROW(ERR_LENGTH, "alter: expected at least 3 arguments");
@@ -229,11 +229,11 @@ obj_p ray_alter(obj_p *x, u64_t n) {
     }
 
     if (x[0]->type != -TYPE_SYMBOL)
-        return obj;
+        return res;
 
-    if ((*cur) != obj) {
+    if ((*cur) != res) {
         drop_obj(*cur);
-        *cur = obj;
+        *cur = res;
     }
 
     return clone_obj(x[0]);

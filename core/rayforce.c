@@ -406,7 +406,7 @@ obj_p push_raw(obj_p *obj, raw_p val) {
 
 obj_p push_obj(obj_p *obj, obj_p val) {
     u64_t i, l;
-    obj_p res, lst = NULL;
+    obj_p res, lst = NULL_OBJ;
 
     // change object type to a coresponding list
     if ((*obj)->type != TYPE_LIST && (*obj)->type != -val->type) {
