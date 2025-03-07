@@ -230,6 +230,7 @@ obj_p ray_internal_command(obj_p cmd) {
     cmd_buf[sizeof(cmd_buf) - 1] = '\0';
 
     cmd_str = cmd_buf;
+    current = cmd_buf;  // Use the copy for parsing
 
     // Find first space
     for (i = 0; i < cmd_len && current[i] != ' '; i++)
@@ -239,7 +240,7 @@ obj_p ray_internal_command(obj_p cmd) {
         // We found a space, split command and arguments
         cmd_buf[i] = '\0';  // Null terminate command part
         remaining_len = cmd_len - i - 1;
-        current = AS_C8(cmd) + i + 1;
+        current = cmd_buf + i + 1;  // Use the copy for arguments
 
         // Parse arguments
         while (remaining_len > 0 && argc < 64) {
