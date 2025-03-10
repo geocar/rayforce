@@ -28,6 +28,7 @@
 #include "util.h"
 #include "group.h"
 #include "pool.h"
+#include "iter.h"
 
 obj_p lambda(obj_p args, obj_p body, obj_p nfo) {
     obj_p obj;
@@ -47,81 +48,6 @@ obj_p lambda(obj_p args, obj_p body, obj_p nfo) {
     return obj;
 }
 
-obj_p lambda_map_partial(obj_p f, obj_p *lst, u64_t n, u64_t arg) {
-    u64_t i;
-
-    for (i = 0; i < n; i++)
-        stack_push(at_idx(lst[i], arg));
-
-    return call(f, n);
-}
-
-obj_p lambda_map(obj_p f, obj_p *x, u64_t n) {
-    u64_t i, j, l, executors;
-    obj_p v, res;
-    pool_p pool;
-
-    l = ops_rank(x, n);
-
-    if (n == 0 || l == 0 || l == 0xfffffffffffffffful)
-        return NULL_OBJ;
-
-    pool = pool_get();
-    executors = pool_split_by(pool, l, 0);
-
-    if (executors > 1) {
-        pool_prepare(pool);
-
-        for (j = 0; j < l; j++)
-            pool_add_task(pool, (raw_p)lambda_map_partial, 4, f, x, n, j);
-
-        res = pool_run(pool);
-        if (IS_ERROR(res))
-            return res;
-
-        goto cleanup;
-    }
-
-    for (j = 0; j < n; j++)
-        stack_push(at_idx(x[j], 0));
-
-    v = call(f, n);
-
-    if (IS_ERROR(v)) {
-        res = v;
-        goto cleanup;
-    }
-
-    res = v->type < 0 ? vector(v->type, l) : LIST(l);
-
-    ins_obj(&res, 0, v);
-
-    for (i = 1; i < l; i++) {
-        for (j = 0; j < n; j++)
-            stack_push(at_idx(x[j], i));
-
-        v = call(f, n);
-
-        if (IS_ERROR(v)) {
-            res->len = i;
-            drop_obj(res);
-            res = v;
-            goto cleanup;
-        }
-
-        ins_obj(&res, i, v);
-    }
-
-// cleanup stack
-cleanup:
-    for (j = 0; j < n; j++)
-        drop_obj(stack_pop());
-
-    return res;
-}
-
 obj_p lambda_call(u8_t attrs, obj_p f, obj_p *x, u64_t n) {
-    UNUSED(attrs);
-    UNUSED(x);
-    return call(f, n);
+    return (attrs & FN_ATOMIC) ? map_lambda(attrs, f, x, n) : call(f, n);
 }
