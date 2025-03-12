@@ -21,7 +21,6 @@
  *   SOFTWARE.
  */
 
-
 #define TEST_ASSERT_EQ(lhs, rhs)                                                                                       \
     {                                                                                                                  \
         obj_p le = eval_str(lhs);                                                                                      \
@@ -1660,27 +1659,47 @@ test_result_t test_lang_math() {
 
     TEST_ASSERT_EQ("(xbar 4i 5i)", "0i");
     TEST_ASSERT_EQ("(xbar [0i 1i 2i 3i 4i 5i 6i] 3i)", "[0i 0i 0i 3i 3i 3i 6i]");
-    TEST_ASSERT_EQ("(xbar [11i] [5])", "[10]");  
-    // TEST_ASSERT_EQ("(xbar (- (til 9) 5) 3)", "[-6 -6 -3 -3 -3 0 0 0 3]");
-    // TEST_ASSERT_EQ("(xbar -5.0 5.0)", "-5.0");
+    TEST_ASSERT_EQ("(xbar [11i] [5])", "[10]");
+    TEST_ASSERT_EQ("(xbar (- (til 9) 5i) 3i)", "[-6i -6i -3i -3i -3i 0i 0i 0i 3i]");
+    TEST_ASSERT_EQ("(xbar (- (til 9) 5) 3)", "[-6 -6 -3 -3 -3 0 0 0 3]");
+    TEST_ASSERT_EQ("(xbar (- (as 'F64 (til 9)) 5.0) 3.0)", "[-6.0 -6.0 -3.0 -3.0 -3.0 0.0 0.0 0.0 3.0]");
+    TEST_ASSERT_EQ("(xbar -5.0 5.0)", "-5.0");
 
-    
     TEST_ASSERT_EQ("(sum 5i)", "5i");
     TEST_ASSERT_EQ("(sum -1.7)", "-1.7");
     TEST_ASSERT_EQ("(sum [-24 12 3])", "-9");
     TEST_ASSERT_EQ("(sum -24)", "-24");
     TEST_ASSERT_EQ("(sum [1.0 2.0 3.0])", "6.0");
     TEST_ASSERT_EQ("(sum [1i 2i -3i])", "0i");
+    TEST_ASSERT_EQ("(sum [02:01:03.000 00:00:02.500])", "02:01:05.500");
+
+    TEST_ASSERT_EQ("(avg 5i)", "5.0");
+    TEST_ASSERT_EQ("(avg -1.7)", "-1.7");
+    TEST_ASSERT_EQ("(avg [-24 12 6])", "-2.0");
+    TEST_ASSERT_EQ("(avg -24)", "-24.0");
+    TEST_ASSERT_EQ("(avg [1.0 2.0 3.0])", "2.0");
+    TEST_ASSERT_EQ("(avg [1i 2i -3i])", "0.0");
+    TEST_ASSERT_EQ("(avg 0Nf)", "0Nf");
 
     TEST_ASSERT_EQ("(floor [1.1 2.5 -1.1])", "[1.0 2.0 -2.0]");
-    // TEST_ASSERT_EQ("(floor -0.0)", "0.0");
-    // TEST_ASSERT_EQ("(floor [-1.0 3.0])", "[-1.0 3.0]");
-    // TEST_ASSERT_EQ("(floor 0.0)", "0.0");
-    // TEST_ASSERT_EQ("(floor 1.0)", "1.0");
-    // TEST_ASSERT_EQ("(floor -1.0)", "-1.0");
-    // TEST_ASSERT_EQ("(floor 1.5)", "1.0");
-    // TEST_ASSERT_EQ("(floor -1.5)", "-2.0");
-    // TEST_ASSERT_EQ("(floor 0Nf)", "0Nf");
+    TEST_ASSERT_EQ("(floor -0.0)", "0.0");
+    TEST_ASSERT_EQ("(floor [-1.0 3.0])", "[-1.0 3.0]");
+    TEST_ASSERT_EQ("(floor 0.0)", "0.0");
+    TEST_ASSERT_EQ("(floor 1.0)", "1.0");
+    TEST_ASSERT_EQ("(floor -1.0)", "-1.0");
+    TEST_ASSERT_EQ("(floor 1.5)", "1.0");
+    TEST_ASSERT_EQ("(floor -1.5)", "-2.0");
+    TEST_ASSERT_EQ("(floor 0Nf)", "0Nf");
+
+    TEST_ASSERT_EQ("(ceil [1.1 2.5 -1.1])", "[2.0 3.0 -1.0]");
+    TEST_ASSERT_EQ("(ceil -0.0)", "0.0");
+    TEST_ASSERT_EQ("(ceil [-1.0 3.0])", "[-1.0 3.0]");
+    TEST_ASSERT_EQ("(ceil 0.0)", "0.0");
+    TEST_ASSERT_EQ("(ceil 1.0)", "1.0");
+    TEST_ASSERT_EQ("(ceil -1.0)", "-1.0");
+    TEST_ASSERT_EQ("(ceil 1.5)", "2.0");
+    TEST_ASSERT_EQ("(ceil -1.5)", "-1.0");
+    TEST_ASSERT_EQ("(ceil 0Nf)", "0Nf");
 
     PASS();
 }

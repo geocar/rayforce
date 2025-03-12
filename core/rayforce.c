@@ -210,32 +210,26 @@ obj_p guid(const guid_t buf) {
 }
 
 obj_p c8(c8_t c) {
-    obj_p s;
-
-    s = atom(TYPE_C8);
+    obj_p s = atom(TYPE_C8);
     s->c8 = c;
-
     return s;
 }
 
 obj_p adate(i32_t val) {
     obj_p t = atom(TYPE_DATE);
     t->i32 = val;
-
     return t;
 }
 
 obj_p atime(i32_t val) {
     obj_p t = atom(TYPE_TIME);
     t->i32 = val;
-
     return t;
 }
 
 obj_p timestamp(i64_t val) {
     obj_p t = atom(TYPE_TIMESTAMP);
     t->i64 = val;
-
     return t;
 }
 
@@ -1712,7 +1706,7 @@ i32_t cmp_obj(obj_p a, obj_p b) {
                    : (ops_is_nan(a->f64) || ops_is_nan(b->f64)) ? 1
                    : (ABSF64(a->f64 - b->f64) < 1e-16)          ? 0
                                                                 : (a->f64 - b->f64);
-        
+
         case -TYPE_I64:
         case -TYPE_I32:
         case -TYPE_SYMBOL:

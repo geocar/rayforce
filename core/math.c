@@ -22,8 +22,6 @@
  */
 
 #include <math.h>
-#include <time.h>
-#include "math.h"
 #include "util.h"
 #include "heap.h"
 #include "ops.h"
@@ -34,13 +32,13 @@
 #include "order.h"
 #include "runtime.h"
 
-#define __UNOP_FOLD(x, lt, ot, op, ln, of, iv) \
-    ({                                         \
-        lt##_t *$lhs = __AS_##lt(x) + of;      \
-        ot##_t $out = iv;                      \
-        for (u64_t $i = 0; $i < ln; $i++)      \
-            $out = op($out, $lhs[$i]);         \
-        ot($out);                              \
+#define __UNOP_FOLD(x, lt, ot, op, ln, of, iv)     \
+    ({                                             \
+        __BASE_##lt##_t *$lhs = __AS_##lt(x) + of; \
+        __BASE_##lt##_t $out = iv;                 \
+        for (u64_t $i = 0; $i < ln; $i++)          \
+            $out = op($out, $lhs[$i]);             \
+        ot(lt##_to_##ot($out));                    \
     })
 
 #define __UNOP_MAP(x, lt, ot, op, ln, of, ov) \
@@ -995,35 +993,110 @@ obj_p ray_xbar_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
             return i32(XBARI32(x->i32, y->i32));
         case MTYPE2(-TYPE_I32, -TYPE_I64):
             return i64(XBARI64(i32_to_i64(x->i32), y->i64));
+        case MTYPE2(-TYPE_I32, -TYPE_F64):
+            return f64(XBARF64(i32_to_f64(x->i32), y->i64));
         case MTYPE2(-TYPE_I32, TYPE_I32):
             return __BINOP_A_V(x, y, i32, i32, i32, i32, XBARI32, len, offset, out);
+        case MTYPE2(-TYPE_I32, TYPE_I64):
+            return __BINOP_A_V(x, y, i32, i64, i64, i64, XBARI64, len, offset, out);
+        case MTYPE2(-TYPE_I32, TYPE_F64):
+            return __BINOP_A_V(x, y, i32, f64, f64, f64, XBARF64, len, offset, out);
         case MTYPE2(TYPE_I32, -TYPE_I32):
             return __BINOP_V_A(x, y, i32, i32, i32, i32, XBARI32, len, offset, out);
         case MTYPE2(TYPE_I32, -TYPE_I64):
-            return __BINOP_V_A(x, y, i32, i64, i32, i64, XBARI64, len, offset, out);
+            return __BINOP_V_A(x, y, i32, i64, i64, i64, XBARI64, len, offset, out);
+        case MTYPE2(TYPE_I32, -TYPE_F64):
+            return __BINOP_V_A(x, y, i32, f64, f64, f64, XBARF64, len, offset, out);
         case MTYPE2(TYPE_I32, TYPE_I32):
             return __BINOP_V_V(x, y, i32, i32, i32, i32, XBARI32, len, offset, out);
         case MTYPE2(TYPE_I32, TYPE_I64):
-            return __BINOP_V_V(x, y, i32, i64, i32, i64, XBARI64, len, offset, out);
+            return __BINOP_V_V(x, y, i32, i64, i64, i64, XBARI64, len, offset, out);
+        case MTYPE2(TYPE_I32, TYPE_F64):
+            return __BINOP_V_V(x, y, i32, f64, f64, f64, XBARF64, len, offset, out);
 
+        case MTYPE2(-TYPE_I64, -TYPE_I32):
+            return i32(i64_to_i32(XBARI64(x->i64, i32_to_i64(x->i32))));
         case MTYPE2(-TYPE_I64, -TYPE_I64):
             return i64(XBARI64(x->i64, y->i64));
-        case MTYPE2(-TYPE_I64, -TYPE_I32):
-            return i64(XBARI64(x->i64, i32_to_i64(y->i32)));
+        case MTYPE2(-TYPE_I64, -TYPE_F64):
+            return f64(XBARF64(i64_to_f64(x->i64), y->f64));
+        case MTYPE2(-TYPE_I64, TYPE_I32):
+            return __BINOP_A_V(x, y, i64, i32, i32, i64, XBARI64, len, offset, out);
         case MTYPE2(-TYPE_I64, TYPE_I64):
             return __BINOP_A_V(x, y, i64, i64, i64, i64, XBARI64, len, offset, out);
+        case MTYPE2(-TYPE_I64, TYPE_F64):
+            return __BINOP_A_V(x, y, i64, f64, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_I64, -TYPE_I32):
+            return __BINOP_V_A(x, y, i64, i32, i32, i64, XBARI64, len, offset, out);
         case MTYPE2(TYPE_I64, -TYPE_I64):
             return __BINOP_V_A(x, y, i64, i64, i64, i64, XBARI64, len, offset, out);
         case MTYPE2(TYPE_I64, -TYPE_F64):
             return __BINOP_V_A(x, y, i64, f64, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_I64, TYPE_I32):
+            return __BINOP_V_V(x, y, i64, i32, i32, i64, XBARI64, len, offset, out);
         case MTYPE2(TYPE_I64, TYPE_I64):
             return __BINOP_V_V(x, y, i64, i64, i64, i64, XBARI64, len, offset, out);
+        case MTYPE2(TYPE_I64, TYPE_F64):
+            return __BINOP_V_V(x, y, i64, f64, f64, f64, XBARF64, len, offset, out);
 
+        case MTYPE2(-TYPE_F64, -TYPE_I32):
+            return i32(f64_to_i32(XBARF64(x->f64, i32_to_f64(y->i32))));
+        case MTYPE2(-TYPE_F64, -TYPE_I64):
+            return i64(f64_to_i64(XBARF64(x->f64, i64_to_f64(y->i64))));
         case MTYPE2(-TYPE_F64, -TYPE_F64):
-            return f64(XBARF64(x->i64, y->f64));
+            return f64(XBARF64(x->f64, y->f64));
+        case MTYPE2(-TYPE_F64, TYPE_I32):
+            return __BINOP_A_V(x, y, f64, i32, i32, f64, XBARF64, len, offset, out);
+        case MTYPE2(-TYPE_F64, TYPE_I64):
+            return __BINOP_A_V(x, y, f64, i64, i64, f64, XBARF64, len, offset, out);
+        case MTYPE2(-TYPE_F64, TYPE_F64):
+            return __BINOP_A_V(x, y, f64, f64, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_F64, -TYPE_I32):
+            return __BINOP_V_A(x, y, f64, i32, i32, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_F64, -TYPE_I64):
+            return __BINOP_V_A(x, y, f64, i64, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_F64, -TYPE_F64):
+            return __BINOP_V_A(x, y, f64, f64, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_F64, TYPE_I32):
+            return __BINOP_V_V(x, y, f64, i32, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_F64, TYPE_I64):
+            return __BINOP_V_V(x, y, f64, i64, f64, f64, XBARF64, len, offset, out);
+        case MTYPE2(TYPE_F64, TYPE_F64):
+            return __BINOP_V_V(x, y, f64, f64, f64, f64, XBARF64, len, offset, out);
 
         default:
             THROW(ERR_TYPE, "xbar: unsupported types: '%s, '%s", type_name(x->type), type_name(y->type));
+    }
+}
+
+obj_p ray_cnt_partial(obj_p x, u64_t len, u64_t offset) {
+    switch (x->type) {
+        case -TYPE_I32:
+            return i64(CNTI32(0, x->i32));
+        case -TYPE_I64:
+            return i64(CNTI64(0, x->i64));
+        case -TYPE_F64:
+            return i64(CNTF64(0, x->f64));
+        case -TYPE_DATE:
+            return i64(CNTI32(0, x->i32));
+        case -TYPE_TIME:
+            return i64(CNTI32(0, x->i32));
+        case -TYPE_TIMESTAMP:
+            return i64(CNTI64(0, x->i64));
+        case TYPE_I32:
+            return __UNOP_FOLD(x, i32, i64, CNTI32, len, offset, 0);
+        case TYPE_I64:
+            return __UNOP_FOLD(x, i64, i64, CNTI64, len, offset, 0);
+        case TYPE_F64:
+            return __UNOP_FOLD(x, f64, i64, CNTF64, len, offset, 0);
+        case TYPE_DATE:
+            return __UNOP_FOLD(x, i32, i64, CNTI32, len, offset, 0);
+        case TYPE_TIME:
+            return __UNOP_FOLD(x, i32, i64, CNTI32, len, offset, 0);
+        case TYPE_TIMESTAMP:
+            return __UNOP_FOLD(x, i64, i64, CNTI64, len, offset, 0);
+        default:
+            THROW(ERR_TYPE, "cnt not null: unsupported type: '%s", type_name(x->type));
     }
 }
 
@@ -1042,6 +1115,8 @@ obj_p ray_sum_partial(obj_p x, u64_t len, u64_t offset) {
             return __UNOP_FOLD(x, i64, i64, ADDI64, len, offset, 0);
         case TYPE_F64:
             return __UNOP_FOLD(x, f64, f64, ADDF64, len, offset, 0);
+        case TYPE_TIME:
+            return __UNOP_FOLD(x, i32, atime, ADDI32, len, offset, 0);
         case TYPE_MAPGROUP:
             return aggr_sum(AS_LIST(x)[0], AS_LIST(x)[1]);
 
@@ -1112,7 +1187,7 @@ obj_p ray_round_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
 obj_p ray_floor_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
     switch (x->type) {
         case -TYPE_F64:
-            return f64(i64_to_f64(FLOORF64(x->f64)));
+            return f64(FLOORF64(x->f64));
         case TYPE_F64:
             return __UNOP_MAP(x, f64, f64, FLOORF64, len, offset, out);
         // case TYPE_MAPGROUP:
@@ -1124,6 +1199,8 @@ obj_p ray_floor_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_ceil_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
     switch (x->type) {
+        case -TYPE_F64:
+            return f64(CEILF64(x->f64));
         case TYPE_F64:
             return __UNOP_MAP(x, f64, f64, CEILF64, len, offset, out);
         // case TYPE_MAPGROUP:
@@ -1135,13 +1212,30 @@ obj_p ray_ceil_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
 
 obj_p ray_avg(obj_p x) {
     u64_t i, l = 0, n;
+    i32_t *xi32vals = NULL;
     i64_t isum = 0, *xivals = NULL;
     f64_t fsum = 0.0, *xfvals = NULL;
 
     switch (x->type) {
+        case -TYPE_I32:
+            return f64(i32_to_f64(x->i32));
         case -TYPE_I64:
+            return f64(i64_to_f64(x->i64));
         case -TYPE_F64:
             return clone_obj(x);
+        case TYPE_I32:
+            l = x->len;
+            xi32vals = AS_I32(x);
+
+            for (i = 0, n = 0; i < l; i++) {
+                if (xi32vals[i] != NULL_I32)
+                    isum += (i64_t)xi32vals[i];
+                else
+                    n++;
+            }
+
+            return f64((f64_t)isum / (l - n));
+
         case TYPE_I64:
             l = x->len;
             xivals = AS_I64(x);
@@ -1208,7 +1302,7 @@ obj_p ray_dev(obj_p x) {
                 return f64(NULL_F64);
 
             xfvals = AS_F64(x);
-            fsum = xfvals[0];
+            fsum = 0;
 
             for (i = 0; i < l; i++)
                 fsum += xfvals[i];
@@ -1391,10 +1485,10 @@ obj_p binop_map(raw_p op, obj_p x, obj_p y) {
         return pool_call_task_fn(op, 2, argv);
     }
 
-    t = (op == ray_fdiv_partial)  ? TYPE_F64
-        : (op == ray_div_partial) ? infer_div_type(x, y)
-        : (op == ray_mod_partial) ? infer_mod_type(x, y)
-                                  : infer_math_type(x, y);
+    t = (op == ray_fdiv_partial)                            ? TYPE_F64
+        : (op == ray_div_partial)                           ? infer_div_type(x, y)
+        : (op == ray_mod_partial || op == ray_xbar_partial) ? infer_mod_type(x, y)
+                                                            : infer_math_type(x, y);
 
     pool = runtime_get()->pool;
     n = pool_split_by(pool, l, 0);

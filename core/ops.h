@@ -95,6 +95,9 @@ extern struct obj_t __NULL_OBJECT;
 #define ABSI32(x) ((x) == NULL_I32 ? NULL_I32 : (((x) < 0 ? -(x) : (x))))
 #define ABSI64(x) ((x) == NULL_I64 ? NULL_I64 : (((x) < 0 ? -(x) : (x))))
 #define ABSF64(x) (ops_is_nan(x) ? NULL_F64 : (((x) < 0.0 ? -(x) : (x))))
+#define CNTI32(x, y) ((y) == NULL_I32 ? (x) : ((x) + 1))
+#define CNTI64(x, y) ((y) == NULL_I64 ? (x) : ((x) + 1))
+#define CNTF64(x, y) (ops_is_nan(y) ? (x) : ((x) + 1))
 #define ADDI32(x, y) (((x) == NULL_I32) ? (y) : ((y) == NULL_I32) ? (x) : ((x) + (y)))
 #define ADDI64(x, y) (((x) == NULL_I64) ? (y) : ((y) == NULL_I64) ? (x) : ((x) + (y)))
 #define ADDF64(x, y) (ops_is_nan(x) ? (y) : ops_is_nan(y) ? (x) : ((x) + (y)))
@@ -113,9 +116,9 @@ extern struct obj_t __NULL_OBJECT;
     })
 #define FDIVI32(x, y) (((y) == 0 || (x) == NULL_I32 || (y) == NULL_I32) ? NULL_F64 : ((f64_t)(x) / (f64_t)(y)))
 #define FDIVI64(x, y) (((y) == 0 || (x) == NULL_I64 || (y) == NULL_I64) ? NULL_F64 : ((f64_t)(x) / (f64_t)(y)))
-#define FDIVF64(x, y)                                                  \
-    ({                                                                 \
-        volatile f64_t t = ((x) / (y));                                \
+#define FDIVF64(x, y)                                        \
+    ({                                                       \
+        volatile f64_t t = ((x) / (y));                      \
         ((i64_t)t == -1 - __LONG_LONG_MAX__) ? NULL_F64 : t; \
     })
 #define MODI32(x, y) (((y) == 0 || (x) == NULL_I32 || (y) == NULL_I32) ? NULL_I32 : ((x) % (y)))
@@ -130,15 +133,17 @@ extern struct obj_t __NULL_OBJECT;
 #define ROTI32(x, y) (((x) << (y)) | ((x) >> (32 - (y))))
 #define ROTI64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
 #define ROUNDF64(x) ((x) >= 0.0 ? (i64_t)((x) + 0.5) : (i64_t)((x) - 0.5))
-#define FLOORF64(x) ((x) >= 0.0 ? (i64_t)(x) : (i64_t)((x) - 1.0))
-#define CEILF64(x) ((x) >= 0.0 ? (i64_t)((x) + 1.0) : (i64_t)(x))
-#define XBARI32(x, y) (((y) == 0 || (x) == NULL_I32 || (y) == NULL_I32) ? NULL_I32 : ((x) / (y) * (y)))
-#define XBARI64(x, y) (((y) == 0 || (x) == NULL_I64 || (y) == NULL_I64) ? NULL_I64 : ((x) / (y) * (y)))
-#define XBARF64(x, y)                                         \
-    ({                                                       \
-        volatile i64_t t = (i64_t)((x) / (y));               \
-        (t == -1 - __LONG_LONG_MAX__) ? NULL_F64 : (y)*(f64_t)t; \
-    })
+#define FLOORF64(x) ((ops_is_nan((x))) ? NULL_F64 : (((x) < 0.0 && (i64_t)(x) != (x)) ? (i64_t)(x) - 1.0 : (i64_t)(x)))
+#define CEILF64(x) ((ops_is_nan((x))) ? NULL_F64 : (-FLOORF64(-(x))))
+#define XBARI32(x, y) \
+    (((y) == 0 || (x) == NULL_I32 || (y) == NULL_I32) ? NULL_I32 : (((x < 0) ? (x + 1 - y) : (x)) / (y) * (y)))
+#define XBARI64(x, y) \
+    (((y) == 0 || (x) == NULL_I64 || (y) == NULL_I64) ? NULL_I64 : (((x < 0) ? (x + 1 - y) : (x)) / (y) * (y)))
+#define XBARF64(x, y) (FLOORF64((x) / (y)) * (y))
+// ({                                                             \
+    //     volatile i64_t t = (i64_t)((x) / (y));                     \
+    //     (t == -1 - __LONG_LONG_MAX__) ? NULL_F64 : (y) * (f64_t)t; \
+    // })
 
 // Function types
 typedef u64_t (*hash_f)(i64_t, raw_p);
@@ -169,6 +174,7 @@ static inline i64_t i32_to_i64(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i
 static inline f64_t i32_to_f64(i32_t x) { return (x == NULL_I32) ? NULL_F64 : (f64_t)x; }
 static inline i32_t i32_to_date(i32_t x) { return x; }
 static inline i32_t i32_to_time(i32_t x) { return x; }
+static inline i32_t i32_to_atime(i32_t x) { return x; }
 static inline i64_t i32_to_timestamp(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i64_t)x; }
 static inline i32_t i64_to_i32(i64_t x) { return (x == NULL_I64) ? NULL_I32 : (i32_t)x; }
 static inline i64_t i64_to_i64(i64_t x) { return x; }
