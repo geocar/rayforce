@@ -465,15 +465,16 @@ obj_p eval_obj(obj_p obj) {
 
     ctx = ctx_push(fn);
     ctx->sp = sp;
+
     res = (setjmp(ctx->jmp) == 0) ? eval(obj) : stack_pop();
 
-    // cleanup stack frame
-    while (__INTERPRETER->sp > sp)
-        drop_obj(stack_pop());
+    // cleanup ctx
+    ctx_pop();
+
+    // cleanup env
+    drop_obj(stack_pop());
 
     drop_obj(fn);
-
-    ctx_pop();
 
     return res;
 }
@@ -565,7 +566,9 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
                 } else
                     stack_push(res);
 
-                return call(fn, 1);
+                res = call(fn, 1);
+                drop_obj(stack_pop());
+                return res;
             case -TYPE_SYMBOL:
                 pfn = resolve(fn->i64);
                 if (pfn == NULL) {

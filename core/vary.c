@@ -55,7 +55,7 @@ obj_p vary_call(obj_p f, obj_p *x, u64_t n) {
 
 obj_p ray_apply(obj_p *x, u64_t n) {
     u64_t i;
-    obj_p f;
+    obj_p f, res;
 
     if (n < 2)
         return null(0);
@@ -82,7 +82,10 @@ obj_p ray_apply(obj_p *x, u64_t n) {
             for (i = 0; i < n; i++)
                 stack_push(clone_obj(x[i]));
 
-            return call(f, n);
+            res = call(f, n);
+            for (i = 0; i < n; i++)
+                drop_obj(stack_pop());
+            return res;
         default:
             THROW(ERR_TYPE, "'map': unsupported function type: '%s", type_name(f->type));
     }

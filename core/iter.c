@@ -590,7 +590,10 @@ obj_p ray_map_left(obj_p *x, u64_t n) {
                 for (i = 0; i < n; i++)
                     stack_push(clone_obj(x[i]));
 
-                return call(f, n);
+                res = call(f, n);
+                for (i = 0; i < n; i++)
+                    drop_obj(stack_pop());
+                return res;
             }
 
             l = ops_count(x[0]);
@@ -607,6 +610,9 @@ obj_p ray_map_left(obj_p *x, u64_t n) {
             }
 
             v = call(f, n);
+            for (i = 0; i < n; i++)
+                drop_obj(stack_pop());
+
             if (IS_ERROR(v))
                 return v;
 
@@ -623,6 +629,9 @@ obj_p ray_map_left(obj_p *x, u64_t n) {
                 }
 
                 v = call(f, n);
+                for (i = 0; i < n; i++)
+                    drop_obj(stack_pop());
+
                 if (IS_ERROR(v)) {
                     res->len = i;
                     drop_obj(res);
@@ -668,7 +677,10 @@ obj_p ray_map_right(obj_p *x, u64_t n) {
                 for (i = 0; i < n; i++)
                     stack_push(clone_obj(x[i]));
 
-                return call(f, n);
+                res = call(f, n);
+                for (i = 0; i < n; i++)
+                    drop_obj(stack_pop());
+                return res;
             }
 
             l = ops_count(x[n - 1]);
@@ -684,6 +696,9 @@ obj_p ray_map_right(obj_p *x, u64_t n) {
             stack_push(at_idx(x[n - 1], 0));
 
             v = call(f, n);
+            for (i = 0; i < n; i++)
+                drop_obj(stack_pop());
+
             if (IS_ERROR(v))
                 return v;
 
@@ -700,6 +715,9 @@ obj_p ray_map_right(obj_p *x, u64_t n) {
                 stack_push(at_idx(x[n - 1], i));
 
                 v = call(f, n);
+                for (i = 0; i < n; i++)
+                    drop_obj(stack_pop());
+
                 if (IS_ERROR(v)) {
                     res->len = i;
                     drop_obj(res);
@@ -783,8 +801,8 @@ obj_p ray_fold(obj_p *x, u64_t n) {
             } else
                 THROW(ERR_LENGTH, "'fold': binary call with wrong arguments count");
 
-            stack_push(v);
             for (i = o; i < l; i++) {
+                stack_push(v);
                 x2 = at_idx(*b, i);
                 stack_push(x2);
 

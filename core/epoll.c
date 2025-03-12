@@ -209,6 +209,7 @@ nil_t poll_call_usr_on_open(poll_p poll, i64_t id) {
         poll_set_usr_fd(id);
         stack_push(i64(id));
         v = call(*clbfn, 1);
+        drop_obj(stack_pop());
         poll_set_usr_fd(0);
         if (IS_ERROR(v)) {
             f = obj_fmt(v, B8_FALSE);
@@ -235,6 +236,7 @@ nil_t poll_call_usr_on_close(poll_p poll, i64_t id) {
         poll_set_usr_fd(id);
         stack_push(i64(id));
         v = call(*clbfn, 1);
+        drop_obj(stack_pop());
         poll_set_usr_fd(0);
         if (IS_ERROR(v)) {
             f = obj_fmt(v, B8_FALSE);
