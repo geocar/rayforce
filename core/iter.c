@@ -783,8 +783,8 @@ obj_p ray_fold(obj_p *x, u64_t n) {
             } else
                 THROW(ERR_LENGTH, "'fold': binary call with wrong arguments count");
 
+            stack_push(v);
             for (i = o; i < l; i++) {
-                stack_push(v);
                 x2 = at_idx(*b, i);
                 stack_push(x2);
 
