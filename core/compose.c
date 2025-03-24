@@ -689,6 +689,10 @@ obj_p ray_row_index(obj_p *x, u64_t n) {
 
 obj_p ray_split(obj_p x, obj_p y) {
     switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(-TYPE_SYMBOL, -TYPE_C8):
+            return str_split(str_from_symbol(x->i64), strlen(str_from_symbol(x->i64)), &y->c8, 1);
+        case MTYPE2(-TYPE_SYMBOL, TYPE_C8):
+            return str_split(str_from_symbol(x->i64), strlen(str_from_symbol(x->i64)), AS_C8(y), y->len);
         case MTYPE2(TYPE_C8, -TYPE_C8):
             return str_split(AS_C8(x), x->len, &y->c8, 1);
         case MTYPE2(TYPE_C8, TYPE_C8):

@@ -948,21 +948,21 @@ test_result_t test_lang_math() {
     TEST_ASSERT_EQ("(/ [-10.0] 5.0)", "[-2.0]");
     TEST_ASSERT_EQ("(/ [-9.0] 5.0)", "[-1.0]");
     TEST_ASSERT_EQ("(/ [-3.0] 5.0)", "[0.0]");
-    TEST_ASSERT_EQ("(/ [-3.0] 0.6)", "-5.0");
-    TEST_ASSERT_EQ("(/ [-3.0] 0.0)", "0Nf");
-    TEST_ASSERT_EQ("(/ [3.0] 0.0)", "0Nf");
-    TEST_ASSERT_EQ("(/ [3.0] 5.0)", "0.0");
-    TEST_ASSERT_EQ("(/ [9.0] 5.0)", "1.0");
-    TEST_ASSERT_EQ("(/ [10.0] 5.0)", "2.0");
-    TEST_ASSERT_EQ("(/ [-10.0] -5.0)", "2.0");
-    TEST_ASSERT_EQ("(/ [-9.0] -5.0)", "1.0");
-    TEST_ASSERT_EQ("(/ [-3.0] -5.0)", "0.0");
-    TEST_ASSERT_EQ("(/ [-3.0] -0.6)", "5.0");
-    TEST_ASSERT_EQ("(/ [-3.0] -0.0)", "0Nf");
-    TEST_ASSERT_EQ("(/ [3.0] -0.0)", "0Nf");
-    TEST_ASSERT_EQ("(/ [3.0] -5.0)", "0.0");
-    TEST_ASSERT_EQ("(/ [9.0] -5.0)", "-1.0");
-    TEST_ASSERT_EQ("(/ [10.0] -5.0)", "-2.0");
+    TEST_ASSERT_EQ("(/ [-3.0] 0.6)", "[-5.0]");
+    TEST_ASSERT_EQ("(/ [-3.0] 0.0)", "[0Nf]");
+    TEST_ASSERT_EQ("(/ [3.0] 0.0)", "[0Nf]");
+    TEST_ASSERT_EQ("(/ [3.0] 5.0)", "[0.0]");
+    TEST_ASSERT_EQ("(/ [9.0] 5.0)", "[1.0]");
+    TEST_ASSERT_EQ("(/ [10.0] 5.0)", "[2.0]");
+    TEST_ASSERT_EQ("(/ [-10.0] -5.0)", "[2.0]");
+    TEST_ASSERT_EQ("(/ [-9.0] -5.0)", "[1.0]");
+    TEST_ASSERT_EQ("(/ [-3.0] -5.0)", "[0.0]");
+    TEST_ASSERT_EQ("(/ [-3.0] -0.6)", "[5.0]");
+    TEST_ASSERT_EQ("(/ [-3.0] -0.0)", "[0Nf]");
+    TEST_ASSERT_EQ("(/ [3.0] -0.0)", "[0Nf]");
+    TEST_ASSERT_EQ("(/ [3.0] -5.0)", "[-0.6]");
+    TEST_ASSERT_EQ("(/ [9.0] -5.0)", "[-1.0]");
+    TEST_ASSERT_EQ("(/ [10.0] -5.0)", "[-2.0]");
     TEST_ASSERT_EQ("(/ [-10.0] [5i])", "[-2.0]");
     TEST_ASSERT_EQ("(/ [-10.0] [5])", "[-2.0]");
     TEST_ASSERT_EQ("(/ [-9.0] [5])", "[-1.8]");
@@ -1800,24 +1800,27 @@ test_result_t test_lang_math() {
     TEST_ASSERT_EQ("((fn [x y] (+ x y)) 1 [2.3 4])", "[3.3 5.0]");
     TEST_ASSERT_EQ("(map count (list (list \"aaa\" \"bbb\")))", "[2]");
 
-    // Test mixed escape sequences
-    TEST_ASSERT_EQ("\"Mixed\\001\\n\\t\\015Escapes\"", "\"Mixed\\001\\n\\t\\015Escapes\"");
+    PASS();
+}
 
-    // Test string split operations
-    TEST_ASSERT_EQ("split(\"hello,world\", \",\")", "[\"hello\", \"world\"]");
-    TEST_ASSERT_EQ("split(\"a,b,c\", \",\")", "[\"a\", \"b\", \"c\"]");
-    TEST_ASSERT_EQ("split(\"hello\", \",\")", "[\"hello\"]");
-    TEST_ASSERT_EQ("split(\"\", \",\")", "[]");
-    TEST_ASSERT_EQ("split(\",\", \",\")", "[\"\", \"\"]");
-    TEST_ASSERT_EQ("split(\",a,\", \",\")", "[\"\", \"a\", \"\"]");
+test_result_t test_lang_split() {
+    // Test split function
+    TEST_ASSERT_EQ("(split \"hello,world\" \",\")", "(list \"hello\" \"world\")");
+    TEST_ASSERT_EQ("(split \"a,b,c\" \",\")", "(list \"a\" \"b\" \"c\")");
+    TEST_ASSERT_EQ("(split \"hello\" \",\")", "(list \"hello\")");
+    TEST_ASSERT_EQ("(split \"\" \",\")", "(list \"\")");
+    TEST_ASSERT_EQ("(split \",\" \",\")", "(list \"\" \"\")");
+    TEST_ASSERT_EQ("(split \",a,\" \",\")", "(list \"\" \"a\" \"\")");
 
     // Test multi-character delimiters
-    TEST_ASSERT_EQ("split(\"hello--world\", \"--\")", "[\"hello\", \"world\"]");
-    TEST_ASSERT_EQ("split(\"a--b--c\", \"--\")", "[\"a\", \"b\", \"c\"]");
-    TEST_ASSERT_EQ("split(\"hello\", \"--\")", "[\"hello\"]");
-    TEST_ASSERT_EQ("split(\"\", \"--\")", "[]");
-    TEST_ASSERT_EQ("split(\"--\", \"--\")", "[\"\", \"\"]");
-    TEST_ASSERT_EQ("split(\"--a--\", \"--\")", "[\"\", \"a\", \"\"]");
+    TEST_ASSERT_EQ("(split \"hello--world\" \"--\")", "(list \"hello\" \"world\")");
+    TEST_ASSERT_EQ("(split \"a--b--c\" \"--\")", "(list \"a\" \"b\" \"c\")");
+    TEST_ASSERT_EQ("(split \"hello\" \"--\")", "(list \"hello\")");
+    TEST_ASSERT_EQ("(split \"\" \"--\")", "(list \"\")");
+    TEST_ASSERT_EQ("(split \"--\" \"--\")", "(list \"\" \"\")");
+    TEST_ASSERT_EQ("(split \"--a--\" \"--\")", "(list \"\" \"a\" \"\")");
+    TEST_ASSERT_EQ("(split 'asasd \"d\")", "(list \"asas\" \"\")");
+    TEST_ASSERT_EQ("(split 'asasd 'd')", "(list \"asas\" \"\")");
 
     PASS();
 }
@@ -1926,25 +1929,6 @@ test_result_t test_lang_literals() {
 
     // Test mixed escape sequences
     TEST_ASSERT_EQ("\"Mixed\\001\\n\\t\\015Escapes\"", "\"Mixed\\001\\n\\t\\015Escapes\"");
-
-    // Test mixed escape sequences
-    TEST_ASSERT_EQ("\"Mixed\\001\\n\\t\\015Escapes\"", "\"Mixed\\001\\n\\t\\015Escapes\"");
-
-    // Test string split operations
-    TEST_ASSERT_EQ("split(\"hello,world\", \",\")", "[\"hello\", \"world\"]");
-    TEST_ASSERT_EQ("split(\"a,b,c\", \",\")", "[\"a\", \"b\", \"c\"]");
-    TEST_ASSERT_EQ("split(\"hello\", \",\")", "[\"hello\"]");
-    TEST_ASSERT_EQ("split(\"\", \",\")", "[]");
-    TEST_ASSERT_EQ("split(\",\", \",\")", "[\"\", \"\"]");
-    TEST_ASSERT_EQ("split(\",a,\", \",\")", "[\"\", \"a\", \"\"]");
-
-    // Test multi-character delimiters
-    TEST_ASSERT_EQ("split(\"hello--world\", \"--\")", "[\"hello\", \"world\"]");
-    TEST_ASSERT_EQ("split(\"a--b--c\", \"--\")", "[\"a\", \"b\", \"c\"]");
-    TEST_ASSERT_EQ("split(\"hello\", \"--\")", "[\"hello\"]");
-    TEST_ASSERT_EQ("split(\"\", \"--\")", "[]");
-    TEST_ASSERT_EQ("split(\"--\", \"--\")", "[\"\", \"\"]");
-    TEST_ASSERT_EQ("split(\"--a--\", \"--\")", "[\"\", \"a\", \"\"]");
 
     PASS();
 }

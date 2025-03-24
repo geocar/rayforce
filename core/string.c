@@ -533,9 +533,9 @@ u64_t str_hash(lit_p str, u64_t len) {
 }
 
 obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
-    obj_p result = NULL_OBJ;
+    u64_t i;
     lit_p start, end;
-    u64_t i, j, count = 0;
+    obj_p part, last_part, result = NULL_OBJ;
 
     // Input validation
     if (str == NULL || delim == NULL)
@@ -544,76 +544,67 @@ obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
     if (delim_len == 0)
         THROW(ERR_LENGTH, "str_split: empty delimiter");
 
+    // Create empty list
+    result = LIST(0);
+    if (IS_ERROR(result))
+        return result;
+
+    // Handle case where input string is shorter than delimiter
+    if (str_len < delim_len) {
+        part = string_from_str(str, str_len);
+        if (IS_ERROR(part)) {
+            drop_obj(result);
+            return part;
+        }
+        push_obj(&result, part);
+        return result;
+    }
+
     // Special case for single character delimiter
     if (delim_len == 1) {
-        // Count number of splits using memchr
         start = str;
         while ((end = (str_p)memchr(start, delim[0], str + str_len - start)) != NULL) {
-            count++;
-            start = end + 1;
-        }
-        count++;  // Add 1 for the last part
-
-        // Create result list
-        result = LIST(count);
-        if (IS_ERROR(result))
-            return result;
-
-        // Split the string
-        start = str;
-        for (i = 0; i < count - 1; i++) {
-            end = (str_p)memchr(start, delim[0], str + str_len - start);
-            AS_LIST(result)[i] = string_from_str(start, end - start);
-            if (IS_ERROR(AS_LIST(result)[i])) {
+            part = string_from_str(start, end - start);
+            if (IS_ERROR(part)) {
                 drop_obj(result);
-                return AS_LIST(result)[i];
+                return part;
             }
+            push_obj(&result, part);
             start = end + 1;
         }
 
         // Add the last part
-        AS_LIST(result)[count - 1] = string_from_str(start, str + str_len - start);
-        if (IS_ERROR(AS_LIST(result)[count - 1])) {
+        last_part = string_from_str(start, str + str_len - start);
+        if (IS_ERROR(last_part)) {
             drop_obj(result);
-            return AS_LIST(result)[count - 1];
+            return last_part;
         }
-
+        push_obj(&result, last_part);
         return result;
     }
 
     // For multi-character delimiters
-    for (i = 0; i <= str_len - delim_len; i++) {
-        if (memcmp(str + i, delim, delim_len) == 0)
-            count++;
-    }
-    count++;  // Add 1 for the last part
-
-    // Create result list
-    result = LIST(count);
-    if (IS_ERROR(result))
-        return result;
-
-    // Split the string
     start = str;
-    for (i = 0, j = 0; i <= str_len - delim_len; i++) {
+    for (i = 0; i <= str_len - delim_len; i++) {
         if (memcmp(str + i, delim, delim_len) == 0) {
             end = str + i;
-            AS_LIST(result)[j] = string_from_str(start, end - start);
-            if (IS_ERROR(AS_LIST(result)[j])) {
+            part = string_from_str(start, end - start);
+            if (IS_ERROR(part)) {
                 drop_obj(result);
-                return AS_LIST(result)[j];
+                return part;
             }
+            push_obj(&result, part);
             start = end + delim_len;
-            j++;
+            i += delim_len - 1;  // Skip the rest of the delimiter
         }
     }
 
     // Add the last part
-    AS_LIST(result)[count - 1] = string_from_str(start, str + str_len - start);
-    if (IS_ERROR(AS_LIST(result)[count - 1])) {
+    last_part = string_from_str(start, str + str_len - start);
+    if (IS_ERROR(last_part)) {
         drop_obj(result);
-        return AS_LIST(result)[count - 1];
+        return last_part;
     }
-
+    push_obj(&result, last_part);
     return result;
 }

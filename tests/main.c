@@ -146,6 +146,7 @@ test_entry_t tests[] = {
     {"test_lang_update", test_lang_update},
     {"test_lang_serde", test_lang_serde},
     {"test_lang_cmp", test_lang_cmp},
+    {"test_lang_split", test_lang_split},
     {"test_serde_different_sizes", test_serde_different_sizes},
 };
 // ---
