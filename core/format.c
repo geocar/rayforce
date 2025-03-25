@@ -332,20 +332,19 @@ i64_t i64_fmt_into(obj_p *dst, i64_t val) {
 
 i64_t f64_fmt_into(obj_p *dst, f64_t val) {
     f64_t order;
-    volatile f64_t v = val;
 
     if (ops_is_nan(val))
         return str_fmt_into(dst, 4, LIT_NULL_F64);
     if (val == -0.0)
-        v = 0.0;
+        return str_fmt_into(dst, NO_LIMIT, "%.*f", F64_PRECISION, 0.0);
 
     // Find the order of magnitude of the number to select the appropriate format
-    order = log10(v < 0 ? -v : v);
+    order = log10(val < 0 ? -val : val);
 
-    if (v && (order > 6 || order < -1))
-        return str_fmt_into(dst, NO_LIMIT, "%.*e", 3 * F64_PRECISION, v);
+    if (val && (order > 6 || order < -1))
+        return str_fmt_into(dst, NO_LIMIT, "%.*e", 3 * F64_PRECISION, val);
 
-    return str_fmt_into(dst, NO_LIMIT, "%.*f", F64_PRECISION, v);
+    return str_fmt_into(dst, NO_LIMIT, "%.*f", F64_PRECISION, val);
 }
 
 i64_t date_fmt_into(obj_p *dst, i32_t val) {
