@@ -7,6 +7,7 @@
 docs
 rayforce
 rayforce.test
+rayforce.bench
 rayforce.S
 rayforce.js
 rayforce.py

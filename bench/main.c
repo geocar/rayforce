@@ -23,7 +23,6 @@
 
 #define _POSIX_C_SOURCE 200809L
 #define _DARWIN_C_SOURCE
-#define _XOPEN_SOURCE
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/utsname.h>
@@ -59,6 +58,12 @@
 #define BENCH_SCRIPTS_DIR "bench/scripts"
 #define BENCH_INIT_SUFFIX ".init"
 #define BENCH_PARAM_PREFIX ";;"
+#define MAX_OS_INFO 256
+#define MAX_CPU_INFO 256
+#define MAX_TIMESTAMP 64
+#define MAX_GIT_COMMIT 64
+#define MAX_VERSION_STR 128
+#define MAX_PATH_LEN 512
 
 typedef struct {
     char name[MAX_SCRIPT_NAME];
@@ -74,10 +79,10 @@ typedef struct {
     double max_time;
     double avg_time;
     double expected_time;  // in milliseconds
-    char timestamp[64];
-    char os_info[256];
-    char cpu_info[256];
-    char git_commit[64];
+    char timestamp[MAX_TIMESTAMP];
+    char os_info[MAX_OS_INFO];
+    char cpu_info[MAX_CPU_INFO];
+    char git_commit[MAX_GIT_COMMIT];
 } bench_result_t;
 
 typedef struct {
@@ -86,8 +91,8 @@ typedef struct {
 } bench_results_t;
 
 // Function declarations
-void get_system_info(char* os_info, char* cpu_info);
-void get_git_commit(char* commit_hash);
+void get_system_info(char* os_info, size_t os_size, char* cpu_info, size_t cpu_size);
+void get_git_commit(char* commit_hash, size_t hash_size);
 void parse_script_params(const char* content, bench_script_t* script);
 void run_benchmark(bench_script_t* script, bench_result_t* result);
 void load_previous_results(bench_results_t* results);
@@ -100,36 +105,45 @@ void process_script_file(const char* filename, bench_results_t* results);
 void print_system_info(bench_result_t* result);
 
 // Get system information
-void get_system_info(char* os_info, char* cpu_info) {
-    struct utsname uname_data;
-    if (uname(&uname_data) == 0) {
-        snprintf(os_info, 256, "%s %s %s", uname_data.sysname, uname_data.release, uname_data.machine);
+void get_system_info(char* os_info, size_t os_size, char* cpu_info, size_t cpu_size) {
+    sys_info_t info = sys_info(0);  // Get system info with default thread count
+
+    // Format version string with explicit length checks
+    size_t remaining = os_size;
+    int written = snprintf(os_info, remaining, "Rayforce %d.%d", info.major_version, info.minor_version);
+    if (written > 0 && (size_t)written < remaining) {
+        os_info += written;
+        remaining -= (size_t)written;
+        if (remaining > 2) {  // Space for " (" and null terminator
+            *os_info++ = ' ';
+            *os_info++ = '(';
+            remaining -= 2;
+            size_t date_len = strlen(info.build_date);
+            if (date_len < remaining - 1) {  // -1 for closing parenthesis
+                strncpy(os_info, info.build_date, remaining - 1);
+                os_info += date_len;
+                *os_info++ = ')';
+                *os_info = '\0';
+            }
+        }
     }
 
-    // On macOS, we can use sysctl to get CPU info
-    char cmd[256];
-    snprintf(cmd, sizeof(cmd), "sysctl -n machdep.cpu.brand_string");
-    FILE* pipe = popen(cmd, "r");
-    if (pipe) {
-        if (fgets(cpu_info, 256, pipe) != NULL) {
-            cpu_info[strcspn(cpu_info, "\n")] = 0;  // Remove newline
-        }
-        pclose(pipe);
-    } else {
-        strcpy(cpu_info, "Unknown CPU");
-    }
+    // Copy CPU info with explicit null termination
+    strncpy(cpu_info, info.cpu, cpu_size - 1);
+    cpu_info[cpu_size - 1] = '\0';
 }
 
 // Get current git commit hash
-void get_git_commit(char* commit_hash) {
+void get_git_commit(char* commit_hash, size_t hash_size) {
     FILE* pipe = popen("git rev-parse HEAD", "r");
     if (pipe) {
-        if (fgets(commit_hash, 64, pipe) != NULL) {
+        if (fgets(commit_hash, hash_size, pipe) != NULL) {
             commit_hash[strcspn(commit_hash, "\n")] = 0;  // Remove newline
         }
         pclose(pipe);
     } else {
-        strcpy(commit_hash, "Unknown");
+        strncpy(commit_hash, "Unknown", hash_size - 1);
+        commit_hash[hash_size - 1] = '\0';
     }
 }
 
@@ -171,12 +185,13 @@ void parse_script_params(const char* content, bench_script_t* script) {
 
 // Run benchmark and collect results
 void run_benchmark(bench_script_t* script, bench_result_t* result) {
-    strncpy(result->script_name, script->name, MAX_SCRIPT_NAME - 1);
+    strncpy(result->script_name, script->name, sizeof(result->script_name) - 1);
+    result->script_name[sizeof(result->script_name) - 1] = '\0';
     result->expected_time = script->expected_time;
 
     // Get system info
-    get_system_info(result->os_info, result->cpu_info);
-    get_git_commit(result->git_commit);
+    get_system_info(result->os_info, sizeof(result->os_info), result->cpu_info, sizeof(result->cpu_info));
+    get_git_commit(result->git_commit, sizeof(result->git_commit));
 
     // Get current timestamp
     time_t now;
@@ -354,96 +369,104 @@ void save_results(bench_results_t* results) {
     fclose(file);
 }
 
+// Compare and print results
+void compare_and_print_results(bench_result_t* current, bench_result_t* previous) {
+    printf("\n\033[1;36mBenchmark Results for %s:\033[0m\n", current->script_name);
+    printf("\033[1;33m----------------------------------------\033[0m\n");
+
+    if (previous) {
+        printf("\033[1;34mPrevious Run:\033[0m %s\n", previous->timestamp);
+        printf("\033[1;34mCurrent Run:\033[0m  %s\n\n", current->timestamp);
+    }
+
+    printf("\033[1;35mPerformance Metrics:\033[0m\n");
+    if (previous) {
+        printf("  \033[1;34mMin Time:\033[0m %.3f ms ", current->min_time);
+        print_colored_diff(current->min_time, previous->min_time);
+        printf("\n");
+
+        printf("  \033[1;34mMax Time:\033[0m %.3f ms ", current->max_time);
+        print_colored_diff(current->max_time, previous->max_time);
+        printf("\n");
+
+        printf("  \033[1;34mAvg Time:\033[0m %.3f ms ", current->avg_time);
+        print_colored_diff(current->avg_time, previous->avg_time);
+        printf("\n");
+
+        printf("  \033[1;34mExp Time:\033[0m %.3f ms ", current->expected_time);
+        print_colored_diff(current->avg_time, current->expected_time);
+        printf("\n");
+        printf("\n");
+
+        // Print summary
+        double avg_diff_percent = ((current->avg_time - previous->avg_time) / previous->avg_time) * 100;
+        if (fabs(avg_diff_percent) > 5) {
+            printf("\n\033[1;35mSummary:\033[0m Performance has ");
+            if (avg_diff_percent > 0) {
+                printf("\033[1;31mdegraded by %.1f%%\033[0m", avg_diff_percent);
+            } else {
+                printf("\033[1;32mimproved by %.1f%%\033[0m", -avg_diff_percent);
+            }
+            printf(" since last run\n");
+        } else {
+            printf("\n\033[1;35mSummary:\033[0m Performance is \033[1;33mstable\033[0m (%.1f%% change)\n",
+                   avg_diff_percent);
+        }
+    } else {
+        printf("  \033[1;34mMin Time:\033[0m %.3f ms \033[1;32m(new)\033[0m\n", current->min_time);
+        printf("  \033[1;34mMax Time:\033[0m %.3f ms \033[1;32m(new)\033[0m\n", current->max_time);
+        printf("  \033[1;34mAvg Time:\033[0m %.3f ms \033[1;32m(new)\033[0m\n", current->avg_time);
+        printf("  \033[1;34mExp Time:\033[0m %.3f ms\n", current->expected_time);
+        printf("\n\033[1;35mSummary:\033[0m First run of this benchmark\n");
+    }
+
+    // Always show expected time comparison if it's set
+    if (current->expected_time > 0.0) {
+        printf("\n\033[1;34mExpected Time:\033[0m %.3f ms ", current->expected_time);
+        print_expected_time_diff(current->avg_time, current->expected_time);
+        printf("\n");
+    }
+
+    printf("\033[1;33m----------------------------------------\033[0m\n\n");
+}
+
+// Print system information
+void print_system_info(bench_result_t* result) {
+    printf("\n\033[1;36mSystem Information:\033[0m\n");
+    printf("\033[1;33m----------------------------------------\033[0m\n");
+    printf("  \033[1;34mOS:\033[0m %s\n", result->os_info);
+    printf("  \033[1;34mCPU:\033[0m %s\n", result->cpu_info);
+    printf("  \033[1;34mGit Commit:\033[0m %s\n", result->git_commit);
+    printf("  \033[1;34mTimestamp:\033[0m %s\n", result->timestamp);
+    printf("\033[1;33m----------------------------------------\033[0m\n\n");
+}
+
 // Print colored diff between current and previous results
 void print_colored_diff(double current, double previous) {
     double diff = ((current - previous) / previous) * 100.0;
     if (diff > 0) {
-        printf("\033[31m+%.1f%%\033[0m", diff);
+        printf("\033[1;31m+%.1f%%\033[0m", diff);
     } else if (diff < 0) {
-        printf("\033[32m%.1f%%\033[0m", diff);
+        printf("\033[1;32m%.1f%%\033[0m", diff);
     } else {
-        printf("0.0%%");
+        printf("\033[1;33m0.0%%\033[0m");
     }
 }
 
 void print_expected_time_diff(double actual, double expected) {
     double diff = ((actual - expected) / expected) * 100.0;
     if (fabs(diff) < 5.0) {
-        printf("\033[33m(within ±5%% of expected)\033[0m");
+        printf("\033[1;33m(within ±5%% of expected)\033[0m");
     } else if (diff > 0) {
-        printf("\033[31m(%.1f%% slower than expected)\033[0m", diff);
+        printf("\033[1;31m(%.1f%% slower than expected)\033[0m", diff);
     } else {
-        printf("\033[32m(%.1f%% faster than expected)\033[0m", -diff);
+        printf("\033[1;32m(%.1f%% faster than expected)\033[0m", -diff);
     }
-}
-
-// Compare and print results
-void compare_and_print_results(bench_result_t* current, bench_result_t* previous) {
-    printf("\nBenchmark Results for %s:\n", current->script_name);
-    printf("----------------------------------------\n");
-
-    if (previous) {
-        printf("Previous Run: %s\n", previous->timestamp);
-        printf("Current Run:  %s\n\n", current->timestamp);
-    }
-
-    printf("Performance Metrics:\n");
-    if (previous) {
-        printf("  Min Time: %.3f ms %+.1f%%\n", current->min_time,
-               ((current->min_time - previous->min_time) / previous->min_time) * 100);
-        printf("  Max Time: %.3f ms %+.1f%%\n", current->max_time,
-               ((current->max_time - previous->max_time) / previous->max_time) * 100);
-        printf("  Avg Time: %.3f ms %+.1f%%\n", current->avg_time,
-               ((current->avg_time - previous->avg_time) / previous->avg_time) * 100);
-        printf("  Exp Time: %.3f ms %+.1f%%\n", current->expected_time,
-               ((current->avg_time - current->expected_time) / current->avg_time) * 100);
-        printf("\n");
-
-        // Print summary
-        double avg_diff_percent = ((current->avg_time - previous->avg_time) / previous->avg_time) * 100;
-        if (fabs(avg_diff_percent) > 5) {
-            printf("\nSummary: Performance has ");
-            if (avg_diff_percent > 0) {
-                printf("\033[31mdegraded by %.1f%%\033[0m", avg_diff_percent);
-            } else {
-                printf("\033[32mimproved by %.1f%%\033[0m", -avg_diff_percent);
-            }
-            printf(" since last run\n");
-        } else {
-            printf("\nSummary: Performance is \033[33mstable\033[0m (%.1f%% change)\n", avg_diff_percent);
-        }
-    } else {
-        printf("  Min Time: %.3f ms \033[32m(new)\033[0m\n", current->min_time);
-        printf("  Max Time: %.3f ms \033[32m(new)\033[0m\n", current->max_time);
-        printf("  Avg Time: %.3f ms \033[32m(new)\033[0m\n", current->avg_time);
-        printf("  Exp Time: %.3f ms\n", current->expected_time);
-        printf("\nSummary: First run of this benchmark\n");
-    }
-
-    // Always show expected time comparison if it's set
-    if (current->expected_time > 0.0) {
-        printf("\nExpected Time: %.3f ms ", current->expected_time);
-        print_expected_time_diff(current->avg_time, current->expected_time);
-        printf("\n");
-    }
-
-    printf("----------------------------------------\n\n");
-}
-
-// Print system information
-void print_system_info(bench_result_t* result) {
-    printf("\nSystem Information:\n");
-    printf("----------------------------------------\n");
-    printf("  OS: %s\n", result->os_info);
-    printf("  CPU: %s\n", result->cpu_info);
-    printf("  Git Commit: %s\n", result->git_commit);
-    printf("  Timestamp: %s\n", result->timestamp);
-    printf("----------------------------------------\n\n");
 }
 
 void process_script_file(const char* filename, bench_results_t* results) {
-    char full_path[MAX_SCRIPT_NAME];
-    char init_path[MAX_SCRIPT_NAME];
+    char full_path[MAX_PATH_LEN];
+    char init_path[MAX_PATH_LEN];
     bench_script_t script = {0};
 
     // Get script name without extension
@@ -456,14 +479,20 @@ void process_script_file(const char* filename, bench_results_t* results) {
     char* dot = strrchr(base_name, '.');
     if (dot) {
         size_t name_len = dot - base_name;
+        if (name_len >= sizeof(script.name)) {
+            name_len = sizeof(script.name) - 1;
+        }
         strncpy(script.name, base_name, name_len);
         script.name[name_len] = '\0';
     } else {
-        strcpy(script.name, base_name);
+        strncpy(script.name, base_name, sizeof(script.name) - 1);
+        script.name[sizeof(script.name) - 1] = '\0';
     }
 
     // Read main script
-    snprintf(full_path, sizeof(full_path), "%s", filename);
+    strncpy(full_path, filename, sizeof(full_path) - 1);
+    full_path[sizeof(full_path) - 1] = '\0';
+
     FILE* file = fopen(full_path, "r");
     if (!file) {
         printf("Error: Could not open script file %s\n", full_path);
@@ -475,7 +504,12 @@ void process_script_file(const char* filename, bench_results_t* results) {
     fclose(file);
 
     // Try to read init script if it exists
-    snprintf(init_path, sizeof(init_path), "%s/%s%s.rf", BENCH_SCRIPTS_DIR, script.name, BENCH_INIT_SUFFIX);
+    size_t written =
+        snprintf(init_path, sizeof(init_path), "%s/%s%s.rf", BENCH_SCRIPTS_DIR, script.name, BENCH_INIT_SUFFIX);
+    if (written >= sizeof(init_path)) {
+        printf("Warning: Init script path truncated for %s\n", script.name);
+    }
+
     file = fopen(init_path, "r");
     if (file) {
         size_t init_size = fread(script.init_script, 1, sizeof(script.init_script) - 1, file);
