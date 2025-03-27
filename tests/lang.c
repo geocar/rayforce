@@ -3100,6 +3100,8 @@ test_result_t test_lang_distinct() {
     TEST_ASSERT_EQ("(distinct [2024.01.01D10:00:00.000000000 2024.01.01D10:00:00.000000000])",
                    "[2024.01.01D10:00:00.000000000]");
     TEST_ASSERT_EQ("(distinct ['a 'b 'ab 'aa 'a 'aa])", "['a 'b 'ab 'aa]");
+    TEST_ASSERT_EQ("(set l (guid 2)) (set l (concat l l)) (count (distinct l))", "2");
+    TEST_ASSERT_EQ("(distinct (list [3i 3i] 2i [3i 3i] 2i))", "(list 2i [3i 3i])");
 
     PASS();
 }
