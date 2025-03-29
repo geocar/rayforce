@@ -150,6 +150,7 @@ test_entry_t tests[] = {
     {"test_lang_split", test_lang_split},
     {"test_serde_different_sizes", test_serde_different_sizes},
     {"test_lang_distinct", test_lang_distinct},
+    {"test_lang_concat", test_lang_concat},
 };
 // ---
 
