@@ -188,6 +188,7 @@ obj_p get_gvals(obj_p obj) {
 nil_t query_ctx_init(query_ctx_p ctx) {
     ctx->tablen = 0;
     ctx->table = NULL_OBJ;
+    ctx->take = NULL_OBJ;
     ctx->filter = NULL_OBJ;
     ctx->group_fields = NULL_OBJ;
     ctx->group_values = NULL_OBJ;
@@ -201,6 +202,7 @@ nil_t query_ctx_destroy(query_ctx_p ctx) {
     runtime_get()->query_ctx = NULL;
 
     drop_obj(ctx->table);
+    drop_obj(ctx->take);
     drop_obj(ctx->filter);
     drop_obj(ctx->group_fields);
     drop_obj(ctx->group_values);
@@ -230,6 +232,18 @@ obj_p select_fetch_table(obj_p obj, query_ctx_p ctx) {
 
     ctx->tablen = AS_LIST(val)[0]->len;
     ctx->table = val;
+
+    prm = at_sym(obj, "take", 4);
+
+    if (!is_null(prm)) {
+        val = eval(prm);
+        drop_obj(prm);
+
+        if (IS_ERROR(val))
+            return val;
+
+        ctx->take = val;
+    }
 
     timeit_tick("fetch table");
 
@@ -491,7 +505,7 @@ obj_p select_collect_fields(query_ctx_p ctx) {
 
 obj_p select_build_table(query_ctx_p ctx) {
     u64_t i, l, m;
-    obj_p res, keys, vals;
+    obj_p take, res, keys, vals;
 
     switch (ctx->group_fields->type) {
         case -TYPE_SYMBOL:  // Grouped by one column
@@ -525,6 +539,12 @@ obj_p select_build_table(query_ctx_p ctx) {
     res = ray_table(keys, vals);
     drop_obj(keys);
     drop_obj(vals);
+
+    if (ctx->take != NULL_OBJ) {
+        take = ray_take(ctx->take, res);
+        drop_obj(res);
+        res = take;
+    }
 
     timeit_tick("build table");
 

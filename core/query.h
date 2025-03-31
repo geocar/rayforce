@@ -28,6 +28,7 @@
 
 typedef struct query_ctx_t {
     u64_t tablen;
+    obj_p take;
     obj_p table;
     obj_p filter;
     obj_p group_index;
