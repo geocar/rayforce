@@ -46,6 +46,7 @@
 #include "date.h"
 #include "time.h"
 #include "timestamp.h"
+#include "cmp.h"
 
 RAYASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
@@ -1299,8 +1300,11 @@ i64_t find_sym(obj_p obj, lit_p str) {
 }
 
 i64_t find_obj_idx(obj_p obj, obj_p val) {
-    if (!IS_VECTOR(obj) && obj->type != TYPE_LIST)
-        return (cmp_obj(obj, val) == 0) ? 0 : NULL_I64;
+    i16_t vi16;
+    i32_t vi32;
+    i64_t vi64;
+    u64_t i;
+    obj_p eq;
 
     switch (MTYPE2(obj->type, val->type)) {
         case MTYPE2(TYPE_B8, -TYPE_B8):
@@ -1309,10 +1313,34 @@ i64_t find_obj_idx(obj_p obj, obj_p val) {
             return find_raw(obj, &val->u8);
         case MTYPE2(TYPE_I16, -TYPE_I16):
             return find_raw(obj, &val->i16);
+        case MTYPE2(TYPE_I16, -TYPE_I32):
+            vi32 = val->i32;
+            vi16 = (i16_t)vi32;
+            return find_raw(obj, &vi16);
+        case MTYPE2(TYPE_I16, -TYPE_I64):
+            vi64 = val->i64;
+            vi16 = (i16_t)vi64;
+            return find_raw(obj, &vi16);
+        case MTYPE2(TYPE_I32, -TYPE_I16):
+            vi16 = val->i16;
+            vi32 = (i32_t)vi16;
+            return find_raw(obj, &vi32);
         case MTYPE2(TYPE_I32, -TYPE_I32):
         case MTYPE2(TYPE_DATE, -TYPE_DATE):
         case MTYPE2(TYPE_TIME, -TYPE_TIME):
             return find_raw(obj, &val->i32);
+        case MTYPE2(TYPE_I32, -TYPE_I64):
+            vi64 = val->i64;
+            vi32 = (i32_t)vi64;
+            return find_raw(obj, &vi32);
+        case MTYPE2(TYPE_I64, -TYPE_I16):
+            vi16 = val->i16;
+            vi64 = (i64_t)vi16;
+            return find_raw(obj, &vi64);
+        case MTYPE2(TYPE_I64, -TYPE_I32):
+            vi32 = val->i32;
+            vi64 = (i64_t)vi32;
+            return find_raw(obj, &vi64);
         case MTYPE2(TYPE_I64, -TYPE_I64):
         case MTYPE2(TYPE_SYMBOL, -TYPE_SYMBOL):
         case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
@@ -1321,9 +1349,14 @@ i64_t find_obj_idx(obj_p obj, obj_p val) {
             return find_raw(obj, &val->f64);
         default:
             if (obj->type == TYPE_LIST) {
-                for (u64_t i = 0; i < obj->len; i++)
-                    if (cmp_obj(AS_LIST(obj)[i], val) == 0)
+                for (i = 0; i < obj->len; i++) {
+                    eq = ray_eq(AS_LIST(obj)[i], val);
+                    if (eq->type == -TYPE_B8 && eq->b8) {
+                        drop_obj(eq);
                         return i;
+                    }
+                    drop_obj(eq);
+                }
             }
             return NULL_I64;
     }
