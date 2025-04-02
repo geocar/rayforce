@@ -182,6 +182,7 @@ static inline i32_t i16_to_time(i16_t x) { return (x == NULL_I16) ? NULL_I32 : (
 static inline i32_t i16_to_adate(i16_t x) { return (x == NULL_I16) ? NULL_I32 : (i32_t)x; }
 static inline i32_t i16_to_atime(i16_t x) { return (x == NULL_I16) ? NULL_I32 : (i32_t)x; }
 static inline i64_t i16_to_timestamp(i16_t x) { return (x == NULL_I16) ? NULL_I64 : (i64_t)x; }
+static inline i16_t i32_to_i16(i32_t x) { return (x == NULL_I32) ? NULL_I16 : (i16_t)x; }
 static inline i32_t i32_to_i32(i32_t x) { return x; }
 static inline i64_t i32_to_i64(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i64_t)x; }
 static inline f64_t i32_to_f64(i32_t x) { return (x == NULL_I32) ? NULL_F64 : (f64_t)x; }
@@ -190,6 +191,7 @@ static inline i32_t i32_to_time(i32_t x) { return x; }
 static inline i32_t i32_to_adate(i32_t x) { return x; }
 static inline i32_t i32_to_atime(i32_t x) { return x; }
 static inline i64_t i32_to_timestamp(i32_t x) { return (x == NULL_I32) ? NULL_I64 : (i64_t)x; }
+static inline i16_t i64_to_i16(i64_t x) { return (x == NULL_I64) ? NULL_I16 : (i16_t)x; }
 static inline i32_t i64_to_i32(i64_t x) { return (x == NULL_I64) ? NULL_I32 : (i32_t)x; }
 static inline i64_t i64_to_i64(i64_t x) { return x; }
 static inline f64_t i64_to_f64(i64_t x) { return (x == NULL_I64) ? NULL_F64 : (f64_t)x; }
