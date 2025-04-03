@@ -661,176 +661,51 @@ obj_p ray_take(obj_p x, obj_p y) {
 }
 
 obj_p ray_in(obj_p x, obj_p y) {
-    i64_t i, xl, yl, p, k;
-    obj_p v, vec, set;
-    i16_t min16;
-    u64_t range;
-    b8_t nl = 0;
+    i64_t i, yl;
+    obj_p v, vec;
 
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(TYPE_U8, TYPE_U8):
         case MTYPE2(TYPE_B8, TYPE_B8):
         case MTYPE2(TYPE_C8, TYPE_C8):
             return index_in_i8_i8(AS_I8(x), x->len, AS_I8(y), y->len);
+        case MTYPE2(TYPE_U8, TYPE_I16):
+        case MTYPE2(TYPE_B8, TYPE_I16):
+            return index_in_i8_i16(AS_I8(x), x->len, AS_I16(y), y->len);
+        case MTYPE2(TYPE_U8, TYPE_I32):
+        case MTYPE2(TYPE_B8, TYPE_I32):
+            return index_in_i8_i32(AS_I8(x), x->len, AS_I32(y), y->len);
+        case MTYPE2(TYPE_U8, TYPE_I64):
+        case MTYPE2(TYPE_B8, TYPE_I64):
+            return index_in_i8_i64(AS_I8(x), x->len, AS_I64(y), y->len);
+        case MTYPE2(TYPE_I16, TYPE_U8):
+            return index_in_i16_i8(AS_I16(x), x->len, AS_I8(y), y->len);
         case MTYPE2(TYPE_I16, TYPE_I16):
-        case MTYPE2(TYPE_I32, TYPE_I16):
-        case MTYPE2(TYPE_I64, TYPE_I16):
-            min16 = -32768;
-            range = 65536;
-            set = B8(range);
-            memset(AS_B8(set), 0, range);
-            for (i = 0; i < (i64_t)y->len; i++)
-                AS_B8(set)[AS_I16(y)[i] - min16] = 1;
-            vec = B8(x->len);
-            switch (x->type) {
-                case TYPE_I32:
-                    for (i = 0; i < (i64_t)x->len; i++)
-                        AS_B8(vec)
-                    [i] = (AS_I32(x)[i] == NULL_I32 || (AS_I32(x)[i] > INT16_MIN && AS_I32(x)[i] <= INT16_MAX))
-                              ? AS_B8(set)[i32_to_i16(AS_I32(x)[i]) - min16]
-                              : 0;
-                    break;
-                case TYPE_I64:
-                    for (i = 0; i < (i64_t)x->len; i++) {
-                        p = AS_I64(x)[i];
-                        AS_B8(vec)
-                        [i] = ((p > INT16_MIN && p <= INT16_MAX) || p == NULL_I64)
-                                  ? AS_B8(set)[i64_to_i16(AS_I64(x)[i]) - min16]
-                                  : 0;
-                    }
-                    break;
-                default:
-                    for (i = 0; i < (i64_t)x->len; i++)
-                        AS_B8(vec)[i] = AS_B8(set)[AS_I16(x)[i] - min16];
-            }
-            drop_obj(set);
-            return vec;
-
+            return index_in_i16_i16(AS_I16(x), x->len, AS_I16(y), y->len);
         case MTYPE2(TYPE_I16, TYPE_I32):
+            return index_in_i16_i32(AS_I16(x), x->len, AS_I32(y), y->len);
+        case MTYPE2(TYPE_I16, TYPE_I64):
+            return index_in_i16_i64(AS_I16(x), x->len, AS_I64(y), y->len);
+        case MTYPE2(TYPE_I32, TYPE_U8):
+            return index_in_i32_i8(AS_I32(x), x->len, AS_I8(y), y->len);
+        case MTYPE2(TYPE_I32, TYPE_I16):
+            return index_in_i32_i16(AS_I32(x), x->len, AS_I16(y), y->len);
         case MTYPE2(TYPE_I32, TYPE_I32):
-        case MTYPE2(TYPE_I64, TYPE_I32):
         case MTYPE2(TYPE_DATE, TYPE_DATE):
         case MTYPE2(TYPE_TIME, TYPE_TIME):
-            xl = x->len;
-            yl = y->len;
-            set = ht_oa_create(yl, -1);
-            for (i = 0; i < yl; i++) {
-                k = (i64_t)(AS_I32(y)[i]);
-                p = ht_oa_tab_next(&set, k);
-                if (AS_I64(AS_LIST(set)[0])[p] == NULL_I64)
-                    AS_I64(AS_LIST(set)[0])[p] = k;
-            }
-            vec = B8(xl);
-            switch (x->type) {
-                case TYPE_I16:
-                    for (i = 0; i < xl; i++) {
-                        AS_B8(vec)[i] = (ht_oa_tab_get(set, (i64_t)(i16_to_i32(AS_I16(x)[i]))) != NULL_I64);
-                    }
-                    break;
-                case TYPE_I64:
-                    for (i = 0; i < xl; i++) {
-                        p = AS_I64(x)[i];
-                        AS_B8(vec)
-                        [i] = ((p > INT32_MIN && p <= INT32_MAX) || p == NULL_I64)
-                                  ? (ht_oa_tab_get(set, (i64_t)(i64_to_i32(p))) != NULL_I64)
-                                  : 0;
-                    }
-                    break;
-                default:
-                    for (i = 0; i < xl; i++) {
-                        AS_B8(vec)[i] = (ht_oa_tab_get(set, (i64_t)(AS_I32(x)[i])) != NULL_I64);
-                    }
-            }
-            drop_obj(set);
-            return vec;
-
-        case MTYPE2(TYPE_I16, TYPE_I64):
+            return index_in_i32_i32(AS_I32(x), x->len, AS_I32(y), y->len);
         case MTYPE2(TYPE_I32, TYPE_I64):
+            return index_in_i32_i64(AS_I32(x), x->len, AS_I64(y), y->len);
+        case MTYPE2(TYPE_I64, TYPE_U8):
+            return index_in_i64_i8(AS_I64(x), x->len, AS_I8(y), y->len);
+        case MTYPE2(TYPE_I64, TYPE_I16):
+            return index_in_i64_i16(AS_I64(x), x->len, AS_I16(y), y->len);
+        case MTYPE2(TYPE_I64, TYPE_I32):
+            return index_in_i64_i32(AS_I64(x), x->len, AS_I32(y), y->len);
         case MTYPE2(TYPE_I64, TYPE_I64):
         case MTYPE2(TYPE_SYMBOL, TYPE_SYMBOL):
         case MTYPE2(TYPE_TIMESTAMP, TYPE_TIMESTAMP):
-            xl = x->len;
-            yl = y->len;
-            set = ht_oa_create(yl, -1);
-            for (i = 0; i < yl; i++) {
-                if (AS_I64(y)[i] == NULL_I64)
-                    nl = 1;
-                else {
-                    p = ht_oa_tab_next(&set, AS_I64(y)[i]);
-                    if (AS_I64(AS_LIST(set)[0])[p] == NULL_I64)
-                        AS_I64(AS_LIST(set)[0])[p] = AS_I64(y)[i];
-                }
-            }
-            vec = B8(xl);
-            switch (x->type) {
-                case TYPE_I16:
-                    for (i = 0; i < xl; i++) {
-                        p = i16_to_i64(AS_I16(x)[i]);
-                        AS_B8(vec)[i] = (p == NULL_I64) ? nl : (ht_oa_tab_get(set, p) != NULL_I64);
-                    }
-                    break;
-                case TYPE_I32:
-                    for (i = 0; i < xl; i++) {
-                        p = i32_to_i64(AS_I32(x)[i]);
-                        AS_B8(vec)[i] = (p == NULL_I64) ? nl : (ht_oa_tab_get(set, p) != NULL_I64);
-                    }
-                    break;
-                default:
-                    for (i = 0; i < xl; i++) {
-                        p = AS_I64(x)[i];
-                        AS_B8(vec)[i] = (p == NULL_I64) ? nl : (ht_oa_tab_get(set, p) != NULL_I64);
-                    }
-            }
-            drop_obj(set);
-            return vec;
-
-        case MTYPE2(TYPE_U8, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(u8(AS_U8(x)[i]), y)->b8;
-            return vec;
-        case MTYPE2(TYPE_B8, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(b8(AS_B8(x)[i]), y)->b8;
-            return vec;
-        case MTYPE2(TYPE_C8, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(c8(AS_C8(x)[i]), y)->b8;
-            return vec;
-        case MTYPE2(TYPE_I16, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(i16(AS_I16(x)[i]), y)->b8;
-            return vec;
-        case MTYPE2(TYPE_I32, TYPE_LIST):
-        case MTYPE2(TYPE_DATE, TYPE_LIST):
-        case MTYPE2(TYPE_TIME, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(i32(AS_I32(x)[i]), y)->b8;
-            return vec;
-        case MTYPE2(TYPE_I64, TYPE_LIST):
-        case MTYPE2(TYPE_SYMBOL, TYPE_LIST):
-        case MTYPE2(TYPE_TIMESTAMP, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(i64(AS_I64(x)[i]), y)->b8;
-            return vec;
-        case MTYPE2(TYPE_F64, TYPE_LIST):
-            xl = x->len;
-            vec = B8(xl);
-            for (i = 0; i < xl; i++)
-                AS_B8(vec)[i] = ray_in(f64(AS_F64(x)[i]), y)->b8;
-            return vec;
-
+            return index_in_i64_i64(AS_I64(x), x->len, AS_I64(y), y->len);
         default:
             if ((IS_VECTOR(y) || y->type == TYPE_LIST) && y->len == 0) {
                 if (IS_VECTOR(x) || x->type == TYPE_LIST) {

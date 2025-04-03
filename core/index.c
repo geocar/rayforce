@@ -1019,6 +1019,207 @@ obj_p index_in_i32_i32(i32_t x[], u64_t xl, i32_t y[], u64_t yl) {
     return vec;
 }
 
+obj_p index_in_i32_i64(i32_t x[], u64_t xl, i64_t y[], u64_t yl) {
+    u64_t i;
+    i64_t n, p;
+    b8_t *r, *s;
+    obj_p vec, ht;
+
+    if (xl == 0)
+        return B8(0);
+
+    const index_scope_t scope = index_scope_i32(x, NULL, xl);
+
+    if (scope.range <= yl || yl <= 1000000) {
+        vec = B8(scope.range);
+        s = AS_B8(vec);
+
+        for (i = 0; i < scope.range; i++)
+            s[i] = B8_FALSE;
+
+        for (i = 0; i < xl; i++) {
+            n = x[i] - scope.min;
+            s[n] = B8_TRUE;
+        }
+
+        for (i = 0; i < yl; i++) {
+            n = y[i] - scope.min;
+            if (y[i] < scope.max && y[i] > scope.min)
+                s[i] = s[n];
+        }
+
+        resize_obj(&vec, yl);
+
+        return vec;
+    }
+
+    vec = B8(yl);
+    r = AS_B8(vec);
+
+    memset(r, 0, yl);
+
+    // otherwise, use a hash table
+    ht = ht_oa_create(xl, -1);
+
+    for (i = 0; i < xl; i++) {
+        p = ht_oa_tab_next(&ht, x[i]);
+        if (AS_I64(AS_LIST(ht)[0])[p] == NULL_I64) {
+            AS_I64(AS_LIST(ht)[0])[p] = 1;
+        }
+    }
+
+    for (i = 0; i < yl; i++) {
+        p = ht_oa_tab_get(ht, y[i]);
+        if (p != NULL_I64)
+            r[i] = B8_TRUE;
+    }
+
+    drop_obj(ht);
+
+    return vec;
+}
+
+obj_p index_in_i64_i8(i64_t x[], u64_t xl, i8_t y[], u64_t yl) {
+    u64_t i, range;
+    i64_t val;
+    i8_t min;
+    b8_t *s, *r;
+    obj_p set, vec;
+
+    min = -128;
+    range = 256;
+
+    if (xl == 0)
+        return B8(0);
+
+    set = B8(range);
+    s = AS_B8(set);
+
+    for (i = 0; i < range; i++)
+        s[i] = B8_FALSE;
+
+    for (i = 0; i < xl; i++) {
+        val = x[i] - min;
+        if (val >= 0 && val < (i64_t)range)
+            s[val] = B8_TRUE;
+    }
+
+    vec = B8(yl);
+    r = AS_B8(vec);
+
+    for (i = 0; i < yl; i++)
+        r[i] = s[y[i] - min];
+
+    drop_obj(set);
+
+    return vec;
+}
+
+obj_p index_in_i64_i16(i64_t x[], u64_t xl, i16_t y[], u64_t yl) {
+    u64_t i, range;
+    i16_t min, val;
+    b8_t *s, *r;
+    obj_p set, vec;
+
+    min = -32768;
+    range = 65536;
+
+    if (xl == 0)
+        return B8(0);
+
+    set = B8(range);
+    s = AS_B8(set);
+
+    for (i = 0; i < range; i++)
+        s[i] = B8_FALSE;
+
+    for (i = 0; i < xl; i++) {
+        val = x[i] - min;
+        if (val >= 0 && val < (i16_t)range)
+            s[val] = B8_TRUE;
+    }
+
+    vec = B8(yl);
+    r = AS_B8(vec);
+
+    for (i = 0; i < yl; i++)
+        r[i] = s[y[i] - min];
+
+    drop_obj(set);
+
+    return vec;
+}
+
+obj_p index_in_i64_i32(i64_t x[], u64_t xl, i32_t y[], u64_t yl) {
+    u64_t i;
+    b8_t *s, *r;
+    i64_t n, p;
+    obj_p vec, ht;
+
+    if (xl == 0)
+        return B8(0);
+
+    const index_scope_t scope = index_scope_i32(y, NULL, yl);
+
+    if (scope.range <= yl || yl <= 1000000) {
+        vec = B8(scope.range);
+        s = AS_B8(vec);
+
+        for (i = 0; i < scope.range; i++)
+            s[i] = B8_FALSE;
+
+        for (i = 0; i < xl; i++) {
+            n = x[i] - scope.min;
+            s[n] = B8_TRUE;
+        }
+
+        for (i = 0; i < yl; i++) {
+            n = y[i] - scope.min;
+            r[i] = s[n];
+        }
+
+        resize_obj(&vec, yl);
+
+        return vec;
+    }
+
+    vec = I64(yl);
+    r = AS_I64(vec);
+
+    // otherwise, use a hash table
+    ht = ht_oa_create(xl, TYPE_I64);
+
+    for (i = 0; i < xl; i++) {
+        p = ht_oa_tab_next(&ht, x[i] - scope.min);
+        if (AS_I64(AS_LIST(ht)[0])[p] == NULL_I64) {
+            AS_I64(AS_LIST(ht)[0])[p] = x[i] - scope.min;
+            AS_I64(AS_LIST(ht)[1])[p] = i;
+        }
+    }
+
+    for (i = 0; i < yl; i++) {
+        p = ht_oa_tab_get(ht, y[i] - scope.min);
+        r[i] = p == NULL_I64 ? NULL_I64 : AS_I64(AS_LIST(ht)[1])[p];
+    }
+
+    drop_obj(ht);
+
+    return vec;
+}
+
+obj_p index_in_i64_i64(i64_t x[], u64_t xl, i64_t y[], u64_t yl) {
+    u64_t i;
+    b8_t *s, *r;
+    obj_p vec, ht;
+
+    if (xl == 0)
+        return B8(0);
+
+    const index_scope_t scope = index_scope_i64(x, NULL, xl);
+
+    return NULL_OBJ;
+}
+
 obj_p index_find_i8(i8_t x[], u64_t xl, i8_t y[], u64_t yl) {
     u64_t i, range;
     i64_t min, n, *r, *f;
