@@ -3194,3 +3194,77 @@ test_result_t test_lang_concat() {
     TEST_ASSERT_EQ("(concat 'a' 5)", "(list 'a' 5)");
     PASS();
 }
+
+test_result_t test_lang_filter() {
+    TEST_ASSERT_EQ("(filter [true false true false] [true true false false])", "[true false]");
+    TEST_ASSERT_EQ("(filter [0x12 0x11 0x10] [true false true])", "[0x12 0x10]");
+    TEST_ASSERT_EQ("(filter \"test\" [true false true false])", "\"ts\"");
+    TEST_ASSERT_EQ("(filter [1h 2h 3h] [false true false])", "[2h]");
+    TEST_ASSERT_EQ("(filter [1i 0Ni 2i] [false true true])", "[0Ni 2i]");
+    TEST_ASSERT_EQ("(filter [2012.12.12 2012.12.13] [true false])", "[2012.12.12]");
+    TEST_ASSERT_EQ("(filter [10:00:00.000] [true])", "[10:00:00.000]");
+    TEST_ASSERT_EQ("(filter [1 0Nl 2] [true true true])", "[1 0Nl 2]");
+    TEST_ASSERT_EQ("(filter ['a 'b 'c 'dd] [true false false true])", "['a 'dd]");
+    TEST_ASSERT_EQ("(filter [2024.01.01D10:00:00.000000000] [true])", "[2024.01.01D10:00:00.000000000]");
+    TEST_ASSERT_EQ("(filter [1.0 2.0 3.0] [true false true])", "[1.0 3.0]");
+    TEST_ASSERT_EQ("(filter (guid 2) [false false])", "[]");
+    TEST_ASSERT_EQ("(filter (take 2 (as 'guid \"d49f18a4-1969-49e8-9b8a-6bb9a4832eea\")) [false true])",
+                   "[d49f18a4-1969-49e8-9b8a-6bb9a4832eea]");
+    TEST_ASSERT_EQ("(filter (list [3i 0Ni] 2i [3i 3i] 2i) [true true false false])", "(list [3i 0Ni] 2i)");
+    TEST_ASSERT_EQ("(first (filter (table [a b] (list [1 2 3] (list 'a 'b 'c))) [false true true]))", "{a:2 b:'b}");
+
+    TEST_ASSERT_ER("(filter [1i 0Ni 2i] [true true])", "filter: arguments must be the same length");
+    TEST_ASSERT_ER("(filter [true false] [1 2])", "filter: unsupported types: 'B8, 'I64");
+
+    PASS();
+}
+
+test_result_t test_lang_in() {
+    TEST_ASSERT_EQ("(in 2 2)", "true");
+    TEST_ASSERT_EQ("(in false [true false])", "true");
+    TEST_ASSERT_EQ("(in 0x12 [0x12 0x11 0x10])", "true");
+    TEST_ASSERT_EQ("(in 'e' \"test\")", "true");
+    TEST_ASSERT_EQ("(in \"asd\" \"asd\")", "[true true true]");
+    TEST_ASSERT_EQ("(in \"asd\" 'a')", "[true false false]");
+    TEST_ASSERT_EQ("(in 1h [2h 3h])", "false");
+    TEST_ASSERT_EQ("(in 2h [2 3])", "true");
+    TEST_ASSERT_EQ("(in 1i [1i 0Ni 2i])", "true");
+    TEST_ASSERT_EQ("(in 2012.12.12 [2012.12.12 2012.12.13])", "true");
+    TEST_ASSERT_EQ("(in 10:00:00.000 [10:00:00.000 20:10:10.500])", "true");
+    TEST_ASSERT_EQ("(in 1 [0Nl])", "false");
+    TEST_ASSERT_EQ("(in 'a ['a 'b 'c 'dd])", "true");
+    TEST_ASSERT_EQ("(in 2024.01.01D10:00:00.000000000 [])", "false");
+    TEST_ASSERT_EQ("(in 1.0 [1.0 2.0 3.0])", "true");
+    TEST_ASSERT_EQ("(in (guid 2) [])", "[false false]");
+    TEST_ASSERT_EQ("(in 2 (list '3' 2))", "true");
+    TEST_ASSERT_EQ("(in 3 [1i 0Ni 2i])", "false");
+    TEST_ASSERT_EQ("(in [true false] [false])", "[false true]");
+    TEST_ASSERT_EQ("(in [0x00 0x01] [0x02 0x00])", "[true false]");
+    TEST_ASSERT_EQ("(in \"test\" \"post\")", "[true false true true]");
+    TEST_ASSERT_EQ("(in [3h 2h 5h 0Nh] [1h 0Nh 2h 3h])", "[true true false true]");
+    TEST_ASSERT_EQ("(in [3 2 5 0Nl -32768] [1h 0Nh 2h 3h])", "[true true false true false]");
+    TEST_ASSERT_EQ("(in [3i 2i 5i 0Ni -32768i] [1h 0Nh 2h 3h])", "[true true false true false]");
+    TEST_ASSERT_EQ("(in [3i 2i 5i 0Ni] [1i 0Ni 2i 3i])", "[true true false true]");
+    TEST_ASSERT_EQ("(in [3h 2h 5h 0Nh] [1i 0Ni 2i 3i])", "[true true false true]");
+    TEST_ASSERT_EQ("(in [3h 2h 5h 0Nh] [1 0Nl 2 3])", "[true true false true]");
+    TEST_ASSERT_EQ("(in [3 2 5 0Nl -2147483648] [1i 0Ni 2i 3i])", "[true true false true false]");
+    TEST_ASSERT_EQ("(in [3i 2i 0Ni] [1 0Nl 2 3])", "[true true true]");
+    TEST_ASSERT_EQ("(in [3 2 5 0Nl] [1 0Nl 2 3])", "[true true false true]");
+    TEST_ASSERT_EQ("(in (list 3h 2i 5 0Nl) [1 0Nl 2 3])", "(list true true false true)");
+    TEST_ASSERT_EQ("(in [0 1 0Nl] 0Nl)", "[false false true]");
+    TEST_ASSERT_EQ("(in [3] (list 3i 2 5))", "[true]");
+    TEST_ASSERT_EQ("(in 'a' (list \"iu\" \"asd\"))", "false");
+    TEST_ASSERT_EQ("(in 'a' (list \"iu\" \"asd\" 'a'))", "true");
+    TEST_ASSERT_EQ("(in \"asd\" (list \"iu\" \"asd\"))", "[false false false]");
+    TEST_ASSERT_EQ("(in \"asd\" (list 'd' \"asd\"))", "[false false true]");
+    TEST_ASSERT_EQ("(in (list \"asd\") (list \"iu\" \"asd\"))", "(list [false false false])");      //(list true)
+    TEST_ASSERT_EQ("(in (list \"asd\" \"iu\") \"asd\")", "(list [true true true] [false false])");  //(list false false)
+    TEST_ASSERT_EQ("(set l (guid 2)) (in l l)", "[true true]");
+    TEST_ASSERT_EQ("(set l (guid 2)) (in (first l) l)", "true");
+    TEST_ASSERT_EQ("(set l (guid 2)) (in l (first l))", "[true false]");
+    TEST_ASSERT_EQ("(set l (guid 2)) (in (first l) (list (first l)))", "true");
+    TEST_ASSERT_EQ("(set l (guid 2)) (in (list (first l)) l)", "(list true)");
+    TEST_ASSERT_EQ("(set l (guid 2)) (in (list (first l)) (list l))", "(list false)");
+    TEST_ASSERT_EQ("(set l (guid 2)) (in (list (first l)) (list (first l)))", "(list true)");
+    PASS();
+}

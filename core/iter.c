@@ -33,14 +33,12 @@
 #include "runtime.h"
 #include "pool.h"
 
-obj_p map_unary(obj_p f, obj_p x) {
+obj_p map_unary_fn(unary_f fn, i64_t attrs, obj_p x) {
     u64_t i, l, n;
     obj_p res, item, a, *v, parts;
     pool_p pool;
-    unary_f fn;
 
     pool = pool_get();
-    fn = (unary_f)f->i64;
 
     switch (x->type) {
         case TYPE_LIST:
@@ -55,12 +53,12 @@ obj_p map_unary(obj_p f, obj_p x) {
             if (n > 1) {
                 pool_prepare(pool);
 
-                if (f->attrs & FN_ATOMIC) {
+                if (attrs & FN_ATOMIC) {
                     for (i = 0; i < l; i++)
-                        pool_add_task(pool, (raw_p)map_unary, 3, f, v[i]);
+                        pool_add_task(pool, (raw_p)map_unary, 3, fn, v[i]);
                 } else {
                     for (i = 0; i < l; i++)
-                        pool_add_task(pool, (raw_p)f, 1, v[i]);
+                        pool_add_task(pool, (raw_p)fn, 1, v[i]);
                 }
 
                 parts = pool_run(pool);
@@ -68,17 +66,17 @@ obj_p map_unary(obj_p f, obj_p x) {
                 return parts;
             }
 
-            item = (f->attrs & FN_ATOMIC) ? map_unary(f, v[0]) : fn(v[0]);
+            item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, v[0]) : fn(v[0]);
 
             if (IS_ERROR(item))
                 return item;
 
-            res = item->type < 0 ? vector(item->type, l) : LIST(l);
+            res = vector(item->type, l);
 
             ins_obj(&res, 0, item);
 
             for (i = 1; i < l; i++) {
-                item = (f->attrs & FN_ATOMIC) ? map_unary(f, v[i]) : fn(v[i]);
+                item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, v[i]) : fn(v[i]);
 
                 if (IS_ERROR(item)) {
                     res->len = i;
@@ -97,19 +95,19 @@ obj_p map_unary(obj_p f, obj_p x) {
                 return NULL_OBJ;
 
             a = at_idx(x, 0);
-            item = (f->attrs & FN_ATOMIC) ? map_unary(f, a) : fn(a);
+            item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, a) : fn(a);
             drop_obj(a);
 
             if (IS_ERROR(item))
                 return item;
 
-            res = item->type < 0 ? vector(item->type, l) : vector(TYPE_LIST, l);
+            res = vector(item->type, l);
 
             ins_obj(&res, 0, item);
 
             for (i = 1; i < l; i++) {
                 a = at_idx(x, i);
-                item = (f->attrs & FN_ATOMIC) ? map_unary(f, a) : fn(a);
+                item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, a) : fn(a);
                 drop_obj(a);
 
                 if (IS_ERROR(item)) {
@@ -124,32 +122,51 @@ obj_p map_unary(obj_p f, obj_p x) {
             return res;
 
         default:
-            fn = (unary_f)f->i64;
             return fn(x);
     }
 }
 
-obj_p map_binary_left(obj_p f, obj_p x, obj_p y) {
+obj_p map_unary(obj_p f, obj_p x) { return map_unary_fn((unary_f)f->i64, f->attrs, x); }
+
+obj_p map_binary_left_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
     u64_t i, l;
-    binary_f fn;
     obj_p res, item, a;
 
     switch (x->type) {
+        case TYPE_C8:
+        case TYPE_U8:
+        case TYPE_B8:
+        case TYPE_I16:
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+        case TYPE_I64:
+        case TYPE_SYMBOL:
+        case TYPE_TIMESTAMP:
+        case TYPE_F64:
+        case TYPE_GUID:
         case TYPE_LIST:
+        case TYPE_MAPLIST:
             l = ops_count(x);
-            a = AS_LIST(x)[0];
-            item = map_binary_left(f, a, y);
+
+            if (l == 0)
+                return null(x->type);
+
+            a = at_idx(x, 0);
+            item = map_binary_left_fn(fn, attrs, a, y);
+            drop_obj(a);
 
             if (IS_ERROR(item))
                 return item;
 
-            res = item->type < 0 ? vector(item->type, l) : LIST(l);
+            res = vector(item->type, l);
 
             ins_obj(&res, 0, item);
 
             for (i = 1; i < l; i++) {
-                a = AS_LIST(x)[i];
-                item = map_binary_left(f, a, y);
+                a = at_idx(x, i);
+                item = map_binary_left_fn(fn, attrs, a, y);
+                drop_obj(a);
 
                 if (IS_ERROR(item)) {
                     res->len = i;
@@ -161,23 +178,51 @@ obj_p map_binary_left(obj_p f, obj_p x, obj_p y) {
             }
 
             return res;
+        default:
+            return fn(x, y);
+    }
+}
 
+obj_p map_binary_left(obj_p f, obj_p x, obj_p y) { return map_binary_left_fn((binary_f)f->i64, f->attrs, x, y); }
+
+obj_p map_binary_right_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
+    u64_t i, l;
+    obj_p res, item, a;
+
+    switch (y->type) {
+        case TYPE_C8:
+        case TYPE_U8:
+        case TYPE_B8:
+        case TYPE_I16:
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+        case TYPE_I64:
+        case TYPE_SYMBOL:
+        case TYPE_TIMESTAMP:
+        case TYPE_F64:
+        case TYPE_GUID:
+        case TYPE_LIST:
         case TYPE_MAPLIST:
-            l = ops_count(x);
-            a = at_idx(x, 0);
-            item = map_binary_left(f, a, y);
+            l = ops_count(y);
+
+            if (l == 0)
+                return null(y->type);
+
+            a = at_idx(y, 0);
+            item = map_binary_right_fn(fn, attrs, x, a);
             drop_obj(a);
 
-            if (item->type == TYPE_ERROR)
+            if (IS_ERROR(item))
                 return item;
 
-            res = item->type < 0 ? vector(item->type, l) : LIST(l);
+            res = vector(item->type, l);
 
             ins_obj(&res, 0, item);
 
             for (i = 1; i < l; i++) {
-                a = at_idx(x, i);
-                item = map_binary_left(f, a, y);
+                a = at_idx(y, i);
+                item = map_binary_right_fn(fn, attrs, x, a);
                 drop_obj(a);
 
                 if (IS_ERROR(item)) {
@@ -192,82 +237,14 @@ obj_p map_binary_left(obj_p f, obj_p x, obj_p y) {
             return res;
 
         default:
-            fn = (binary_f)f->i64;
             return fn(x, y);
     }
 }
 
-obj_p map_binary_right(obj_p f, obj_p x, obj_p y) {
+obj_p map_binary_right(obj_p f, obj_p x, obj_p y) { return map_binary_right_fn((binary_f)f->i64, f->attrs, x, y); }
+
+obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
     u64_t i, l;
-    binary_f fn;
-    obj_p res, item, b;
-
-    switch (y->type) {
-        case TYPE_LIST:
-            l = ops_count(y);
-            b = AS_LIST(y)[0];
-            item = map_binary_right(f, x, b);
-
-            if (IS_ERROR(item))
-                return item;
-
-            res = item->type < 0 ? vector(item->type, l) : LIST(l);
-
-            ins_obj(&res, 0, item);
-
-            for (i = 1; i < l; i++) {
-                b = AS_LIST(y)[i];
-                item = map_binary_right(f, x, b);
-
-                if (IS_ERROR(item)) {
-                    res->len = i;
-                    drop_obj(res);
-                    return item;
-                }
-
-                ins_obj(&res, i, item);
-            }
-
-            return res;
-
-        case TYPE_MAPLIST:
-            l = ops_count(y);
-            b = at_idx(y, 0);
-            item = map_binary_right(f, x, b);
-            drop_obj(b);
-
-            if (IS_ERROR(item))
-                return item;
-
-            res = item->type < 0 ? vector(item->type, l) : LIST(l);
-
-            ins_obj(&res, 0, item);
-
-            for (i = 1; i < l; i++) {
-                b = at_idx(y, i);
-                item = map_binary_right(f, x, b);
-                drop_obj(b);
-
-                if (item->type == TYPE_ERROR) {
-                    res->len = i;
-                    drop_obj(res);
-                    return item;
-                }
-
-                ins_obj(&res, i, item);
-            }
-
-            return res;
-
-        default:
-            fn = (binary_f)f->i64;
-            return fn(x, y);
-    }
-}
-
-obj_p map_binary(obj_p f, obj_p x, obj_p y) {
-    u64_t i, l;
-    binary_f fn;
     obj_p res, item, a, b;
     i8_t xt, yt;
 
@@ -283,14 +260,12 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
         if (l != ops_count(y))
             return error_str(ERR_LENGTH, "binary: vectors must be of the same length");
 
-        if (l == 0) {
-            fn = (binary_f)f->i64;
+        if (l == 0)
             return fn(x, y);
-        }
 
         a = xt == TYPE_LIST ? AS_LIST(x)[0] : at_idx(x, 0);
         b = yt == TYPE_LIST ? AS_LIST(y)[0] : at_idx(y, 0);
-        item = map_binary(f, a, b);
+        item = map_binary_fn(fn, attrs, a, b);
 
         if (xt != TYPE_LIST)
             drop_obj(a);
@@ -307,7 +282,7 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
         for (i = 1; i < l; i++) {
             a = xt == TYPE_LIST ? AS_LIST(x)[i] : at_idx(x, i);
             b = yt == TYPE_LIST ? AS_LIST(y)[i] : at_idx(y, i);
-            item = map_binary(f, a, b);
+            item = map_binary_fn(fn, attrs, a, b);
 
             if (xt != TYPE_LIST)
                 drop_obj(a);
@@ -327,12 +302,11 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
     } else if (xt == TYPE_LIST || xt == TYPE_MAPLIST) {
         l = ops_count(x);
         if (l == 0) {
-            fn = (binary_f)f->i64;
             return fn(x, y);
         }
 
         a = xt == TYPE_LIST ? AS_LIST(x)[0] : at_idx(x, 0);
-        item = map_binary(f, a, y);
+        item = map_binary_fn(fn, attrs, a, y);
         if (xt != TYPE_LIST)
             drop_obj(a);
 
@@ -345,7 +319,7 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
 
         for (i = 1; i < l; i++) {
             a = xt == TYPE_LIST ? AS_LIST(x)[i] : at_idx(x, i);
-            item = map_binary(f, a, y);
+            item = map_binary_fn(fn, attrs, a, y);
             if (xt != TYPE_LIST)
                 drop_obj(a);
 
@@ -361,13 +335,11 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
         return res;
     } else if (yt == TYPE_LIST || yt == TYPE_MAPLIST) {
         l = ops_count(y);
-        if (l == 0) {
-            fn = (binary_f)f->i64;
+        if (l == 0)
             return fn(x, y);
-        }
 
         b = yt == TYPE_LIST ? AS_LIST(y)[0] : at_idx(y, 0);
-        item = map_binary(f, x, b);
+        item = map_binary_fn(fn, attrs, x, b);
         if (yt != TYPE_LIST)
             drop_obj(b);
 
@@ -380,7 +352,7 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
 
         for (i = 1; i < l; i++) {
             b = yt == TYPE_LIST ? AS_LIST(y)[i] : at_idx(y, i);
-            item = map_binary(f, x, b);
+            item = map_binary_fn(fn, attrs, x, b);
             if (yt != TYPE_LIST)
                 drop_obj(b);
 
@@ -396,13 +368,13 @@ obj_p map_binary(obj_p f, obj_p x, obj_p y) {
         return res;
     }
 
-    fn = (binary_f)f->i64;
     return fn(x, y);
 }
 
-obj_p map_vary(obj_p f, obj_p *x, u64_t n) {
+obj_p map_binary(obj_p f, obj_p x, obj_p y) { return map_binary_fn((binary_f)f->i64, f->attrs, x, y); }
+
+obj_p map_vary_fn(vary_f fn, i64_t attrs, obj_p *x, u64_t n) {
     u64_t i, j, l;
-    vary_f fn;
     obj_p v, res;
 
     if (n == 0)
@@ -415,7 +387,6 @@ obj_p map_vary(obj_p f, obj_p *x, u64_t n) {
     for (j = 0; j < n; j++)
         stack_push(at_idx(x[j], 0));
 
-    fn = (vary_f)f->i64;
     v = fn(x + n, n);
 
     if (IS_ERROR(v))
@@ -429,7 +400,7 @@ obj_p map_vary(obj_p f, obj_p *x, u64_t n) {
         for (j = 0; j < n; j++)
             stack_push(at_idx(x[j], i));
 
-        v = (f->attrs & FN_ATOMIC) ? map_vary(f, x + n, n) : fn(x + n, n);
+        v = (attrs & FN_ATOMIC) ? map_vary_fn(fn, attrs, x + n, n) : fn(x + n, n);
 
         // cleanup stack
         for (j = 0; j < n; j++)
@@ -446,6 +417,8 @@ obj_p map_vary(obj_p f, obj_p *x, u64_t n) {
 
     return res;
 }
+
+obj_p map_vary(obj_p f, obj_p *x, u64_t n) { return map_vary_fn((vary_f)f->i64, f->attrs, x, n); }
 
 obj_p map_lambda_partial(obj_p f, obj_p *lst, u64_t n, u64_t arg) {
     u64_t i;

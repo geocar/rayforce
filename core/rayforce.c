@@ -46,6 +46,7 @@
 #include "date.h"
 #include "time.h"
 #include "timestamp.h"
+#include "cmp.h"
 
 RAYASSERT(sizeof(struct obj_t) == 16, rayforce_h)
 
@@ -1299,19 +1300,70 @@ i64_t find_sym(obj_p obj, lit_p str) {
 }
 
 i64_t find_obj_idx(obj_p obj, obj_p val) {
-    if (!IS_VECTOR(obj))
-        return NULL_I64;
+    i16_t vi16;
+    i32_t vi32;
+    i64_t vi64;
+    u64_t i;
+    obj_p eq;
 
     switch (MTYPE2(obj->type, val->type)) {
+        case MTYPE2(TYPE_B8, -TYPE_B8):
+        case MTYPE2(TYPE_U8, -TYPE_U8):
+        case MTYPE2(TYPE_C8, -TYPE_C8):
+            return find_raw(obj, &val->u8);
+        case MTYPE2(TYPE_I16, -TYPE_I16):
+            return find_raw(obj, &val->i16);
+        case MTYPE2(TYPE_I16, -TYPE_I32):
+            vi32 = val->i32;
+            vi16 = (i16_t)vi32;
+            return find_raw(obj, &vi16);
+        case MTYPE2(TYPE_I16, -TYPE_I64):
+            vi64 = val->i64;
+            vi16 = (i16_t)vi64;
+            return find_raw(obj, &vi16);
+        case MTYPE2(TYPE_I32, -TYPE_I16):
+            vi16 = val->i16;
+            vi32 = (i32_t)vi16;
+            return find_raw(obj, &vi32);
+        case MTYPE2(TYPE_I32, -TYPE_I32):
+        case MTYPE2(TYPE_DATE, -TYPE_DATE):
+        case MTYPE2(TYPE_TIME, -TYPE_TIME):
+            return find_raw(obj, &val->i32);
+        case MTYPE2(TYPE_I32, -TYPE_I64):
+            vi64 = val->i64;
+            vi32 = (i32_t)vi64;
+            return find_raw(obj, &vi32);
+        case MTYPE2(TYPE_I64, -TYPE_I16):
+            vi16 = val->i16;
+            vi64 = (i64_t)vi16;
+            return find_raw(obj, &vi64);
+        case MTYPE2(TYPE_I64, -TYPE_I32):
+            vi32 = val->i32;
+            vi64 = (i64_t)vi32;
+            return find_raw(obj, &vi64);
         case MTYPE2(TYPE_I64, -TYPE_I64):
         case MTYPE2(TYPE_SYMBOL, -TYPE_SYMBOL):
         case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
             return find_raw(obj, &val->i64);
         case MTYPE2(TYPE_F64, -TYPE_F64):
             return find_raw(obj, &val->f64);
-        case MTYPE2(TYPE_C8, -TYPE_C8):
-            return find_raw(obj, &val->c8);
+        case MTYPE2(TYPE_GUID, -TYPE_GUID):
+            return find_raw(obj, AS_GUID(val));
         default:
+            if (!IS_VECTOR(obj) && !IS_VECTOR(val))
+                return (cmp_obj(obj, val) == 0) ? 0 : NULL_I64;
+
+            if (obj->type == TYPE_LIST) {
+                for (i = 0; i < obj->len; i++) {
+                    eq = ray_eq(AS_LIST(obj)[i], val);
+                    if (eq->type == -TYPE_B8 && eq->b8) {
+                        drop_obj(eq);
+                        return i;
+                    }
+                    drop_obj(eq);
+                }
+            }
+
             return NULL_I64;
     }
 }
@@ -1747,6 +1799,8 @@ i64_t cmp_obj(obj_p a, obj_p b) {
                    : (ops_is_nan(a->f64) || ops_is_nan(b->f64)) ? 1
                    : (ABSF64(a->f64 - b->f64) < 1e-16)          ? 0
                                                                 : 1;
+        case -TYPE_GUID:
+            return memcmp(AS_GUID(a), AS_GUID(b), sizeof(guid_t));
         case TYPE_I16:
             if (a->len != b->len)
                 return a->len - b->len;
@@ -1836,29 +1890,46 @@ i64_t find_raw(obj_p obj, raw_p val) {
     if (!IS_VECTOR(obj))
         return NULL_I64;
 
+    l = obj->len;
+
     switch (obj->type) {
+        case TYPE_U8:
+        case TYPE_B8:
+        case TYPE_C8:
+            for (i = 0; i < l; i++)
+                if (AS_U8(obj)[i] == *(u8_t *)val)
+                    return i;
+            return NULL_I64;
+        case TYPE_I16:
+            for (i = 0; i < l; i++)
+                if (AS_I16(obj)[i] == *(i16_t *)val)
+                    return i;
+            return NULL_I64;
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+            for (i = 0; i < l; i++)
+                if (AS_I32(obj)[i] == *(i32_t *)val)
+                    return i;
+            return NULL_I64;
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
-            l = obj->len;
             for (i = 0; i < l; i++)
                 if (AS_I64(obj)[i] == *(i64_t *)val)
                     return i;
             return NULL_I64;
         case TYPE_F64:
-            l = obj->len;
             for (i = 0; i < l; i++)
                 if (AS_F64(obj)[i] == *(f64_t *)val)
                     return i;
             return NULL_I64;
-        case TYPE_C8:
-            l = obj->len;
+        case TYPE_GUID:
             for (i = 0; i < l; i++)
-                if (AS_C8(obj)[i] == *(c8_t *)val)
+                if (memcmp(AS_GUID(obj)[i], *(guid_t *)val, sizeof(guid_t)) == 0)
                     return i;
             return NULL_I64;
         case TYPE_LIST:
-            l = obj->len;
             for (i = 0; i < l; i++)
                 if (cmp_obj(AS_LIST(obj)[i], *(obj_p *)val) == 0)
                     return i;

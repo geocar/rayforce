@@ -27,10 +27,15 @@
 #include "rayforce.h"
 #include "ops.h"
 
+obj_p map_unary_fn(unary_f fn, i64_t attrs, obj_p x);
 obj_p map_unary(obj_p f, obj_p x);
+obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y);
 obj_p map_binary(obj_p f, obj_p x, obj_p y);
+obj_p map_binary_left_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y);
 obj_p map_binary_left(obj_p f, obj_p x, obj_p y);
+obj_p map_binary_right_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y);
 obj_p map_binary_right(obj_p f, obj_p x, obj_p y);
+obj_p map_vary_fn(vary_f fn, i64_t attrs, obj_p *x, u64_t n);
 obj_p map_vary(obj_p f, obj_p *x, u64_t n);
 obj_p map_lambda(obj_p f, obj_p *x, u64_t n);
 obj_p ray_map(obj_p *x, u64_t n);
