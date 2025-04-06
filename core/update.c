@@ -171,7 +171,7 @@ obj_p __alter(obj_p *obj, obj_p func, obj_p idx, obj_p val) {
         p = at_obj_ref(*obj, idx);
         if (p == NULL)
             return error(ERR_NOT_FOUND, "alter: invalid index");
-        if (IS_ERROR(*p))
+        if (IS_ERR(*p))
             return *p;
 
         return push_obj(p, clone_obj(val));
@@ -184,7 +184,7 @@ obj_p __alter(obj_p *obj, obj_p func, obj_p idx, obj_p val) {
     // retrieve the object via indices
     v = at_obj(*obj, idx);
 
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         return v;
 
     args[0] = func;
@@ -194,7 +194,7 @@ obj_p __alter(obj_p *obj, obj_p func, obj_p idx, obj_p val) {
     res = ray_apply(args, 3);
     drop_obj(v);
 
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         return res;
 
     return set_obj(obj, idx, res);
@@ -221,7 +221,7 @@ obj_p ray_alter(obj_p *x, u64_t n) {
     res = obj;
     res = (n == 4) ? __alter(&res, x[1], x[2], x[3]) : __alter(&res, x[1], NULL_OBJ, x[2]);
 
-    if (IS_ERROR(res)) {
+    if (IS_ERR(res)) {
         if (x[0]->type != -TYPE_SYMBOL)
             drop_obj(obj);
 
@@ -260,17 +260,17 @@ obj_p ray_modify(obj_p *x, u64_t n) {
     }
 
     res = dot_obj(obj, x[2]);
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         return res;
 
     idx = ray_last(x[2]);
-    if (IS_ERROR(idx))
+    if (IS_ERR(idx))
         return idx;
 
     res = __alter(&res, x[1], idx, x[3]);
     drop_obj(idx);
 
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         return res;
 
     if (x[0]->type != -TYPE_SYMBOL)
@@ -297,7 +297,7 @@ obj_p ray_insert(obj_p *x, u64_t n) {
 
     obj = __fetch(x[0], &val);
 
-    if (IS_ERROR(obj))
+    if (IS_ERR(obj))
         return obj;
 
     if (obj->type != TYPE_TABLE) {
@@ -427,7 +427,7 @@ obj_p ray_upsert(obj_p *x, u64_t n) {
         THROW(ERR_LENGTH, "upsert: expected positive number of keys > 0, got %lld", keys);
 
     obj = __fetch(x[0], &val);
-    if (IS_ERROR(obj))
+    if (IS_ERR(obj))
         return obj;
 
     if (obj->type != TYPE_TABLE) {
@@ -466,7 +466,7 @@ upsert:
             drop_obj(k1);
             drop_obj(k2);
 
-            if (IS_ERROR(idx)) {
+            if (IS_ERR(idx)) {
                 drop_obj(obj);
                 return idx;
             }
@@ -583,7 +583,7 @@ obj_p __update_table(obj_p tab, obj_p keys, obj_p vals, obj_p filters, obj_p gro
     // Groupings
     else if (groupby != NULL_OBJ) {
         obj = __fetch(tab, &val);
-        if (IS_ERROR(obj)) {
+        if (IS_ERR(obj)) {
             drop_obj(tab);
             drop_obj(keys);
             drop_obj(vals);
@@ -680,7 +680,7 @@ obj_p __update_table(obj_p tab, obj_p keys, obj_p vals, obj_p filters, obj_p gro
     // Filters
     else {
         obj = __fetch(tab, &val);
-        if (IS_ERROR(obj)) {
+        if (IS_ERR(obj)) {
             drop_obj(tab);
             drop_obj(keys);
             drop_obj(vals);
@@ -773,7 +773,7 @@ obj_p ray_update(obj_p obj) {
         THROW(ERR_LENGTH, "'update' expects 'from' param");
 
     tab = eval(tabsym);
-    if (IS_ERROR(tab)) {
+    if (IS_ERR(tab)) {
         drop_obj(tabsym);
         return tab;
     }
@@ -812,7 +812,7 @@ obj_p ray_update(obj_p obj) {
     if (prm != NULL_OBJ) {
         val = eval(prm);
         drop_obj(prm);
-        if (IS_ERROR(val)) {
+        if (IS_ERR(val)) {
             drop_obj(tabsym);
             drop_obj(tab);
             return val;
@@ -820,7 +820,7 @@ obj_p ray_update(obj_p obj) {
 
         filters = ray_where(val);
         drop_obj(val);
-        if (IS_ERROR(filters)) {
+        if (IS_ERR(filters)) {
             drop_obj(tabsym);
             drop_obj(tab);
             return filters;
@@ -835,7 +835,7 @@ obj_p ray_update(obj_p obj) {
 
         unmount_env(tablen);
 
-        if (IS_ERROR(groupby)) {
+        if (IS_ERR(groupby)) {
             drop_obj(tabsym);
             drop_obj(tab);
             return groupby;
@@ -845,7 +845,7 @@ obj_p ray_update(obj_p obj) {
         drop_obj(groupby);
         prm = group_map(tab, bins);
 
-        if (IS_ERROR(prm)) {
+        if (IS_ERR(prm)) {
             drop_obj(tabsym);
             drop_obj(tab);
             drop_obj(filters);
@@ -873,7 +873,7 @@ obj_p ray_update(obj_p obj) {
         val = eval(prm);
         drop_obj(prm);
 
-        if (IS_ERROR(val)) {
+        if (IS_ERR(val)) {
             vals->len = i;
             drop_obj(tabsym);
             drop_obj(vals);
@@ -899,7 +899,7 @@ obj_p ray_update(obj_p obj) {
             val = prm;
         }
 
-        if (IS_ERROR(val)) {
+        if (IS_ERR(val)) {
             vals->len = i;
             drop_obj(tabsym);
             drop_obj(vals);

@@ -100,7 +100,7 @@ typedef u8_t guid_t[16];
 
 // Special Types
 #define TYPE_NULL 126
-#define TYPE_ERROR 127
+#define TYPE_ERR 127
 
 //=============================================================================
 // Result Constants
@@ -251,7 +251,7 @@ extern nil_t drop_raw(raw_p ptr);  // Free a raw pointer
 // Checkers
 extern b8_t is_null(obj_p obj);
 extern str_p type_name(i8_t tp);
-#define IS_ERROR(obj) ((obj)->type == TYPE_ERROR)
+#define IS_ERR(obj) ((obj)->type == TYPE_ERR)
 #define IS_ATOM(obj) ((obj)->type < 0)
 #define IS_VECTOR(obj) ((obj)->type >= 0 && (obj)->type <= TYPE_ENUM)
 

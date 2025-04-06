@@ -37,7 +37,7 @@
 obj_p ray_type(obj_p x) {
     i8_t type;
     if (!x)
-        type = -TYPE_ERROR;
+        type = -TYPE_ERR;
     else
         type = x->type;
 

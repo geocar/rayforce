@@ -107,7 +107,7 @@ inline __attribute__((always_inline)) ctx_p ctx_top(obj_p info) {
 }
 
 inline __attribute__((always_inline)) obj_p unwrap(obj_p obj, i64_t id) {
-    if (IS_ERROR(obj))
+    if (IS_ERR(obj))
         error_add_loc(obj, id, ctx_get());
 
     return obj;

@@ -124,13 +124,13 @@ obj_p ray_xasc(obj_p x, obj_p y) {
         case MTYPE2(TYPE_TABLE, -TYPE_SYMBOL):
             col = at_obj(x, y);
 
-            if (IS_ERROR(col))
+            if (IS_ERR(col))
                 return col;
 
             idx = ray_iasc(col);
             drop_obj(col);
 
-            if (IS_ERROR(idx))
+            if (IS_ERR(idx))
                 return idx;
 
             res = ray_take(x, idx);
@@ -150,13 +150,13 @@ obj_p ray_xdesc(obj_p x, obj_p y) {
         case MTYPE2(TYPE_TABLE, -TYPE_SYMBOL):
             col = at_obj(x, y);
 
-            if (IS_ERROR(col))
+            if (IS_ERR(col))
                 return col;
 
             idx = ray_idesc(col);
             drop_obj(col);
 
-            if (IS_ERROR(idx))
+            if (IS_ERR(idx))
                 return idx;
 
             res = ray_take(x, idx);

@@ -425,7 +425,7 @@ obj_p pool_run(pool_p pool) {
 
     // Check res for errors
     for (i = 0; i < tasks_count; i++) {
-        if (IS_ERROR(AS_LIST(res)[i])) {
+        if (IS_ERR(AS_LIST(res)[i])) {
             e = clone_obj(AS_LIST(res)[i]);
             drop_obj(res);
             return e;

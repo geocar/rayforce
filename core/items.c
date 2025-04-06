@@ -192,7 +192,7 @@ obj_p ray_at(obj_p x, obj_p y) {
                 THROW(ERR_INDEX, "at: enum can not be resolved: index out of range");
             }
 
-            if (!s || IS_ERROR(s) || s->type != TYPE_SYMBOL) {
+            if (!s || IS_ERR(s) || s->type != TYPE_SYMBOL) {
                 drop_obj(s);
                 return i64(AS_I64(v)[y->i64]);
             }
@@ -215,7 +215,7 @@ obj_p ray_at(obj_p x, obj_p y) {
             s = ray_get(k);
             drop_obj(k);
 
-            if (IS_ERROR(s))
+            if (IS_ERR(s))
                 return s;
 
             xl = s->len;
@@ -549,7 +549,7 @@ obj_p ray_take(obj_p x, obj_p y) {
                         buf = AS_U8(k) + AS_I64(s)[i % n];
                         v = load_obj(&buf, &size);
 
-                        if (IS_ERROR(v)) {
+                        if (IS_ERR(v)) {
                             res->len = i;
                             drop_obj(res);
                             return v;
@@ -569,7 +569,7 @@ obj_p ray_take(obj_p x, obj_p y) {
                         buf = AS_U8(k) + AS_I64(s)[n - 1 - (i % n)];
                         v = load_obj(&buf, &size);
 
-                        if (IS_ERROR(v)) {
+                        if (IS_ERR(v)) {
                             res->len = i;
                             drop_obj(res);
                             return v;
@@ -642,7 +642,7 @@ obj_p ray_take(obj_p x, obj_p y) {
             for (i = 0; i < l; i++) {
                 v = ray_take(x, AS_LIST(AS_LIST(y)[1])[i]);
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i;
                     drop_obj(v);
                     drop_obj(res);
@@ -829,13 +829,13 @@ obj_p ray_except(obj_p x, obj_p y) {
         case MTYPE2(TYPE_I64, TYPE_I64):
         case MTYPE2(TYPE_SYMBOL, TYPE_SYMBOL):
             mask = ray_in(x, y);
-            if (IS_ERROR(mask))
+            if (IS_ERR(mask))
                 return mask;
 
             nmask = ray_not(mask);
             drop_obj(mask);
 
-            if (IS_ERROR(nmask))
+            if (IS_ERR(nmask))
                 return nmask;
 
             res = ray_filter(x, nmask);
@@ -843,13 +843,13 @@ obj_p ray_except(obj_p x, obj_p y) {
             return res;
         case MTYPE2(TYPE_TABLE, -TYPE_SYMBOL):
             mask = ray_ne(AS_LIST(x)[0], y);
-            if (IS_ERROR(mask))
+            if (IS_ERR(mask))
                 return mask;
 
             ids = ray_where(mask);
             drop_obj(mask);
 
-            if (IS_ERROR(ids))
+            if (IS_ERR(ids))
                 return ids;
 
             k = ray_at(AS_LIST(x)[0], ids);
@@ -859,19 +859,19 @@ obj_p ray_except(obj_p x, obj_p y) {
             return table(k, v);
         case MTYPE2(TYPE_TABLE, TYPE_SYMBOL):
             mask = ray_in(AS_LIST(x)[0], y);
-            if (IS_ERROR(mask))
+            if (IS_ERR(mask))
                 return mask;
 
             nmask = ray_not(mask);
             drop_obj(mask);
 
-            if (IS_ERROR(nmask))
+            if (IS_ERR(nmask))
                 return nmask;
 
             ids = ray_where(nmask);
             drop_obj(nmask);
 
-            if (IS_ERROR(ids))
+            if (IS_ERR(ids))
                 return ids;
 
             k = ray_at(AS_LIST(x)[0], ids);
@@ -891,7 +891,7 @@ obj_p ray_except(obj_p x, obj_p y) {
                     for (i = 0, j = 0; i < l; i++) {
                         mask = ray_eq(AS_LIST(x)[i], y);
 
-                        if (IS_ERROR(mask)) {
+                        if (IS_ERR(mask)) {
                             res->len = i;
                             drop_obj(res);
                             return mask;
@@ -1023,7 +1023,7 @@ obj_p ray_value(obj_p x) {
                     buf = AS_U8(k) + AS_I64(e)[i];
                     v = load_obj(&buf, &size);
 
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -1044,7 +1044,7 @@ obj_p ray_value(obj_p x) {
             v = vector(TYPE_LIST, l);
             for (i = 0; i < l; i++) {
                 res = ray_value(AS_LIST(AS_LIST(x)[1])[i]);
-                if (IS_ERROR(res)) {
+                if (IS_ERR(res)) {
                     drop_obj(v);
                     return res;
                 }

@@ -75,7 +75,7 @@ obj_p binary_set(obj_p x, obj_p y) {
                     AS_LAMBDA(y)->name = clone_obj(x);
             }
 
-            if (IS_ERROR(res))
+            if (IS_ERR(res))
                 return res;
 
             return clone_obj(y);
@@ -94,7 +94,7 @@ obj_p binary_set(obj_p x, obj_p y) {
 
                     buf = ser_obj(y);
 
-                    if (IS_ERROR(buf)) {
+                    if (IS_ERR(buf)) {
                         fs_fclose(fd);
                         drop_obj(path);
                         return buf;
@@ -215,7 +215,7 @@ obj_p binary_set(obj_p x, obj_p y) {
                     drop_obj(col);
                     drop_obj(buf);
 
-                    if (IS_ERROR(res))
+                    if (IS_ERR(res))
                         return res;
 
                     drop_obj(res);
@@ -332,7 +332,7 @@ obj_p ray_set(obj_p x, obj_p y) {
     obj_p e, res;
 
     e = eval(y);
-    if (IS_ERROR(e))
+    if (IS_ERR(e))
         return e;
 
     res = binary_set(x, e);
@@ -348,7 +348,7 @@ obj_p ray_let(obj_p x, obj_p y) {
         case -TYPE_SYMBOL:
             e = eval(y);
 
-            if (IS_ERROR(e))
+            if (IS_ERR(e))
                 return e;
 
             return amend(x, e);

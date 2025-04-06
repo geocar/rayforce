@@ -546,13 +546,13 @@ obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
 
     // Create empty list
     result = LIST(0);
-    if (IS_ERROR(result))
+    if (IS_ERR(result))
         return result;
 
     // Handle case where input string is shorter than delimiter
     if (str_len < delim_len) {
         part = string_from_str(str, str_len);
-        if (IS_ERROR(part)) {
+        if (IS_ERR(part)) {
             drop_obj(result);
             return part;
         }
@@ -565,7 +565,7 @@ obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
         start = str;
         while ((end = (str_p)memchr(start, delim[0], str + str_len - start)) != NULL) {
             part = string_from_str(start, end - start);
-            if (IS_ERROR(part)) {
+            if (IS_ERR(part)) {
                 drop_obj(result);
                 return part;
             }
@@ -575,7 +575,7 @@ obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
 
         // Add the last part
         last_part = string_from_str(start, str + str_len - start);
-        if (IS_ERROR(last_part)) {
+        if (IS_ERR(last_part)) {
             drop_obj(result);
             return last_part;
         }
@@ -589,7 +589,7 @@ obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
         if (memcmp(str + i, delim, delim_len) == 0) {
             end = str + i;
             part = string_from_str(start, end - start);
-            if (IS_ERROR(part)) {
+            if (IS_ERR(part)) {
                 drop_obj(result);
                 return part;
             }
@@ -601,7 +601,7 @@ obj_p str_split(lit_p str, u64_t str_len, lit_p delim, u64_t delim_len) {
 
     // Add the last part
     last_part = string_from_str(start, str + str_len - start);
-    if (IS_ERROR(last_part)) {
+    if (IS_ERR(last_part)) {
         drop_obj(result);
         return last_part;
     }

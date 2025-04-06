@@ -98,7 +98,7 @@ obj_p ray_do(obj_p *x, u64_t n) {
     for (i = 0; i < n; i++) {
         drop_obj(res);
         res = eval(x[i]);
-        if (IS_ERROR(res))
+        if (IS_ERR(res))
             return res;
     }
 
@@ -198,7 +198,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
 
             // Try to get symfile
             res = io_get_symfile(x[0]);
-            if (IS_ERROR(res))
+            if (IS_ERR(res))
                 return res;
 
             // Read directories structure
@@ -206,7 +206,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
             dir = fs_read_dir(AS_C8(path));
             drop_obj(path);
 
-            if (IS_ERROR(dir))
+            if (IS_ERR(dir))
                 return dir;
 
             // Get grouping column (parted by)
@@ -215,13 +215,13 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
             drop_obj(sym);
             drop_obj(dir);
 
-            if (IS_ERROR(dirs))
+            if (IS_ERR(dirs))
                 return dirs;
 
             // Try to convert dirs to a parted column (one of numeric datatypes)
             res = cast_obj(TYPE_DATE, dirs);
 
-            if (IS_ERROR(res)) {
+            if (IS_ERR(res)) {
                 drop_obj(dirs);
                 return res;
             }
@@ -231,7 +231,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
             ord = ray_iasc(v);
             drop_obj(v);
 
-            if (IS_ERROR(ord)) {
+            if (IS_ERR(ord)) {
                 drop_obj(res);
                 drop_obj(dirs);
                 return ord;
@@ -259,7 +259,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
 
             t1 = io_get_table_splayed(path, NULL_OBJ);
 
-            if (IS_ERROR(t1)) {
+            if (IS_ERR(t1)) {
                 drop_obj(gcol);
                 drop_obj(res);
                 drop_obj(path);
@@ -294,7 +294,7 @@ obj_p ray_get_parted(obj_p *x, u64_t n) {
 
                 t2 = io_get_table_splayed(path, NULL_OBJ);
 
-                if (IS_ERROR(t2)) {
+                if (IS_ERR(t2)) {
                     drop_obj(gcol);
                     drop_obj(res);
                     drop_obj(t1);

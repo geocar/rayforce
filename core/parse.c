@@ -783,7 +783,7 @@ obj_p parse_vector(parser_t *parser) {
     parser->replace_symbols = B8_TRUE;
 
     while (!is_at(tok, ']')) {
-        if (IS_ERROR(tok)) {
+        if (IS_ERR(tok)) {
             drop_obj(vec);
             return tok;
         }
@@ -936,7 +936,7 @@ obj_p parse_list(parser_t *parser) {
         drop_obj(tok);
 
         args = parser_advance(parser);
-        if (IS_ERROR(args))
+        if (IS_ERR(args))
             return args;
 
         if (args->type != TYPE_SYMBOL) {
@@ -951,7 +951,7 @@ obj_p parse_list(parser_t *parser) {
         }
 
         body = parse_do(parser);
-        if (IS_ERROR(body)) {
+        if (IS_ERR(body)) {
             drop_obj(args);
             return body;
         }
@@ -980,7 +980,7 @@ obj_p parse_list(parser_t *parser) {
     }
 
     while (!is_at(tok, ')')) {
-        if (IS_ERROR(tok)) {
+        if (IS_ERR(tok)) {
             drop_obj(lst);
             return tok;
         }
@@ -1028,7 +1028,7 @@ obj_p parse_dict(parser_t *parser) {
     parser->replace_symbols = B8_TRUE;
 
     while (!is_at(tok, '}')) {
-        if (IS_ERROR(tok)) {
+        if (IS_ERR(tok)) {
             drop_obj(keys);
             drop_obj(vals);
             return tok;
@@ -1052,7 +1052,7 @@ obj_p parse_dict(parser_t *parser) {
         span_extend(parser, &span);
         tok = parser_advance(parser);
 
-        if (IS_ERROR(tok)) {
+        if (IS_ERR(tok)) {
             drop_obj(keys);
             drop_obj(vals);
 
@@ -1072,7 +1072,7 @@ obj_p parse_dict(parser_t *parser) {
         drop_obj(tok);
         tok = parser_advance(parser);
 
-        if (IS_ERROR(tok)) {
+        if (IS_ERR(tok)) {
             drop_obj(keys);
             drop_obj(vals);
 
@@ -1209,7 +1209,7 @@ obj_p parse_do(parser_t *parser) {
     while (!at_eof(*parser->current)) {
         tok = parser_advance(parser);
 
-        if (IS_ERROR(tok)) {
+        if (IS_ERR(tok)) {
             if (lst == NULL_OBJ) {
                 // Only free car if it's not part of a list
                 drop_obj(car);
@@ -1260,7 +1260,7 @@ obj_p parse(lit_p input, obj_p nfo) {
 
     res = parse_do(&parser);
 
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         return res;
 
     if (!at_eof(*parser.current)) {

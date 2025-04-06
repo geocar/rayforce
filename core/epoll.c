@@ -211,7 +211,7 @@ nil_t poll_call_usr_on_open(poll_p poll, i64_t id) {
         v = call(*clbfn, 1);
         drop_obj(stack_pop());
         poll_set_usr_fd(0);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             f = obj_fmt(v, B8_FALSE);
             fprintf(stderr, "Error in .z.po callback: \n%.*s\n", (i32_t)f->len, AS_C8(f));
             drop_obj(f);
@@ -238,7 +238,7 @@ nil_t poll_call_usr_on_close(poll_p poll, i64_t id) {
         v = call(*clbfn, 1);
         drop_obj(stack_pop());
         poll_set_usr_fd(0);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             f = obj_fmt(v, B8_FALSE);
             fprintf(stderr, "Error in .z.pc callback: \n%.*s\n", (i32_t)f->len, AS_C8(f));
             drop_obj(f);
@@ -425,7 +425,7 @@ nil_t process_request(poll_p poll, selector_p selector) {
 
     poll_set_usr_fd(selector->id);
 
-    if (IS_ERROR(res) || is_null(res))
+    if (IS_ERR(res) || is_null(res))
         v = res;
     else if (res->type == TYPE_C8) {
         v = ray_eval_str(res, poll->ipcfile);
@@ -479,13 +479,13 @@ i64_t poll_run(poll_p poll) {
 
                 str = term_read(poll->term);
                 if (str != NULL) {
-                    if (IS_ERROR(str))
+                    if (IS_ERR(str))
                         io_write(STDOUT_FILENO, MSG_TYPE_RESP, str);
                     else if (str != NULL_OBJ) {
                         res = ray_eval_str(str, poll->replfile);
                         drop_obj(str);
                         io_write(STDOUT_FILENO, MSG_TYPE_RESP, res);
-                        error = IS_ERROR(res);
+                        error = IS_ERR(res);
                         drop_obj(res);
                         if (!error)
                             timeit_print();

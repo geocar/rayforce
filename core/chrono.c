@@ -137,7 +137,7 @@ obj_p ray_timeit(obj_p x) {
     ray_clock_get_time(&start);
 
     x = eval(x);
-    if (IS_ERROR(x))
+    if (IS_ERR(x))
         return x;
     drop_obj(x);
 
@@ -284,7 +284,7 @@ i64_t timer_next_timeout(timers_p timers) {
         res = call(timer->clb, 1);
         drop_obj(stack_pop());
 
-        if (IS_ERROR(res))
+        if (IS_ERR(res))
             io_write(1, MSG_TYPE_RESP, res);
 
         drop_obj(res);

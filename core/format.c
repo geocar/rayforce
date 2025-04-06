@@ -695,7 +695,7 @@ i64_t raw_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj, i64_t i) {
             idx = i64(i);
             res = ray_at(obj, idx);
             drop_obj(idx);
-            if (IS_ERROR(res)) {
+            if (IS_ERR(res)) {
                 drop_obj(res);
                 return error_fmt_into(dst, limit, res);
             }
@@ -808,7 +808,7 @@ i64_t enum_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj) {
 
     s = ray_key(obj);
 
-    if (IS_ERROR(s))
+    if (IS_ERR(s))
         return error_fmt_into(dst, limit, s);
 
     if (ENUM_VAL(obj)->len >= TABLE_MAX_HEIGHT) {
@@ -819,7 +819,7 @@ i64_t enum_fmt_into(obj_p *dst, i64_t indent, i64_t limit, obj_p obj) {
     } else
         e = ray_value(obj);
 
-    if (IS_ERROR(e)) {
+    if (IS_ERR(e)) {
         drop_obj(s);
         return error_fmt_into(dst, limit, e);
     }
@@ -1187,7 +1187,7 @@ i64_t obj_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj) 
             return lambda_fmt_into(dst, limit, obj);
         case TYPE_NULL:
             return str_fmt_into(dst, limit, "Null");
-        case TYPE_ERROR:
+        case TYPE_ERR:
             return error_fmt_into(dst, limit, obj);
         default:
             return str_fmt_into(dst, limit, "@<%s>", type_name(obj->type));

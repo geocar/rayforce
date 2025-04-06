@@ -25,7 +25,7 @@
     {                                                                                                                  \
         obj_p le = eval_str(lhs);                                                                                      \
         obj_p lns = obj_fmt(le, B8_TRUE);                                                                              \
-        if (IS_ERROR(le)) {                                                                                            \
+        if (IS_ERR(le)) {                                                                                              \
             obj_p fmt = str_fmt(-1, "Input error: %s\n -- at: %s:%d", AS_C8(lns), __FILE__, __LINE__);                 \
             TEST_ASSERT(0, AS_C8(lns));                                                                                \
             drop_obj(lns);                                                                                             \
@@ -47,7 +47,7 @@
     {                                                                                                           \
         obj_p le = eval_str(lhs);                                                                               \
         obj_p lns = obj_fmt(le, B8_TRUE);                                                                       \
-        if (!IS_ERROR(le)) {                                                                                    \
+        if (!IS_ERR(le)) {                                                                                      \
             obj_p fmt = str_fmt(-1, "Expected error: %s\n -- at: %s:%d", AS_C8(lns), __FILE__, __LINE__);       \
             TEST_ASSERT(0, AS_C8(lns));                                                                         \
             drop_obj(lns);                                                                                      \

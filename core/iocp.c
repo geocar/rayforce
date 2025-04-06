@@ -467,7 +467,7 @@ nil_t process_request(poll_p poll, selector_p selector) {
 
     res = read_obj(selector);
 
-    if (IS_ERROR(res) || is_null(res))
+    if (IS_ERR(res) || is_null(res))
         v = res;
     if (res->type == TYPE_C8) {
         v = ray_eval_str(poll->ipcfile, res);
@@ -519,13 +519,13 @@ i64_t poll_run(poll_p poll) {
 
                         str = term_read(poll->term);
                         if (str != NULL) {
-                            if (IS_ERROR(str))
+                            if (IS_ERR(str))
                                 io_write(STDOUT_FILENO, MSG_TYPE_RESP, str);
                             else if (str != NULL_OBJ) {
                                 res = ray_eval_str(str, poll->replfile);
                                 drop_obj(str);
                                 io_write(STDOUT_FILENO, MSG_TYPE_RESP, res);
-                                error = IS_ERROR(res);
+                                error = IS_ERR(res);
                                 drop_obj(res);
                                 if (!error)
                                     timeit_print();

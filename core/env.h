@@ -29,7 +29,7 @@
 
 // offset in array of typenames for each type
 #define TYPE_OFFSET TYPE_C8
-#define MAX_TYPE (TYPE_ERROR + TYPE_OFFSET + 2)
+#define MAX_TYPE (TYPE_ERR + TYPE_OFFSET + 2)
 
 // hot symbols
 extern i64_t SYMBOL_FN;

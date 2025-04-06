@@ -33,7 +33,7 @@ obj_p error_obj(i8_t code, obj_p msg) {
 
     obj = (obj_p)heap_alloc(sizeof(struct obj_t) + sizeof(struct ray_error_t));
     obj->mmod = MMOD_INTERNAL;
-    obj->type = TYPE_ERROR;
+    obj->type = TYPE_ERR;
     obj->rc = 1;
 
     e = (ray_error_p)obj->arr;

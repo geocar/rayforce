@@ -149,7 +149,7 @@ obj_p ray_read(obj_p x) {
             while (sz > 0) {
                 val = load_obj(&cur, &sz);
 
-                if (IS_ERROR(val)) {
+                if (IS_ERR(val)) {
                     drop_obj(val);
                     break;
                 }
@@ -157,7 +157,7 @@ obj_p ray_read(obj_p x) {
                 res = eval_obj(val);
                 drop_obj(val);
 
-                if (IS_ERROR(res)) {
+                if (IS_ERR(res)) {
                     mmap_free(map, size);
                     return res;
                 }
@@ -495,7 +495,7 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, u64_t
 
     l = res->len;
     for (i = 0; i < l; i++) {
-        if (IS_ERROR(AS_LIST(res)[i])) {
+        if (IS_ERR(AS_LIST(res)[i])) {
             err = clone_obj(AS_LIST(res)[i]);
             drop_obj(res);
             return err;
@@ -537,7 +537,7 @@ obj_p ray_read_csv(obj_p *x, i64_t n) {
             types = U8(l);
             for (i = 0; i < l; i++) {
                 type = env_get_type_by_type_name(&runtime_get()->env, AS_SYMBOL(x[0])[i]);
-                if (type == TYPE_ERROR) {
+                if (type == TYPE_ERR) {
                     drop_obj(types);
                     THROW(ERR_TYPE, "csv: invalid type: '%s", str_from_symbol(AS_SYMBOL(x[0])[i]));
                 }
@@ -708,7 +708,7 @@ obj_p ray_load(obj_p x) {
     // table expected
     if (x->len > 1 && AS_C8(x)[x->len - 1] == '/') {
         tab = ray_get(x);
-        if (IS_ERROR(tab))
+        if (IS_ERR(tab))
             return tab;
 
         // bind table to a symbol from the path, so determine the last part of the path
@@ -725,7 +725,7 @@ obj_p ray_load(obj_p x) {
     }
 
     file = ray_read(x);
-    if (IS_ERROR(file))
+    if (IS_ERR(file))
         return file;
 
     res = ray_eval_str(file, x);
@@ -785,7 +785,7 @@ obj_p io_get_symfile(obj_p path) {
         drop_obj(col);
     }
 
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         return v;
 
     s = symbol("sym", 3);
@@ -815,7 +815,7 @@ obj_p io_set_table(obj_p path, obj_p table) {
     }
 
     buf = ser_obj(table);
-    if (IS_ERROR(buf)) {
+    if (IS_ERR(buf)) {
         drop_obj(s);
         fs_fclose(fd);
         return buf;
@@ -849,7 +849,7 @@ obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
     drop_obj(s);
     drop_obj(col);
 
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         return res;
 
     drop_obj(res);
@@ -897,7 +897,7 @@ obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
                 THROW(ERR_TYPE, "set: symfile must be a string");
         }
 
-        if (IS_ERROR(res))
+        if (IS_ERR(res))
             return res;
 
         drop_obj(res);
@@ -907,7 +907,7 @@ obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
 
         drop_obj(s);
 
-        if (IS_ERROR(res))
+        if (IS_ERR(res))
             return res;
 
         drop_obj(res);
@@ -928,7 +928,7 @@ obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
             drop_obj(s);
             drop_obj(v);
 
-            if (IS_ERROR(e))
+            if (IS_ERR(e))
                 return e;
 
             v = e;
@@ -944,7 +944,7 @@ obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
         drop_obj(s);
         drop_obj(col);
 
-        if (IS_ERROR(res))
+        if (IS_ERR(res))
             return res;
 
         drop_obj(res);
@@ -965,7 +965,7 @@ obj_p io_get_table_splayed(obj_p path, obj_p symfile) {
     drop_obj(s);
     drop_obj(col);
 
-    if (IS_ERROR(keys))
+    if (IS_ERR(keys))
         return keys;
 
     if (keys->type != TYPE_SYMBOL) {
@@ -986,7 +986,7 @@ obj_p io_get_table_splayed(obj_p path, obj_p symfile) {
         drop_obj(s);
         drop_obj(col);
 
-        if (IS_ERROR(val)) {
+        if (IS_ERR(val)) {
             vals->len = i;
             drop_obj(vals);
             drop_obj(keys);
@@ -1004,7 +1004,7 @@ obj_p io_get_table_splayed(obj_p path, obj_p symfile) {
     if (syms_present && resolve(SYMBOL_SYM) == NULL) {
         v = (symfile->type != TYPE_NULL) ? io_get_symfile(symfile) : io_get_symfile(path);
 
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             drop_obj(keys);
             drop_obj(vals);
             return v;

@@ -167,7 +167,7 @@ i32_t runtime_create(i32_t argc, str_p argv[]) {
         if (!is_null(arg)) {
             res = ray_load(arg);
             drop_obj(arg);
-            if (IS_ERROR(res)) {
+            if (IS_ERR(res)) {
                 fmt = obj_fmt(res, B8_TRUE);
                 printf("%.*s\n", (i32_t)fmt->len, AS_C8(fmt));
                 drop_obj(fmt);
@@ -225,7 +225,7 @@ nil_t runtime_fdmap_push(runtime_p runtime, obj_p assoc, obj_p fdmap) {
     r = set_obj(&runtime->fdmaps, id, fdmap);
     drop_obj(id);
 
-    if (IS_ERROR(r)) {
+    if (IS_ERR(r)) {
         DEBUG_OBJ(r);
         return;
     }

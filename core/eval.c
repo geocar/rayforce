@@ -160,7 +160,7 @@ __attribute__((hot)) obj_p eval(obj_p obj) {
                     else {
                         x = eval(args[0]);
 
-                        if (IS_ERROR(x))
+                        if (IS_ERR(x))
                             return x;
 
                         if (!(car->attrs & FN_AGGR) && x->type == TYPE_MAPGROUP) {
@@ -186,7 +186,7 @@ __attribute__((hot)) obj_p eval(obj_p obj) {
                         res = ((binary_f)car->i64)(args[0], args[1]);
                     else {
                         x = eval(args[0]);
-                        if (IS_ERROR(x))
+                        if (IS_ERR(x))
                             return x;
 
                         if (!(car->attrs & FN_AGGR) && x->type == TYPE_MAPGROUP) {
@@ -200,7 +200,7 @@ __attribute__((hot)) obj_p eval(obj_p obj) {
                         }
 
                         y = eval(args[1]);
-                        if (IS_ERROR(y)) {
+                        if (IS_ERR(y)) {
                             drop_obj(x);
                             return y;
                         }
@@ -231,7 +231,7 @@ __attribute__((hot)) obj_p eval(obj_p obj) {
 
                         for (i = 0; i < len; i++) {
                             x = eval(args[i]);
-                            if (IS_ERROR(x))
+                            if (IS_ERR(x))
                                 return x;
 
                             if (!(car->attrs & FN_AGGR) && x->type == TYPE_MAPGROUP) {
@@ -267,7 +267,7 @@ __attribute__((hot)) obj_p eval(obj_p obj) {
 
                     for (i = 0; i < len; i++) {
                         x = eval(args[i]);
-                        if (IS_ERROR(x))
+                        if (IS_ERR(x))
                             return x;
 
                         // if (x->type == TYPE_MAPGROUP)
@@ -494,7 +494,7 @@ obj_p ray_eval_str(obj_p str, obj_p file) {
     parsed = parse(AS_C8(str), info);
     timeit_tick("parse");
 
-    if (IS_ERROR(parsed)) {
+    if (IS_ERR(parsed)) {
         drop_obj(info);
         return parsed;
     }
@@ -552,7 +552,7 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
 
     ctx_pop();
 
-    if (IS_ERROR(res) || sig) {
+    if (IS_ERR(res) || sig) {
         switch (fn->type) {
             case TYPE_LAMBDA:
             call:
@@ -560,7 +560,7 @@ obj_p try_obj(obj_p obj, obj_p ctch) {
                     drop_obj(res);
                     THROW(ERR_LENGTH, "catch: expected 1 argument, got %llu", AS_LAMBDA(fn)->args->len);
                 }
-                if (IS_ERROR(res)) {
+                if (IS_ERR(res)) {
                     stack_push(clone_obj(AS_ERROR(res)->msg));
                     drop_obj(res);
                 } else

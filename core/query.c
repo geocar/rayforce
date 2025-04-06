@@ -55,14 +55,14 @@ obj_p remap_group(obj_p *gvals, obj_p cols, obj_p gkeys, obj_p gcols, query_ctx_
             index = index_group(cols, ctx->filter);
             timeit_tick("build index");
 
-            if (IS_ERROR(index))
+            if (IS_ERR(index))
                 return index;
 
             ctx->group_index = clone_obj(index);
 
             res = group_map(ctx->table, index);
             v = (gcols == NULL_OBJ) ? aggr_first(cols, index) : aggr_first(gcols, index);
-            if (IS_ERROR(v)) {
+            if (IS_ERR(v)) {
                 drop_obj(index);
                 drop_obj(res);
                 return v;
@@ -78,7 +78,7 @@ obj_p remap_group(obj_p *gvals, obj_p cols, obj_p gkeys, obj_p gcols, query_ctx_
             index = index_group_list(cols, ctx->filter);
             timeit_tick("build compound index");
 
-            if (IS_ERROR(index))
+            if (IS_ERR(index))
                 return index;
 
             res = group_map(ctx->table, index);
@@ -89,7 +89,7 @@ obj_p remap_group(obj_p *gvals, obj_p cols, obj_p gkeys, obj_p gcols, query_ctx_
             for (i = 0; i < l; i++) {
                 v = aggr_first(AS_LIST(cols)[i], index);
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     lst->len = i;
                     drop_obj(res);
                     drop_obj(index);
@@ -169,7 +169,7 @@ obj_p get_gvals(obj_p obj) {
                 r = eval(v);
                 drop_obj(v);
 
-                if (IS_ERROR(r)) {
+                if (IS_ERR(r)) {
                     res->len = i;
                     drop_obj(res);
                     return r;
@@ -222,7 +222,7 @@ obj_p select_fetch_table(obj_p obj, query_ctx_p ctx) {
     val = eval(prm);
     drop_obj(prm);
 
-    if (IS_ERROR(val))
+    if (IS_ERR(val))
         return val;
 
     if (val->type != TYPE_TABLE) {
@@ -239,7 +239,7 @@ obj_p select_fetch_table(obj_p obj, query_ctx_p ctx) {
         val = eval(prm);
         drop_obj(prm);
 
-        if (IS_ERROR(val))
+        if (IS_ERR(val))
             return val;
 
         ctx->take = val;
@@ -258,13 +258,13 @@ obj_p select_apply_filters(obj_p obj, query_ctx_p ctx) {
         val = eval(prm);
         drop_obj(prm);
 
-        if (IS_ERROR(val))
+        if (IS_ERR(val))
             return val;
 
         fil = ray_where(val);
         drop_obj(val);
 
-        if (IS_ERROR(fil))
+        if (IS_ERR(fil))
             return fil;
 
         ctx->filter = fil;
@@ -297,7 +297,7 @@ obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx) {
         unmount_env(ctx->tablen);
         ctx->tablen = 0;
 
-        if (IS_ERROR(groupby)) {
+        if (IS_ERR(groupby)) {
             drop_obj(gkeys);
             drop_obj(gvals);
             timeit_span_end("group");
@@ -311,7 +311,7 @@ obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx) {
         drop_obj(gvals);
         drop_obj(groupby);
 
-        if (IS_ERROR(prm)) {
+        if (IS_ERR(prm)) {
             drop_obj(gkeys);
             timeit_span_end("group");
             return prm;
@@ -321,7 +321,7 @@ obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx) {
         ctx->tablen = tablen;
         drop_obj(prm);
 
-        if (IS_ERROR(gcol)) {
+        if (IS_ERR(gcol)) {
             drop_obj(gkeys);
             timeit_span_end("group");
             return gcol;
@@ -339,7 +339,7 @@ obj_p select_apply_groupings(obj_p obj, query_ctx_p ctx) {
 
         val = remap_filter(ctx->table, ctx->filter);
 
-        if (IS_ERROR(val))
+        if (IS_ERR(val))
             return val;
 
         mount_env(val);
@@ -369,7 +369,7 @@ obj_p select_apply_mappings(obj_p obj, query_ctx_p ctx) {
             val = eval(prm);
             drop_obj(prm);
 
-            if (IS_ERROR(val)) {
+            if (IS_ERR(val)) {
                 res->len = i;
                 drop_obj(res);
                 drop_obj(keys);
@@ -395,7 +395,7 @@ obj_p select_apply_mappings(obj_p obj, query_ctx_p ctx) {
                     break;
             }
 
-            if (IS_ERROR(val)) {
+            if (IS_ERR(val)) {
                 res->len = i;
                 drop_obj(res);
                 drop_obj(keys);
@@ -437,7 +437,7 @@ obj_p select_collect_fields(query_ctx_p ctx) {
             prm = ray_get(sym);
             drop_obj(sym);
 
-            if (IS_ERROR(prm)) {
+            if (IS_ERR(prm)) {
                 res->len = i;
                 drop_obj(res);
                 drop_obj(keys);
@@ -447,7 +447,7 @@ obj_p select_collect_fields(query_ctx_p ctx) {
             val = aggr_first(AS_LIST(prm)[0], AS_LIST(prm)[1]);
             drop_obj(prm);
 
-            if (IS_ERROR(val)) {
+            if (IS_ERR(val)) {
                 res->len = i;
                 drop_obj(res);
                 drop_obj(keys);
@@ -485,7 +485,7 @@ obj_p select_collect_fields(query_ctx_p ctx) {
                 break;
         }
 
-        if (IS_ERROR(val)) {
+        if (IS_ERR(val)) {
             res->len = i;
             drop_obj(res);
             drop_obj(keys);
@@ -567,7 +567,7 @@ obj_p ray_select(obj_p obj) {
 
     // Fetch table
     res = select_fetch_table(obj, &ctx);
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         goto cleanup;
 
     // Mount table columns to a local env
@@ -575,22 +575,22 @@ obj_p ray_select(obj_p obj) {
 
     // Apply filters
     res = select_apply_filters(obj, &ctx);
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         goto cleanup;
 
     // Apply groupping
     res = select_apply_groupings(obj, &ctx);
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         goto cleanup;
 
     // Apply mappings
     res = select_apply_mappings(obj, &ctx);
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         goto cleanup;
 
     // Collect fields
     res = select_collect_fields(&ctx);
-    if (IS_ERROR(res))
+    if (IS_ERR(res))
         goto cleanup;
 
     // Build result table

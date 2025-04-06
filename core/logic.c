@@ -82,7 +82,7 @@ obj_p ray_or(obj_p x, obj_p y) {
                     AS_LIST(res)[i] = b8(B8_TRUE);
                 else {
                     v = ray_or(AS_LIST(x)[i], AS_LIST(y)[i]);
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;

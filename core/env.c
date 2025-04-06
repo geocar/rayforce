@@ -262,7 +262,7 @@ nil_t init_functions(obj_p functions)
     
 nil_t init_typenames(obj_p typenames)    
 {
-    REGISTER_TYPE(typenames,   -TYPE_ERROR,           "Null");
+    REGISTER_TYPE(typenames,   -TYPE_ERR,           "Null");
     REGISTER_TYPE(typenames,   -TYPE_B8,              "b8");
     REGISTER_TYPE(typenames,   -TYPE_U8,              "u8");
     REGISTER_TYPE(typenames,   -TYPE_I16,             "i16");
@@ -309,7 +309,7 @@ nil_t init_typenames(obj_p typenames)
     REGISTER_TYPE(typenames,    TYPE_VARY,            "Vary");
     REGISTER_TYPE(typenames,    TYPE_LAMBDA,          "Lambda");
     REGISTER_TYPE(typenames,    TYPE_NULL,            "Null");
-    REGISTER_TYPE(typenames,    TYPE_ERROR,           "Error");
+    REGISTER_TYPE(typenames,    TYPE_ERR,           "Error");
 }
 // clang-format on
 
@@ -391,7 +391,7 @@ i8_t env_get_type_by_type_name(env_t *env, i64_t name) {
     i = find_raw(AS_LIST(env->typenames)[1], &n);
 
     if (i == NULL_I64)
-        return TYPE_ERROR;
+        return TYPE_ERR;
 
     return (i8_t)AS_I64(AS_LIST(env->typenames)[0])[i];
 }

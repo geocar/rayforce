@@ -48,7 +48,7 @@ obj_p ray_cast_obj(obj_p x, obj_p y) {
 
     type = env_get_type_by_type_name(&runtime_get()->env, x->i64);
 
-    if (type == TYPE_ERROR) {
+    if (type == TYPE_ERR) {
         fmt = obj_fmt(x, B8_TRUE);
         msg = str_fmt(-1, "as: not a type: '%s", fmt);
         err = error_obj(ERR_TYPE, msg);
@@ -88,7 +88,7 @@ obj_p __til(obj_p x, obj_p filter) {
 
     vec = I64(l);
 
-    if (IS_ERROR(vec))
+    if (IS_ERR(vec))
         return vec;
 
     vec->attrs = ATTR_ASC | ATTR_DISTINCT;
@@ -359,7 +359,7 @@ obj_p ray_enum(obj_p x, obj_p y) {
         case MTYPE2(-TYPE_SYMBOL, TYPE_SYMBOL):
             s = ray_get(x);
 
-            if (IS_ERROR(s))
+            if (IS_ERR(s))
                 return s;
 
             if (!s || s->type != TYPE_SYMBOL) {
@@ -370,7 +370,7 @@ obj_p ray_enum(obj_p x, obj_p y) {
             v = index_find_i64(AS_I64(s), s->len, AS_I64(y), y->len);
             drop_obj(s);
 
-            if (IS_ERROR(v)) {
+            if (IS_ERR(v)) {
                 drop_obj(v);
                 THROW(ERR_TYPE, "enum: can not be fully indexed");
             }

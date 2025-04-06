@@ -325,7 +325,7 @@ typedef obj_p (*ray_cmp_f)(obj_p, obj_p, u64_t, u64_t, obj_p);
                 for (i = 0; i < len; i++)                                                                   \
                     out[i] = op##GUID(AS_GUID(x)[i], AS_GUID(y)[i]);                                        \
                 return res;                                                                                 \
-            case MTYPE2(TYPE_ERROR, TYPE_ERROR):                                                            \
+            case MTYPE2(TYPE_ERR, TYPE_ERR):                                                                \
                 return b8(cmp_obj(x, y) == 0);                                                              \
             case MTYPE2(TYPE_NULL, TYPE_NULL):                                                              \
                 return b8(B8_TRUE);                                                                         \
@@ -344,7 +344,7 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
         l = AS_LIST(x)[0]->len;
         res = B8(l);
         v = cmp_fn(AS_LIST(x)[0], y, l, 0, res);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             drop_obj(res);
             return v;
         }
@@ -362,7 +362,7 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
         l = AS_LIST(y)[0]->len;
         res = B8(l);
         v = cmp_fn(x, AS_LIST(y)[0], l, 0, NULL_OBJ);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             drop_obj(res);
             return v;
         }
@@ -406,7 +406,7 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
 
     if (n == 1) {
         v = cmp_fn(x, y, l, 0, res);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             drop_obj(res);
             return v;
         }
@@ -423,7 +423,7 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
     pool_add_task(pool, op, 5, x, y, l - i * chunk, i * chunk, res);
 
     v = pool_run(pool);
-    if (IS_ERROR(v)) {
+    if (IS_ERR(v)) {
         drop_obj(res);
         return v;
     }

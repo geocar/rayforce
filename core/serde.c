@@ -157,7 +157,7 @@ u64_t size_obj(obj_p obj) {
             return sizeof(i8_t) + strlen(env_get_internal_name(obj)) + 1;
         case TYPE_NULL:
             return sizeof(i8_t);
-        case TYPE_ERROR:
+        case TYPE_ERR:
             return sizeof(i8_t) + sizeof(i8_t) + size_obj(AS_ERROR(obj)->msg);
         default:
             return 0;
@@ -323,7 +323,7 @@ u64_t save_obj(u8_t *buf, u64_t len, obj_p obj) {
             c = str_cpy((str_p)buf, env_get_internal_name(obj));
             return sizeof(i8_t) + c + 1;
 
-        case TYPE_ERROR:
+        case TYPE_ERR:
             buf[0] = (i8_t)AS_ERROR(obj)->code;
             c = sizeof(i8_t);
             c += save_obj(buf + c, len, AS_ERROR(obj)->msg);
@@ -512,7 +512,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
                     if (*len < l * sizeof(b8_t))
                         return error_str(ERR_IO, "load_obj: buffer underflow");
                     obj = B8(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     memcpy(AS_B8(obj), *buf, l * sizeof(b8_t));
                     *buf += l * sizeof(b8_t);
@@ -523,7 +523,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
                     if (*len < l * sizeof(u8_t))
                         return error_str(ERR_IO, "load_obj: buffer underflow");
                     obj = U8(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     memcpy(AS_U8(obj), *buf, l * sizeof(u8_t));
                     *buf += l * sizeof(u8_t);
@@ -534,7 +534,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
                     if (*len < l * sizeof(c8_t))
                         return error_str(ERR_IO, "load_obj: buffer underflow");
                     obj = C8(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     memcpy(AS_C8(obj), *buf, l * sizeof(c8_t));
                     *buf += l * sizeof(c8_t);
@@ -546,7 +546,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
                     if (*len < l * sizeof(i64_t))
                         return error_str(ERR_IO, "load_obj: buffer underflow");
                     obj = I64(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     memcpy(AS_I64(obj), *buf, l * sizeof(i64_t));
                     *buf += l * sizeof(i64_t);
@@ -558,7 +558,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
                     if (*len < l * sizeof(f64_t))
                         return error_str(ERR_IO, "load_obj: buffer underflow");
                     obj = F64(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     memcpy(AS_F64(obj), *buf, l * sizeof(f64_t));
                     *buf += l * sizeof(f64_t);
@@ -567,7 +567,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
 
                 case TYPE_SYMBOL:
                     obj = SYMBOL(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     for (i = 0; i < l; i++) {
                         if (*len < 1) {
@@ -592,7 +592,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
                     if (*len < l * sizeof(guid_t))
                         return error_str(ERR_IO, "load_obj: buffer underflow");
                     obj = GUID(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     memcpy(AS_C8(obj), *buf, l * sizeof(guid_t));
                     *buf += l * sizeof(guid_t);
@@ -601,11 +601,11 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
 
                 case TYPE_LIST:
                     obj = LIST(l);
-                    if (IS_ERROR(obj))
+                    if (IS_ERR(obj))
                         return obj;
                     for (i = 0; i < l; i++) {
                         v = load_obj(buf, len);
-                        if (IS_ERROR(v)) {
+                        if (IS_ERR(v)) {
                             obj->len = i;
                             drop_obj(obj);
                             return v;
@@ -622,12 +622,12 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
         case TYPE_DICT:
             k = load_obj(buf, len);
 
-            if (IS_ERROR(k))
+            if (IS_ERR(k))
                 return k;
 
             v = load_obj(buf, len);
 
-            if (IS_ERROR(v)) {
+            if (IS_ERR(v)) {
                 drop_obj(k);
                 return v;
             }
@@ -640,12 +640,12 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
         case TYPE_LAMBDA:
             k = load_obj(buf, len);
 
-            if (IS_ERROR(k))
+            if (IS_ERR(k))
                 return k;
 
             v = load_obj(buf, len);
 
-            if (IS_ERROR(v)) {
+            if (IS_ERR(v)) {
                 drop_obj(k);
                 return v;
             }
@@ -671,7 +671,7 @@ obj_p load_obj(u8_t **buf, u64_t *len) {
 
             return k;
 
-        case TYPE_ERROR:
+        case TYPE_ERR:
             if (*len < 1)
                 return error_str(ERR_IO, "load_obj: buffer underflow");
             code = **buf;

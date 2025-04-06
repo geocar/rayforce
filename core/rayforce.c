@@ -744,11 +744,11 @@ obj_p at_idx(obj_p obj, i64_t idx) {
                 idx = obj->len + idx;
             if (idx >= 0 && idx < (i64_t)ENUM_VAL(obj)->len) {
                 k = ray_key(obj);
-                if (IS_ERROR(k))
+                if (IS_ERR(k))
                     return k;
                 v = ray_get(k);
                 drop_obj(k);
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
                 idx = AS_I64(ENUM_VAL(obj))[idx];
                 res = at_idx(v, idx);
@@ -779,7 +779,7 @@ obj_p at_idx(obj_p obj, i64_t idx) {
             if (idx >= 0 && idx < (i64_t)l) {
                 for (i = 0; i < n; i++) {
                     k = at_idx(AS_LIST(AS_LIST(obj)[1])[i], idx);
-                    if (IS_ERROR(k)) {
+                    if (IS_ERR(k)) {
                         v->len = i;
                         drop_obj(v);
                         return k;
@@ -841,11 +841,11 @@ obj_p at_idx(obj_p obj, i64_t idx) {
                 n += m;
                 if (idx < n) {
                     k = ray_key(AS_LIST(obj)[i]);
-                    if (IS_ERROR(k))
+                    if (IS_ERR(k))
                         return k;
                     v = ray_get(k);
                     drop_obj(k);
-                    if (IS_ERROR(v))
+                    if (IS_ERR(v))
                         return v;
                     idx = AS_I64(ENUM_VAL(AS_LIST(obj)[i]))[m - (n - idx)];
                     res = at_idx(v, idx);
@@ -933,13 +933,13 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             return res;
         case TYPE_ENUM:
             k = ray_key(obj);
-            if (IS_ERROR(k))
+            if (IS_ERR(k))
                 return k;
 
             v = ray_get(k);
             drop_obj(k);
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             if (v->type != TYPE_SYMBOL)
@@ -960,7 +960,7 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
                 // if (IS_ATOM(c))
                 //     c = ray_enlist(&c, 1);
 
-                if (IS_ERROR(k)) {
+                if (IS_ERR(k)) {
                     cols->len = i;
                     drop_obj(cols);
                     return k;
@@ -1010,13 +1010,13 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             return res;
         case TYPE_PARTEDENUM:
             k = ray_key(AS_LIST(obj)[0]);
-            if (IS_ERROR(k))
+            if (IS_ERR(k))
                 return k;
 
             v = ray_get(k);
             drop_obj(k);
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             if (v->type != TYPE_SYMBOL)
@@ -1407,17 +1407,17 @@ obj_p set_dict_obj(obj_p *obj, obj_p idx, obj_p val) {
             // Key not found, add it
             if (i == NULL_I64) {
                 res = push_obj(&AS_LIST(*obj)[0], clone_obj(idx));
-                if (IS_ERROR(res))
+                if (IS_ERR(res))
                     return res;
 
                 res = push_obj(&AS_LIST(*obj)[1], val);
-                if (IS_ERROR(res))
+                if (IS_ERR(res))
                     return res;
             }
             // Key found, update it
             else {
                 res = set_idx(&AS_LIST(*obj)[1], i, val);
-                if (IS_ERROR(res))
+                if (IS_ERR(res))
                     return res;
             }
 
@@ -1426,7 +1426,7 @@ obj_p set_dict_obj(obj_p *obj, obj_p idx, obj_p val) {
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
             ids = find_obj_ids(AS_LIST(*obj)[0], idx);
-            if (IS_ERROR(ids))
+            if (IS_ERR(ids))
                 return ids;
 
             res = set_ids(&AS_LIST(*obj)[1], AS_I64(ids), ids->len, val);
@@ -1483,16 +1483,16 @@ obj_p set_obj(obj_p *obj, obj_p idx, obj_p val) {
             return set_ids(obj, ids, n, val);
         case MTYPE2(TYPE_TABLE, -TYPE_SYMBOL):
             val = __expand(val, ops_count(*obj));
-            if (IS_ERROR(val))
+            if (IS_ERR(val))
                 return val;
             j = find_obj_idx(AS_LIST(*obj)[0], idx);
             if (j == NULL_I64) {
                 res = push_obj(&AS_LIST(*obj)[0], clone_obj(idx));
-                if (IS_ERROR(res))
+                if (IS_ERR(res))
                     return res;
 
                 res = push_obj(&AS_LIST(*obj)[1], val);
-                if (IS_ERROR(res))
+                if (IS_ERR(res))
                     PANIC("set_obj: inconsistent update");
 
                 return *obj;
@@ -1522,7 +1522,7 @@ obj_p set_obj(obj_p *obj, obj_p idx, obj_p val) {
             for (i = 0; i < l; i++) {
                 k = __expand(clone_obj(AS_LIST(val)[i]), n);
 
-                if (IS_ERROR(k)) {
+                if (IS_ERR(k)) {
                     v->len = i;
                     drop_obj(v);
                     drop_obj(val);
@@ -1551,7 +1551,7 @@ obj_p set_obj(obj_p *obj, obj_p idx, obj_p val) {
         default:
             if ((*obj)->type == TYPE_DICT) {
                 res = set_dict_obj(obj, idx, val);
-                if (IS_ERROR(res)) {
+                if (IS_ERR(res)) {
                     drop_obj(val);
                     return res;
                 }
@@ -1735,11 +1735,11 @@ obj_p remove_obj(obj_p *obj, obj_p idx) {
 
             v = remove_idx(&AS_LIST(*obj)[0], i);
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             v = remove_idx(&AS_LIST(*obj)[1], i);
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             return *obj;
@@ -1750,11 +1750,11 @@ obj_p remove_obj(obj_p *obj, obj_p idx) {
                     return *obj;
 
                 v = remove_idx(&AS_LIST(*obj)[0], j);
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 v = remove_idx(&AS_LIST(*obj)[1], j);
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 return *obj;
@@ -2211,7 +2211,7 @@ obj_p cast_obj(i8_t type, obj_p obj) {
                     return vector(type, 0);
 
                 v = cast_obj(-type, AS_LIST(obj)[0]);
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 res = vector(type, l);
@@ -2219,7 +2219,7 @@ obj_p cast_obj(i8_t type, obj_p obj) {
 
                 for (i = 1; i < l; i++) {
                     v = cast_obj(-type, AS_LIST(obj)[i]);
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -2322,7 +2322,7 @@ nil_t __attribute__((hot)) drop_obj(obj_p obj) {
             return;
         case TYPE_NULL:
             return;
-        case TYPE_ERROR:
+        case TYPE_ERR:
             drop_obj(AS_ERROR(obj)->msg);
             drop_obj(AS_ERROR(obj)->locs);
             heap_free(obj);

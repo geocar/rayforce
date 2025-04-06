@@ -100,11 +100,11 @@ obj_p ray_left_join(obj_p *x, u64_t n) {
     ll = ops_count(x[1]);
 
     k1 = ray_at(x[1], x[0]);
-    if (IS_ERROR(k1))
+    if (IS_ERR(k1))
         return k1;
 
     k2 = ray_at(x[2], x[0]);
-    if (IS_ERROR(k2)) {
+    if (IS_ERR(k2)) {
         drop_obj(k1);
         return k2;
     }
@@ -112,13 +112,13 @@ obj_p ray_left_join(obj_p *x, u64_t n) {
     idx = index_join_obj(k1, k2, x[0]->len);
     drop_obj(k2);
 
-    if (IS_ERROR(idx)) {
+    if (IS_ERR(idx)) {
         drop_obj(k1);
         return idx;
     }
 
     un = ray_union(AS_LIST(x[1])[0], AS_LIST(x[2])[0]);
-    if (IS_ERROR(un)) {
+    if (IS_ERR(un)) {
         drop_obj(k1);
         return un;
     }
@@ -127,7 +127,7 @@ obj_p ray_left_join(obj_p *x, u64_t n) {
     cols = ray_except(un, x[0]);
     drop_obj(un);
 
-    if (IS_ERROR(cols)) {
+    if (IS_ERR(cols)) {
         drop_obj(k1);
         drop_obj(idx);
         return cols;
@@ -165,7 +165,7 @@ obj_p ray_left_join(obj_p *x, u64_t n) {
         }
 
         col = select_column(c1, c2, AS_I64(idx), ll);
-        if (IS_ERROR(col)) {
+        if (IS_ERR(col)) {
             drop_obj(k1);
             drop_obj(cols);
             drop_obj(idx);
@@ -222,11 +222,11 @@ obj_p ray_inner_join(obj_p *x, u64_t n) {
         return clone_obj(x[1]);
 
     k1 = ray_at(x[1], x[0]);
-    if (IS_ERROR(k1))
+    if (IS_ERR(k1))
         return k1;
 
     k2 = ray_at(x[2], x[0]);
-    if (IS_ERROR(k2)) {
+    if (IS_ERR(k2)) {
         drop_obj(k1);
         return k2;
     }
@@ -235,7 +235,7 @@ obj_p ray_inner_join(obj_p *x, u64_t n) {
     drop_obj(k1);
     drop_obj(k2);
 
-    if (IS_ERROR(idx))
+    if (IS_ERR(idx))
         return idx;
 
     // Compact the index (skip all nulls)
@@ -245,14 +245,14 @@ obj_p ray_inner_join(obj_p *x, u64_t n) {
             AS_I64(idx)[ll++] = AS_I64(idx)[i];
 
     un = ray_union(AS_LIST(x[1])[0], AS_LIST(x[2])[0]);
-    if (IS_ERROR(un))
+    if (IS_ERR(un))
         return un;
 
     // exclude columns that we are joining on
     cols = ray_except(un, x[0]);
     drop_obj(un);
 
-    if (IS_ERROR(cols)) {
+    if (IS_ERR(cols)) {
         drop_obj(idx);
         return cols;
     }
@@ -292,7 +292,7 @@ obj_p ray_inner_join(obj_p *x, u64_t n) {
         }
 
         col = get_column(c1, c2, AS_I64(idx), ll);
-        if (IS_ERROR(col)) {
+        if (IS_ERR(col)) {
             drop_obj(cols);
             drop_obj(idx);
             drop_obj(vals);

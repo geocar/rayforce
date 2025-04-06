@@ -68,7 +68,7 @@ obj_p map_unary_fn(unary_f fn, i64_t attrs, obj_p x) {
 
             item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, v[0]) : fn(v[0]);
 
-            if (IS_ERROR(item))
+            if (IS_ERR(item))
                 return item;
 
             res = vector(item->type, l);
@@ -78,7 +78,7 @@ obj_p map_unary_fn(unary_f fn, i64_t attrs, obj_p x) {
             for (i = 1; i < l; i++) {
                 item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, v[i]) : fn(v[i]);
 
-                if (IS_ERROR(item)) {
+                if (IS_ERR(item)) {
                     res->len = i;
                     drop_obj(res);
                     return item;
@@ -98,7 +98,7 @@ obj_p map_unary_fn(unary_f fn, i64_t attrs, obj_p x) {
             item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, a) : fn(a);
             drop_obj(a);
 
-            if (IS_ERROR(item))
+            if (IS_ERR(item))
                 return item;
 
             res = vector(item->type, l);
@@ -110,7 +110,7 @@ obj_p map_unary_fn(unary_f fn, i64_t attrs, obj_p x) {
                 item = (attrs & FN_ATOMIC) ? map_unary_fn(fn, attrs, a) : fn(a);
                 drop_obj(a);
 
-                if (IS_ERROR(item)) {
+                if (IS_ERR(item)) {
                     res->len = i;
                     drop_obj(res);
                     return item;
@@ -156,7 +156,7 @@ obj_p map_binary_left_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
             item = map_binary_left_fn(fn, attrs, a, y);
             drop_obj(a);
 
-            if (IS_ERROR(item))
+            if (IS_ERR(item))
                 return item;
 
             res = vector(item->type, l);
@@ -168,7 +168,7 @@ obj_p map_binary_left_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
                 item = map_binary_left_fn(fn, attrs, a, y);
                 drop_obj(a);
 
-                if (IS_ERROR(item)) {
+                if (IS_ERR(item)) {
                     res->len = i;
                     drop_obj(res);
                     return item;
@@ -213,7 +213,7 @@ obj_p map_binary_right_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
             item = map_binary_right_fn(fn, attrs, x, a);
             drop_obj(a);
 
-            if (IS_ERROR(item))
+            if (IS_ERR(item))
                 return item;
 
             res = vector(item->type, l);
@@ -225,7 +225,7 @@ obj_p map_binary_right_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
                 item = map_binary_right_fn(fn, attrs, x, a);
                 drop_obj(a);
 
-                if (IS_ERROR(item)) {
+                if (IS_ERR(item)) {
                     res->len = i;
                     drop_obj(res);
                     return item;
@@ -272,7 +272,7 @@ obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
         if (yt != TYPE_LIST)
             drop_obj(b);
 
-        if (IS_ERROR(item))
+        if (IS_ERR(item))
             return item;
 
         res = item->type < 0 ? vector(item->type, l) : LIST(l);
@@ -289,7 +289,7 @@ obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
             if (yt != TYPE_LIST)
                 drop_obj(b);
 
-            if (IS_ERROR(item)) {
+            if (IS_ERR(item)) {
                 res->len = i;
                 drop_obj(res);
                 return item;
@@ -310,7 +310,7 @@ obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
         if (xt != TYPE_LIST)
             drop_obj(a);
 
-        if (IS_ERROR(item))
+        if (IS_ERR(item))
             return item;
 
         res = item->type < 0 ? vector(item->type, l) : LIST(l);
@@ -323,7 +323,7 @@ obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
             if (xt != TYPE_LIST)
                 drop_obj(a);
 
-            if (IS_ERROR(item)) {
+            if (IS_ERR(item)) {
                 res->len = i;
                 drop_obj(res);
                 return item;
@@ -343,7 +343,7 @@ obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
         if (yt != TYPE_LIST)
             drop_obj(b);
 
-        if (IS_ERROR(item))
+        if (IS_ERR(item))
             return item;
 
         res = item->type < 0 ? vector(item->type, l) : LIST(l);
@@ -356,7 +356,7 @@ obj_p map_binary_fn(binary_f fn, i64_t attrs, obj_p x, obj_p y) {
             if (yt != TYPE_LIST)
                 drop_obj(b);
 
-            if (IS_ERROR(item)) {
+            if (IS_ERR(item)) {
                 res->len = i;
                 drop_obj(res);
                 return item;
@@ -389,7 +389,7 @@ obj_p map_vary_fn(vary_f fn, i64_t attrs, obj_p *x, u64_t n) {
 
     v = fn(x + n, n);
 
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         res = v;
 
     res = v->type < 0 ? vector(v->type, l) : LIST(l);
@@ -406,7 +406,7 @@ obj_p map_vary_fn(vary_f fn, i64_t attrs, obj_p *x, u64_t n) {
         for (j = 0; j < n; j++)
             drop_obj(stack_pop());
 
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             res->len = i;
             drop_obj(res);
             return v;
@@ -465,7 +465,7 @@ obj_p map_lambda(obj_p f, obj_p *x, u64_t n) {
     for (j = 0; j < n; j++)
         drop_obj(stack_pop());
 
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         return v;
 
     res = v->type < 0 ? vector(v->type, l) : LIST(l);
@@ -481,7 +481,7 @@ obj_p map_lambda(obj_p f, obj_p *x, u64_t n) {
         for (j = 0; j < n; j++)
             drop_obj(stack_pop());
 
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             res->len = i;
             drop_obj(res);
             return v;
@@ -586,7 +586,7 @@ obj_p ray_map_left(obj_p *x, u64_t n) {
             for (i = 0; i < n; i++)
                 drop_obj(stack_pop());
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             res = v->type < 0 ? vector(v->type, l) : vector(TYPE_LIST, l);
@@ -605,7 +605,7 @@ obj_p ray_map_left(obj_p *x, u64_t n) {
                 for (i = 0; i < n; i++)
                     drop_obj(stack_pop());
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i;
                     drop_obj(res);
                     return v;
@@ -672,7 +672,7 @@ obj_p ray_map_right(obj_p *x, u64_t n) {
             for (i = 0; i < n; i++)
                 drop_obj(stack_pop());
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             res = v->type < 0 ? vector(v->type, l) : vector(TYPE_LIST, l);
@@ -691,7 +691,7 @@ obj_p ray_map_right(obj_p *x, u64_t n) {
                 for (i = 0; i < n; i++)
                     drop_obj(stack_pop());
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i;
                     drop_obj(res);
                     return v;
@@ -748,7 +748,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                 if (yt != TYPE_LIST)
                     drop_obj(x2);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 for (i = 1; i < l; i++) {
@@ -761,7 +761,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                     if (yt != TYPE_LIST)
                         drop_obj(x2);
 
-                    if (IS_ERROR(v))
+                    if (IS_ERR(v))
                         return v;
                 }
 
@@ -776,7 +776,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                 if (xt != TYPE_LIST)
                     drop_obj(x1);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 for (i = 1; i < l; i++) {
@@ -785,7 +785,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                     if (xt != TYPE_LIST)
                         drop_obj(x1);
 
-                    if (IS_ERROR(v))
+                    if (IS_ERR(v))
                         return v;
                 }
 
@@ -800,7 +800,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                 if (yt != TYPE_LIST)
                     drop_obj(x2);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 for (i = 1; i < l; i++) {
@@ -809,7 +809,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                     if (yt != TYPE_LIST)
                         drop_obj(x2);
 
-                    if (IS_ERROR(v))
+                    if (IS_ERR(v))
                         return v;
                 }
 
@@ -835,7 +835,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
             for (i = 0; i < n; i++)
                 drop_obj(stack_pop());
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             for (i = 1; i < l; i++) {
@@ -848,7 +848,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                 for (j = 0; j < n; j++)
                     drop_obj(stack_pop());
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
             }
 
@@ -878,7 +878,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                     drop_obj(stack_pop());
 
-                    if (IS_ERROR(v))
+                    if (IS_ERR(v))
                         return v;
                 }
 
@@ -900,7 +900,7 @@ obj_p ray_fold(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                     drop_obj(stack_pop());
 
-                    if (IS_ERROR(v))
+                    if (IS_ERR(v))
                         return v;
                 }
 
@@ -956,7 +956,7 @@ obj_p ray_fold_left(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                 }
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
             }
 
@@ -991,7 +991,7 @@ obj_p ray_fold_left(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                 }
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
             }
 
@@ -1033,7 +1033,7 @@ obj_p ray_fold_right(obj_p *x, u64_t n) {
                 drop_obj(x1);
                 drop_obj(x2);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
             }
 
@@ -1070,7 +1070,7 @@ obj_p ray_fold_right(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                 }
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
             }
 
@@ -1122,7 +1122,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                 if (yt != TYPE_LIST)
                     drop_obj(x2);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 res = LIST(l);
@@ -1138,7 +1138,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                     if (yt != TYPE_LIST)
                         drop_obj(x2);
 
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -1160,7 +1160,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                 if (xt != TYPE_LIST)
                     drop_obj(x1);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 res = LIST(l);
@@ -1172,7 +1172,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                     if (xt != TYPE_LIST)
                         drop_obj(x1);
 
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -1194,7 +1194,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                 if (yt != TYPE_LIST)
                     drop_obj(x2);
 
-                if (IS_ERROR(v))
+                if (IS_ERR(v))
                     return v;
 
                 res = LIST(l);
@@ -1206,7 +1206,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                     if (yt != TYPE_LIST)
                         drop_obj(x2);
 
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -1221,7 +1221,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
             }
 
             v = binary_call(f, x[0], x[1]);
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             res = LIST(1);
@@ -1245,7 +1245,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
             for (i = 0; i < n; i++)
                 drop_obj(stack_pop());
 
-            if (IS_ERROR(v))
+            if (IS_ERR(v))
                 return v;
 
             res = v->type < 0 ? vector(v->type, l) : LIST(l);
@@ -1261,7 +1261,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                 for (j = 0; j < n; j++)
                     drop_obj(stack_pop());
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i;
                     drop_obj(res);
                     return v;
@@ -1300,7 +1300,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                     drop_obj(stack_pop());
 
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -1331,7 +1331,7 @@ obj_p ray_scan(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                     drop_obj(stack_pop());
 
-                    if (IS_ERROR(v)) {
+                    if (IS_ERR(v)) {
                         res->len = i;
                         drop_obj(res);
                         return v;
@@ -1385,7 +1385,7 @@ obj_p ray_scan_left(obj_p *x, u64_t n) {
                 drop_obj(x1);
                 drop_obj(x2);
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i + 1;
                     drop_obj(res);
                     return v;
@@ -1430,7 +1430,7 @@ obj_p ray_scan_left(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                 }
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i + 1;
                     drop_obj(res);
                     return v;
@@ -1482,7 +1482,7 @@ obj_p ray_scan_right(obj_p *x, u64_t n) {
                 drop_obj(x1);
                 drop_obj(x2);
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i + 1;
                     drop_obj(res);
                     return v;
@@ -1527,7 +1527,7 @@ obj_p ray_scan_right(obj_p *x, u64_t n) {
                     drop_obj(stack_pop());
                 }
 
-                if (IS_ERROR(v)) {
+                if (IS_ERR(v)) {
                     res->len = i + 1;
                     drop_obj(res);
                     return v;

@@ -1412,7 +1412,7 @@ obj_p unop_fold(raw_p op, obj_p x) {
     raw_p argv[3];
 
     if (IS_ATOM(x)) {
-        unop = (obj_p(*)(obj_p))op;
+        unop = (obj_p (*)(obj_p))op;
         return unop(x);
     }
 
@@ -1438,7 +1438,7 @@ obj_p unop_fold(raw_p op, obj_p x) {
     pool_add_task(pool, op, 3, x, l - i * chunk, i * chunk);
 
     v = pool_run(pool);
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         return v;
 
     // Fold the results
@@ -1460,7 +1460,7 @@ obj_p unop_map(raw_p op, obj_p x) {
     raw_p argv[4];
 
     if (IS_ATOM(x)) {
-        unop = (obj_p(*)(obj_p))op;
+        unop = (obj_p (*)(obj_p))op;
         return unop(x);
     }
 
@@ -1476,7 +1476,7 @@ obj_p unop_map(raw_p op, obj_p x) {
         argv[2] = (raw_p)0;
         argv[3] = (raw_p)out;
         v = pool_call_task_fn(op, 4, argv);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             out->len = 0;
             drop_obj(out);
             return v;
@@ -1493,7 +1493,7 @@ obj_p unop_map(raw_p op, obj_p x) {
     pool_add_task(pool, op, 4, x, l - i * chunk, i * chunk, out);
 
     v = pool_run(pool);
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         return v;
 
     drop_obj(v);
@@ -1540,7 +1540,7 @@ obj_p binop_map(raw_p op, obj_p x, obj_p y) {
         argv[3] = (raw_p)0;
         argv[4] = (raw_p)out;
         v = pool_call_task_fn(op, 5, argv);
-        if (IS_ERROR(v)) {
+        if (IS_ERR(v)) {
             out->len = 0;
             drop_obj(out);
             return v;
@@ -1557,7 +1557,7 @@ obj_p binop_map(raw_p op, obj_p x, obj_p y) {
     pool_add_task(pool, op, 5, x, y, l - i * chunk, i * chunk, out);
 
     v = pool_run(pool);
-    if (IS_ERROR(v)) {
+    if (IS_ERR(v)) {
         out->len = 0;
         drop_obj(out);
         return v;
@@ -1595,7 +1595,7 @@ obj_p binop_fold(raw_p op, obj_p x, obj_p y) {
     pool_add_task(pool, op, 4, x, y, l - i * chunk, i * chunk);
 
     v = pool_run(pool);
-    if (IS_ERROR(v))
+    if (IS_ERR(v))
         return v;
 
     // Fold the results
