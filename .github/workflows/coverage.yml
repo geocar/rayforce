@@ -61,7 +61,15 @@ jobs:
         fi
 
     - name: Build documentation
-      run: mkdocs build --site-dir docs
+      run: |
+        # Create a temporary directory for MkDocs build
+        mkdir -p temp_site
+        # Build MkDocs into the temporary directory
+        mkdocs build --site-dir temp_site
+        # Copy the built site to docs, preserving the coverage report
+        cp -r temp_site/* docs/
+        # Clean up
+        rm -rf temp_site
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
