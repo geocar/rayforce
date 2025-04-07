@@ -22,13 +22,16 @@
  */
 
 #include "signal.h"
+#include <signal.h>
 
 #if defined(OS_WINDOWS)
 #include <windows.h>
+static DWORD __CHILD_PID = (DWORD)-1;
+#else
+#include <sys/types.h>
+static pid_t __CHILD_PID = -1;
 #endif
 
-// Static variables for storing the child process ID and signal handler
-static pid_t __CHILD_PID = -1;
 static signal_handler_fn __SIGNAL_HANDLER_FN = NULL;
 
 void register_signal_handler(signal_handler_fn handler) {
@@ -38,12 +41,16 @@ void register_signal_handler(signal_handler_fn handler) {
     signal(SIGINT, __SIGNAL_HANDLER_FN);
     signal(SIGTERM, __SIGNAL_HANDLER_FN);
 
-// SIGQUIT is not available on Windows
 #if !defined(OS_WINDOWS)
+    // SIGQUIT is not available on Windows
     signal(SIGQUIT, __SIGNAL_HANDLER_FN);
 #endif
 }
 
+#if defined(OS_WINDOWS)
+void set_child_pid(DWORD pid) { __CHILD_PID = pid; }
+DWORD get_child_pid(void) { return __CHILD_PID; }
+#else
 void set_child_pid(pid_t pid) { __CHILD_PID = pid; }
-
 pid_t get_child_pid(void) { return __CHILD_PID; }
+#endif

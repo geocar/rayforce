@@ -21,19 +21,44 @@
  *   SOFTWARE.
  */
 
+#include "def.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <io.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <mswsock.h>
+
+// Define STDOUT_FILENO for Windows if not already defined
+#ifndef STDOUT_FILENO
+#define STDOUT_FILENO _fileno(stdout)
+#endif
+
+#include "rayforce.h"
 #include "poll.h"
 #include "string.h"
 #include "hash.h"
 #include "format.h"
 #include "util.h"
+#include "sock.h"
 #include "heap.h"
 #include "io.h"
 #include "error.h"
-#include "sys.h"
+#include "symbols.h"
 #include "eval.h"
+#include "sys.h"
+#include "chrono.h"
+#include "binary.h"
+
+// Link with Ws2_32.lib
+#pragma comment(lib, "Ws2_32.lib")
+// Link with Mswsock.lib
+#pragma comment(lib, "Mswsock.lib")
+
+// Global IOCP handle
+HANDLE g_iocp = INVALID_HANDLE_VALUE;
 
 // Definitions and globals
 #define STDIN_WAKER_ID ~0ull
@@ -155,49 +180,68 @@ i64_t poll_accept(poll_p poll) {
     return (i64_t)sock_fd;
 }
 
+/**
+ * Initialize the IOCP polling system
+ * @param port The port to listen on
+ * @return A poll_t structure or NULL on failure
+ */
 poll_p poll_init(i64_t port) {
+    i64_t listen_fd = -1;
+    poll_p poll;
     WSADATA wsaData;
-    i64_t ipc_fd = -1, poll_fd = -1;
+    int result;
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-        exit_werror();
+    // Initialize Winsock
+    result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (result != 0) {
+        fprintf(stderr, "WSAStartup failed: %d\n", result);
+        return NULL;
+    }
 
-    poll_fd = (i64_t)CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+    // Create IOCP
+    g_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+    if (g_iocp == NULL) {
+        fprintf(stderr, "CreateIoCompletionPort failed: %d\n", GetLastError());
+        WSACleanup();
+        return NULL;
+    }
 
-    if (!poll_fd)
-        exit_werror();
-
-    poll_p poll = (poll_p)heap_alloc(sizeof(struct poll_t));
-    poll->poll_fd = poll_fd;
-
-    if (port) {
-        ipc_fd = sock_listen(port);
-        if (ipc_fd == -1) {
-            heap_free(poll);
-            exit_werror();
-        }
-
-        poll->ipc_fd = ipc_fd;
-        CreateIoCompletionPort((HANDLE)ipc_fd, (HANDLE)poll_fd, ipc_fd, 0);
-
-        __LISTENER = (listener_p)heap_alloc(sizeof(struct listener_t));
-        memset(__LISTENER, 0, sizeof(struct listener_t));
-
-        if (poll_accept(poll) == -1) {
-            heap_free(poll);
-            exit_werror();
-        }
+    poll = (poll_p)heap_alloc(sizeof(struct poll_t));
+    if (poll == NULL) {
+        CloseHandle(g_iocp);
+        WSACleanup();
+        return NULL;
     }
 
     poll->code = NULL_I64;
+    poll->poll_fd = (i64_t)g_iocp;
+    poll->ipc_fd = -1;
     poll->replfile = string_from_str("repl", 4);
     poll->ipcfile = string_from_str("ipc", 3);
     poll->term = term_create();
     poll->selectors = freelist_create(128);
     poll->timers = timers_create(16);
 
+    // Add server socket if port is specified
+    if (port) {
+        listen_fd = poll_listen(poll, port);
+        if (listen_fd == -1) {
+            fprintf(stderr, "Failed to listen on port %lld\n", port);
+            poll_destroy(poll);
+            return NULL;
+        }
+    }
+
+    __LISTENER = (listener_p)heap_alloc(sizeof(struct listener_t));
+    memset(__LISTENER, 0, sizeof(struct listener_t));
+
+    if (poll_accept(poll) == -1) {
+        heap_free(poll);
+        exit_werror();
+    }
+
     __STDIN_THREAD_CTX = (stdin_thread_ctx_p)heap_alloc(sizeof(struct stdin_thread_ctx_t));
-    __STDIN_THREAD_CTX->h_cp = (HANDLE)poll_fd;
+    __STDIN_THREAD_CTX->h_cp = (HANDLE)poll->poll_fd;
     __STDIN_THREAD_CTX->term = poll->term;
 
     // Create a thread to read from stdin
@@ -206,11 +250,74 @@ poll_p poll_init(i64_t port) {
     return poll;
 }
 
+/**
+ * Start listening on a port
+ * @param poll The poll_t structure
+ * @param port The port to listen on
+ * @return The socket file descriptor or -1 on error
+ */
+i64_t poll_listen(poll_p poll, i64_t port) {
+    SOCKET listen_fd;
+    struct sockaddr_in addr;
+    int opt = 1;
+
+    if (poll == NULL)
+        return -1;
+
+    if (poll->ipc_fd != -1)
+        return -2;
+
+    // Create socket
+    listen_fd = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+    if (listen_fd == INVALID_SOCKET)
+        return -1;
+
+    // Set socket options
+    if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) == SOCKET_ERROR) {
+        closesocket(listen_fd);
+        return -1;
+    }
+
+    // Setup address structure
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons((u16_t)port);
+
+    // Bind
+    if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR) {
+        closesocket(listen_fd);
+        return -1;
+    }
+
+    // Listen
+    if (listen(listen_fd, SOMAXCONN) == SOCKET_ERROR) {
+        closesocket(listen_fd);
+        return -1;
+    }
+
+    // Associate the listen socket with the IOCP
+    if (CreateIoCompletionPort((HANDLE)listen_fd, (HANDLE)poll->poll_fd, 0, 0) == NULL) {
+        closesocket(listen_fd);
+        return -1;
+    }
+
+    poll->ipc_fd = listen_fd;
+    return listen_fd;
+}
+
+/**
+ * Clean up the polling system
+ * @param poll The poll_t structure
+ */
 nil_t poll_destroy(poll_p poll) {
     i64_t i, l;
 
+    if (poll == NULL)
+        return;
+
     if (poll->ipc_fd != -1)
-        CloseHandle((HANDLE)poll->ipc_fd);
+        closesocket((SOCKET)poll->ipc_fd);
 
     // Free all selectors
     l = poll->selectors->data_pos;
@@ -227,13 +334,16 @@ nil_t poll_destroy(poll_p poll) {
     freelist_free(poll->selectors);
     timers_destroy(poll->timers);
 
-    CloseHandle((HANDLE)poll->poll_fd);
+    if (g_iocp != INVALID_HANDLE_VALUE) {
+        CloseHandle(g_iocp);
+        g_iocp = INVALID_HANDLE_VALUE;
+    }
+
+    WSACleanup();
     heap_free(poll);
 
     heap_free(__LISTENER);
     heap_free(__STDIN_THREAD_CTX);
-
-    WSACleanup();
 }
 
 nil_t poll_deregister(poll_p poll, i64_t id) {

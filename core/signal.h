@@ -25,17 +25,15 @@
 #define RAYFORCE_SIGNAL_H
 
 #include <signal.h>
-#include <sys/types.h>
 
-// Type definition for signal handler function pointer
-typedef void (*signal_handler_fn)(int);
-
-// Platform-specific type for process ID
 #if defined(OS_WINDOWS)
-typedef DWORD pid_t;
+#include <windows.h>
 #else
 #include <sys/types.h>  // for pid_t
 #endif
+
+// Type definition for signal handler function pointer
+typedef void (*signal_handler_fn)(int);
 
 /**
  * Registers a signal handler for SIGINT, SIGTERM, and SIGQUIT
@@ -47,12 +45,12 @@ void register_signal_handler(signal_handler_fn handler);
  * Sets the child process ID
  * @param pid The child process ID to set
  */
+#if defined(OS_WINDOWS)
+void set_child_pid(DWORD pid);
+DWORD get_child_pid(void);
+#else
 void set_child_pid(pid_t pid);
-
-/**
- * Gets the child process ID
- * @return The child process ID
- */
 pid_t get_child_pid(void);
+#endif
 
 #endif /* RAYFORCE_SIGNAL_H */

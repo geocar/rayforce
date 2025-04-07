@@ -32,10 +32,13 @@
 #include <windows.h>
 #define popen _popen
 #define pclose _pclose
+#define WIFEXITED(status) 1
+#define WEXITSTATUS(status) (status)
 #else
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
 #endif
 
 i32_t cpu_cores() {

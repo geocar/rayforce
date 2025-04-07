@@ -32,6 +32,7 @@ raw_p mmap_stack(u64_t size) { return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_
 raw_p mmap_alloc(u64_t size) { return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE); }
 
 raw_p mmap_file(i64_t fd, raw_p addr, u64_t size, i64_t offset) {
+    UNUSED(addr);  // Mark addr as intentionally unused on Windows
     HANDLE hMapping;
     raw_p ptr;
 

@@ -88,6 +88,20 @@ nil_t thread_exit(raw_p res) {
     ExitThread((DWORD)code);
 }
 
+ray_thread_t thread_self() {
+    ray_thread_t t;
+    t.handle = GetCurrentThread();
+    return t;
+}
+
+i32_t thread_pin(ray_thread_t thread, u64_t core) {
+    DWORD_PTR mask = 1ULL << core;
+    if (SetThreadAffinityMask(thread.handle, mask) == 0) {
+        return -1;
+    }
+    return 0;
+}
+
 #else
 
 mutex_t mutex_create() {
@@ -155,6 +169,7 @@ ray_thread_t thread_self() {
     t.handle = pthread_self();
     return t;
 }
+
 #if defined(OS_LINUX)
 
 i32_t thread_pin(ray_thread_t thread, u64_t core) {
