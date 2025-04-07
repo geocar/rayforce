@@ -34,14 +34,15 @@ jobs:
         
     - name: Generate coverage report
       run: |
-        mkdir -p docs/coverage_report
+        # Clean up any existing coverage report
+        rm -rf docs/coverage_report
         if [ -f coverage.info ]; then
           genhtml coverage.info -o docs/coverage_report
-          # Extract coverage percentage
+          # Extract coverage percentage for the badge
           COVERAGE=$(lcov --summary coverage.info | grep "lines" | awk '{print $4}' | cut -d'%' -f1)
-          # Update README.md with the coverage percentage
           sed -i "s/coverage-[0-9]*%25/coverage-${COVERAGE}%25/" README.md
         else
+          mkdir -p docs/coverage_report
           echo "<html><body><h1>Coverage Report</h1><p>No tests available yet.</p></body></html>" > docs/coverage_report/index.html
         fi
         
