@@ -46,13 +46,38 @@ jobs:
     - name: Run Tests
       run: |
         make clean
-        make tests | sed 's/\x1b\[[0-9;]*m//g' | tee test_output.txt
+        make tests | grep -v "gcc" | sed 's/\x1b\[[0-9;]*m//g' | tee test_output.txt
 
     - name: Convert Test Output to HTML
       run: |
-        echo '<html><head><style>body { font-family: Arial, sans-serif; } .passed { color: green; } .failed { color: red; }</style></head><body><h1>Test Report</h1><pre>' > site/tests_report/index.html
-        cat test_output.txt | sed 's/Passed/<span class="passed">✓ Passed<\/span>/g' | sed 's/Failed/<span class="failed">✗ Failed<\/span>/g' >> site/tests_report/index.html
-        echo '</pre></body></html>' >> site/tests_report/index.html
+        echo '<html><head>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f5f5f5; }
+          .passed { color: #28a745; font-weight: bold; }
+          .failed { color: #dc3545; font-weight: bold; }
+          .test-name { font-family: monospace; }
+        </style>
+        </head>
+        <body>
+        <h1>Test Report</h1>
+        <table>
+          <tr>
+            <th>Test Name</th>
+            <th>Status</th>
+          </tr>' > site/tests_report/index.html
+        grep -E "Test:.*|Passed|Failed" test_output.txt | while read -r line; do
+          if [[ $line =~ Test:\ (.*) ]]; then
+            echo "<tr><td class='test-name'>${BASH_REMATCH[1]}</td><td>" >> site/tests_report/index.html
+          elif [[ $line =~ Passed ]]; then
+            echo "<span class='passed'>✓ Passed</span></td></tr>" >> site/tests_report/index.html
+          elif [[ $line =~ Failed ]]; then
+            echo "<span class='failed'>✗ Failed</span></td></tr>" >> site/tests_report/index.html
+          fi
+        done
+        echo '</table></body></html>' >> site/tests_report/index.html
 
     - name: Run Coverage
       run: |
