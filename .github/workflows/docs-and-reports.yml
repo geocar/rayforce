@@ -51,8 +51,7 @@ jobs:
     - name: Convert Test Output to HTML
       run: |
         set +e
-        total_passed=0
-        total_failed=0
+        total_tests=$(head -n 1 test_output.txt | grep -oE '[0-9]+')
         echo '<html><head>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
@@ -66,27 +65,24 @@ jobs:
         </head>
         <body>
         <h1>Test Report</h1>
+        <h2>Total Tests: ${total_tests}</h2>
         <table>
           <tr>
             <th>Test Name</th>
             <th>Status</th>
           </tr>' > site/tests_report/index.html
         grep -E "Running test_.* \.\.\. (Passed|Failed)" test_output.txt | while read -r line; do
-          echo "Processing line: $line"
           if [[ $line =~ Running\ (test_[^ ]+)\ \.\.\.\ (Passed|Failed) ]]; then
             test_name="${BASH_REMATCH[1]}"
             status="${BASH_REMATCH[2]}"
-            echo "Captured test name: $test_name with status: $status"
             if [[ $status == "Passed" ]]; then
               echo "<tr><td class='test-name'>${test_name}</td><td><span class='passed'>✓ Passed</span></td></tr>" >> site/tests_report/index.html
-              ((total_passed++))
             else
               echo "<tr><td class='test-name'>${test_name}</td><td><span class='failed'>✗ Failed</span></td></tr>" >> site/tests_report/index.html
-              ((total_failed++))
             fi
           fi
         done
-        echo "</table><h2>Total Passed: ${total_passed}</h2><h2>Total Failed: ${total_failed}</h2></body></html>" >> site/tests_report/index.html
+        echo '</table></body></html>' >> site/tests_report/index.html
 
     - name: Run Coverage
       run: |
