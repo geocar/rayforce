@@ -58,6 +58,9 @@ jobs:
         name: test-report
         path: test_output.txt
 
+    - name: Create Tests Report Directory
+      run: mkdir -p site/tests_report
+
     - name: Convert Test Output to HTML
       run: |
         echo '<html><head><style>body { font-family: Arial, sans-serif; } .passed { color: green; } .failed { color: red; }</style></head><body><h1>Test Report</h1><pre>' > site/tests_report/index.html
