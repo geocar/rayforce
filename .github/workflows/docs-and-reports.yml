@@ -73,4 +73,13 @@ jobs:
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4 
+      uses: actions/deploy-pages@v4
+
+    - name: Extract Coverage Percentage
+      run: |
+        COVERAGE=$(lcov --summary coverage.info | grep 'lines\.*' | awk '{print $2}')
+        echo "Coverage: $COVERAGE"
+
+    - name: Update Coverage Badge
+      run: |
+        sed -i "s/Coverage-[0-9]*%/Coverage-$COVERAGE%/g" README.md 
