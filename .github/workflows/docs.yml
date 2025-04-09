@@ -43,8 +43,10 @@ jobs:
         name: test-report
         path: test_output.txt
 
-    - name: Create Tests Report Directory
-      run: mkdir -p site/tests_report
+    - name: Create Directories for Reports
+      run: |
+        mkdir -p site/tests_report
+        mkdir -p site/coverage_report
 
     - name: Convert Test Output to HTML
       run: |
@@ -52,10 +54,9 @@ jobs:
         cat test_output.txt | sed 's/Passed/<span class="passed">✓ Passed<\/span>/g' | sed 's/Failed/<span class="failed">✗ Failed<\/span>/g' >> site/tests_report/index.html
         echo '</pre></body></html>' >> site/tests_report/index.html
 
-    - name: Deploy Test Report
+    - name: Add Coverage Report
       run: |
-        mkdir -p docs/tests_report
-        mv site/tests_report/index.html docs/tests_report/index.html
+        echo '<html><body><h1>Coverage Report</h1><p>No coverage data available yet.</p></body></html>' > site/coverage_report/index.html
 
     - name: Build documentation
       run: mkdocs build
