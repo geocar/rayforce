@@ -31,22 +31,22 @@ jobs:
       run: |
         pip install mkdocs-material
         pip install mkdocs-git-revision-date-plugin
-        
-    - name: Run Tests
-      run: |
-        make clean
-        make tests | sed 's/\x1b\[[0-9;]*m//g' | tee test_output.txt
 
-    - name: Upload Test Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-report
-        path: test_output.txt
+    - name: Install lcov
+      run: sudo apt-get update && sudo apt-get install -y lcov
+  
+    - name: Build documentation
+      run: mkdocs build
 
     - name: Create Directories for Reports
       run: |
         mkdir -p site/tests_report
         mkdir -p site/coverage_report
+
+    - name: Run Tests
+      run: |
+        make clean
+        make tests | sed 's/\x1b\[[0-9;]*m//g' | tee test_output.txt
 
     - name: Convert Test Output to HTML
       run: |
@@ -54,24 +54,14 @@ jobs:
         cat test_output.txt | sed 's/Passed/<span class="passed">✓ Passed<\/span>/g' | sed 's/Failed/<span class="failed">✗ Failed<\/span>/g' >> site/tests_report/index.html
         echo '</pre></body></html>' >> site/tests_report/index.html
 
-    - name: Add Coverage Report
-      run: |
-        echo '<html><body><h1>Coverage Report</h1><p>No coverage data available yet.</p></body></html>' > site/coverage_report/index.html
-
-    - name: Install lcov
-      run: sudo apt-get update && sudo apt-get install -y lcov
-
     - name: Run Coverage
       run: |
         make clean
         make coverage
-
+  
     - name: Include Coverage Report in Site
       run: |
         cp -r coverage_report/* site/coverage_report/
-
-    - name: Build documentation
-      run: mkdocs build
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
