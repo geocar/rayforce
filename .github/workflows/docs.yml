@@ -58,6 +58,9 @@ jobs:
       run: |
         echo '<html><body><h1>Coverage Report</h1><p>No coverage data available yet.</p></body></html>' > site/coverage_report/index.html
 
+    - name: Install lcov
+      run: sudo apt-get update && sudo apt-get install -y lcov
+
     - name: Run Coverage
       run: make coverage
 
