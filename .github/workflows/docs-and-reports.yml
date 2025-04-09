@@ -71,14 +71,18 @@ jobs:
             <th>Status</th>
           </tr>' > site/tests_report/index.html
         grep -E "Test:.*|Passed|Failed" test_output.txt | while read -r line; do
+          echo "Processing line: $line"
           if [[ $line =~ Test:\ (.*) ]]; then
             test_name="${BASH_REMATCH[1]}"
+            echo "Captured test name: $test_name"
           elif [[ $line =~ Passed ]]; then
             echo "<tr><td class='test-name'>${test_name}</td><td><span class='passed'>✓ Passed</span></td></tr>" >> site/tests_report/index.html
             ((total_passed++))
+            echo "Incremented passed count: $total_passed"
           elif [[ $line =~ Failed ]]; then
             echo "<tr><td class='test-name'>${test_name}</td><td><span class='failed'>✗ Failed</span></td></tr>" >> site/tests_report/index.html
             ((total_failed++))
+            echo "Incremented failed count: $total_failed"
           fi
         done
         echo "</table><h2>Total Passed: ${total_passed}</h2><h2>Total Failed: ${total_failed}</h2></body></html>" >> site/tests_report/index.html
