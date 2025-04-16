@@ -62,19 +62,19 @@ obj_p select_column(obj_p left_col, obj_p right_col, i64_t ids[], u64_t len) {
     return res;
 }
 
-obj_p get_column(obj_p left_col, obj_p right_col, i64_t ids[], u64_t len) {
+obj_p get_column(obj_p left_col, obj_p right_col, obj_p lids, obj_p rids) {
     i8_t type;
 
     // there is no such column in the right table
     if (is_null(right_col))
-        return at_ids(left_col, ids, len);
+        return at_ids(left_col, AS_I64(lids), lids->len);
 
     type = is_null(left_col) ? right_col->type : left_col->type;
 
     if (right_col->type != type)
         THROW(ERR_TYPE, "get_column: incompatible types");
 
-    return at_ids(right_col, ids, len);
+    return at_ids(right_col, AS_I64(rids), rids->len);
 }
 
 obj_p ray_left_join(obj_p *x, u64_t n) {
@@ -202,7 +202,6 @@ obj_p ray_left_join(obj_p *x, u64_t n) {
 }
 
 obj_p ray_inner_join(obj_p *x, u64_t n) {
-    u64_t ll;
     i64_t i, j, l;
     obj_p k1, k2, c1, c2, un, col, cols, vals, idx;
 
@@ -237,12 +236,6 @@ obj_p ray_inner_join(obj_p *x, u64_t n) {
 
     if (IS_ERR(idx))
         return idx;
-
-    // Compact the index (skip all nulls)
-    l = idx->len;
-    for (i = 0, ll = 0; i < l; i++)
-        if (AS_I64(idx)[i] != NULL_I64)
-            AS_I64(idx)[ll++] = AS_I64(idx)[i];
 
     un = ray_union(AS_LIST(x[1])[0], AS_LIST(x[2])[0]);
     if (IS_ERR(un))
@@ -291,7 +284,7 @@ obj_p ray_inner_join(obj_p *x, u64_t n) {
             }
         }
 
-        col = get_column(c1, c2, AS_I64(idx), ll);
+        col = get_column(c1, c2, AS_LIST(idx)[0], AS_LIST(idx)[1]);
         if (IS_ERR(col)) {
             drop_obj(cols);
             drop_obj(idx);

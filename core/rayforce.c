@@ -895,42 +895,43 @@ obj_p at_idx(obj_p obj, i64_t idx) {
 }
 
 obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
-    i64_t i, mapid, xl, m, n;
-    u8_t *u8inp, *u8out;    
+    u64_t i, xl;
+    i64_t mapid, m, n;
+    u8_t *u8inp, *u8out;
     i16_t *i16inp, *i16out;
     i32_t *i32inp, *i32out;
     i64_t *i64inp, *i64out;
-    f64_t *finp, *fout;
+    f64_t *f64inp, *f64out;
     obj_p k, v, cols, res;
 
     switch (obj->type) {
         case TYPE_B8:
         case TYPE_U8:
         case TYPE_C8:
-        res = vector(obj->type, len);
-        u8inp = AS_U8(obj);
-        u8out = AS_U8(res);
-        for (i = 0; i < len; i++)
-            u8out[i] = u8inp[ids[i]];
+            res = vector(obj->type, len);
+            u8inp = AS_U8(obj);
+            u8out = AS_U8(res);
+            for (i = 0; i < len; i++)
+                u8out[i] = u8inp[ids[i]];
 
-        return res;
+            return res;
         case TYPE_I16:
-        res = I16(len);
-        i16inp = AS_I16(obj);
-        i16out = AS_I16(res);
-        for (i = 0; i < len; i++)
+            res = I16(len);
+            i16inp = AS_I16(obj);
+            i16out = AS_I16(res);
+            for (i = 0; i < len; i++)
                 i16out[i] = i16inp[ids[i]];
 
             return res;
         case TYPE_I32:
         case TYPE_DATE:
         case TYPE_TIME:
-        res = vector(obj->type, len);
-        i32inp = AS_I32(obj);
-        i32out = AS_I32(res);
-        for (i = 0; i < len; i++)
-            i32out[i] = i32inp[ids[i]];
-        
+            res = vector(obj->type, len);
+            i32inp = AS_I32(obj);
+            i32out = AS_I32(res);
+            for (i = 0; i < len; i++)
+                i32out[i] = i32inp[ids[i]];
+
             return res;
         case TYPE_I64:
         case TYPE_SYMBOL:
@@ -944,10 +945,10 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
             return res;
         case TYPE_F64:
             res = F64(len);
-            finp = AS_F64(obj);
-            fout = AS_F64(res);
+            f64inp = AS_F64(obj);
+            f64out = AS_F64(res);
             for (i = 0; i < len; i++)
-                fout[i] = finp[ids[i]];
+                f64out[i] = f64inp[ids[i]];
 
             return res;
         case TYPE_GUID:
@@ -981,6 +982,7 @@ obj_p at_ids(obj_p obj, i64_t ids[], u64_t len) {
                 AS_I64(res)[i] = AS_I64(v)[AS_I64(ENUM_VAL(obj))[ids[i]]];
 
             drop_obj(v);
+
             return res;
         case TYPE_TABLE:
             xl = AS_LIST(obj)[0]->len;

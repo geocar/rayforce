@@ -2110,48 +2110,54 @@ obj_p index_group_list(obj_p obj, obj_p filter) {
 }
 
 obj_p index_join_obj(obj_p lcols, obj_p rcols, u64_t len) {
-    u64_t i, ll, rl;
-    obj_p ht, res;
+    u64_t i, j, ll, rl;
+    obj_p ht, lids, rids;
     i64_t idx;
     __index_list_ctx_t ctx;
 
-    if (len == 1) {
-        res = ray_find(rcols, lcols);
-        if (res->type == -TYPE_I64) {
-            idx = res->i64;
-            drop_obj(res);
-            res = I64(1);
-            AS_I64(res)[0] = idx;
-        }
+    // if (len == 1) {
+    //     lids = ray_find(rcols, lcols);
+    //     if (lids->type == TYPE_I64) {
+    //         idx = lids->i64;
+    //         drop_obj(lids);
+    //         lids = I64(1);
+    //         AS_I64(lids)[0] = idx;
+    //     }
 
-        return res;
-    }
+    //     return vn_list(2, lids, rids);
+    // }
 
     ll = ops_count(AS_LIST(lcols)[0]);
     rl = ops_count(AS_LIST(rcols)[0]);
-    ht = ht_oa_create(MAXU64(ll, rl), -1);
-    res = I64(MAXU64(ll, rl));
+    ht = ht_oa_create(rl, -1);
+    rids = I64(MAXU64(ll, rl));
 
     // Right hashes
-    __index_list_precalc_hash(rcols, (u64_t *)AS_I64(res), len, rl, NULL, B8_TRUE);
-    ctx = (__index_list_ctx_t){rcols, rcols, (u64_t *)AS_I64(res), NULL};
+    __index_list_precalc_hash(rcols, (u64_t *)AS_I64(rids), len, rl, NULL, B8_TRUE);
+    ctx = (__index_list_ctx_t){rcols, rcols, (u64_t *)AS_I64(rids), NULL};
     for (i = 0; i < rl; i++) {
         idx = ht_oa_tab_next_with(&ht, i, &__index_list_hash_get, &__index_list_cmp_row, &ctx);
         if (AS_I64(AS_LIST(ht)[0])[idx] == NULL_I64)
             AS_I64(AS_LIST(ht)[0])[idx] = i;
     }
 
+    lids = I64(ll);
+
     // Left hashes
-    __index_list_precalc_hash(lcols, (u64_t *)AS_I64(res), len, ll, NULL, B8_TRUE);
-    ctx = (__index_list_ctx_t){rcols, lcols, (u64_t *)AS_I64(res), NULL};
-    for (i = 0; i < ll; i++) {
+    __index_list_precalc_hash(lcols, (u64_t *)AS_I64(rids), len, ll, NULL, B8_TRUE);
+    ctx = (__index_list_ctx_t){rcols, lcols, (u64_t *)AS_I64(rids), NULL};
+    for (i = 0, j = 0; i < ll; i++) {
         idx = ht_oa_tab_get_with(ht, i, &__index_list_hash_get, &__index_list_cmp_row, &ctx);
-        AS_I64(res)[i] = (idx == NULL_I64) ? NULL_I64 : AS_I64(AS_LIST(ht)[0])[idx];
+        if (idx != NULL_I64) {
+            AS_I64(rids)[j] = AS_I64(AS_LIST(ht)[0])[idx];
+            AS_I64(lids)[j++] = i;
+        }
     }
 
     drop_obj(ht);
 
-    resize_obj(&res, MINU64(ll, rl));
+    resize_obj(&lids, j);
+    resize_obj(&rids, j);
 
-    return res;
+    return vn_list(2, lids, rids);
 }
