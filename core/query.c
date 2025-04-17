@@ -195,11 +195,12 @@ nil_t query_ctx_init(query_ctx_p ctx) {
     ctx->query_fields = NULL_OBJ;
     ctx->query_values = NULL_OBJ;
     ctx->group_index = NULL_OBJ;
+    ctx->parent = runtime_get()->query_ctx;
     runtime_get()->query_ctx = ctx;
 }
 
 nil_t query_ctx_destroy(query_ctx_p ctx) {
-    runtime_get()->query_ctx = NULL;
+    runtime_get()->query_ctx = ctx->parent;
 
     drop_obj(ctx->table);
     drop_obj(ctx->take);

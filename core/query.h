@@ -36,6 +36,7 @@ typedef struct query_ctx_t {
     obj_p group_values;
     obj_p query_fields;
     obj_p query_values;
+    struct query_ctx_t *parent;
 } *query_ctx_p;
 
 nil_t query_ctx_init(query_ctx_p ctx);
