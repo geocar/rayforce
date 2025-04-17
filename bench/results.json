@@ -1,47 +1,35 @@
 {
   "results": [
     {
-      "script": "basic_ops",
-      "min_time": 0.000,
-      "max_time": 0.008,
-      "avg_time": 0.001,
-      "expected_time": 0.015,
-      "timestamp": "2025-03-27 15:13:02",
-      "os_info": "Rayforce 0.1 (Mar 27 2025)",
-      "cpu_info": "Intel(R) Core(TM) i7-14700",
-      "git_commit": "a277aa25371d3653bba7e2dd981f200594ae5c59"
-    },
-    {
       "script": "system",
+      "min_time": 1000000000.000,
+      "max_time": 0.000,
+      "avg_time": 0.000,
+      "timestamp": "2025-04-17 11:34:32",
+      "os_info": "Rayforce 0.1 (Apr 17 2025)",
+      "cpu_info": "Apple M3 Max",
+      "git_commit": "8926417e6bb39899ecb48e1b67a9febfffdafb8c"
+    },
+    {
+      "script": "logic",
+      "min_time": 8.847,
+      "max_time": 11.365,
+      "avg_time": 9.157,
+      "expected_time": 84.000,
+      "timestamp": "2025-04-17 11:44:11",
+      "os_info": "Rayforce 0.1 (Apr 17 2025)",
+      "cpu_info": "Apple M3 Max",
+      "git_commit": "8926417e6bb39899ecb48e1b67a9febfffdafb8c"
+    },
+    {
+      "script": "",
       "min_time": 0.000,
-      "max_time": 0.004,
-      "avg_time": 0.001,
-      "timestamp": "2025-03-27 15:13:02",
-      "os_info": "Rayforce 0.1 (Mar 27 2025)",
-      "cpu_info": "Intel(R) Core(TM) i7-14700",
-      "git_commit": "a277aa25371d3653bba7e2dd981f200594ae5c59"
-    },
-    {
-      "script": "string_ops",
-      "min_time": 0.001,
-      "max_time": 0.041,
-      "avg_time": 0.002,
-      "expected_time": 10.000,
-      "timestamp": "2025-03-27 15:13:02",
-      "os_info": "Rayforce 0.1 (Mar 27 2025)",
-      "cpu_info": "Intel(R) Core(TM) i7-14700",
-      "git_commit": "a277aa25371d3653bba7e2dd981f200594ae5c59"
-    },
-    {
-      "script": "example_bench",
-      "min_time": 0.047,
-      "max_time": 0.094,
-      "avg_time": 0.051,
-      "expected_time": 100.000,
-      "timestamp": "2025-03-27 15:13:02",
-      "os_info": "Rayforce 0.1 (Mar 27 2025)",
-      "cpu_info": "Intel(R) Core(TM) i7-14700",
-      "git_commit": "a277aa25371d3653bba7e2dd981f200594ae5c59"
+      "max_time": 0.000,
+      "avg_time": 0.000,
+      "timestamp": "",
+      "os_info": "Rayforce 0.1 (Apr 17 2025)",
+      "cpu_info": "Apple M3 Max",
+      "git_commit": ""
     }
   ]
 }

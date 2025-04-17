@@ -211,13 +211,33 @@ void run_benchmark(bench_script_t* script, bench_result_t* result) {
 
     // Run initialization script if present
     if (script->init_script[0] != '\0') {
-        eval_str(script->init_script);
+        printf("Evaluating init script for %s (%zu bytes)\n", script->name, strlen(script->init_script));
+        obj_p v = eval_str(script->init_script);
+        if (IS_ERR(v)) {
+            obj_p r = obj_fmt(v, 1);
+            printf("Error in initialization script [%s]: %s\n", script->name, AS_C8(r));
+            drop_obj(v);
+            drop_obj(r);
+            runtime_destroy();
+            return;
+        }
+        drop_obj(v);
     }
 
     for (int i = 0; i < iterations; i++) {
         struct timeval start, end;
         gettimeofday(&start, NULL);
-        eval_str(script->content);
+        obj_p v = eval_str(script->content);
+        if (IS_ERR(v)) {
+            obj_p r = obj_fmt(v, 1);
+            printf("Error in benchmark script [%s]: %s\n", script->name, AS_C8(r));
+            drop_obj(v);
+            drop_obj(r);
+            runtime_destroy();
+            return;
+        }
+
+        drop_obj(v);
         gettimeofday(&end, NULL);
 
         double iteration_time = (end.tv_sec - start.tv_sec) * 1000.0;  // Convert to milliseconds
@@ -501,7 +521,7 @@ void process_script_file(const char* filename, bench_results_t* results) {
     else
         base++;
 
-    // Copy script name and remove .rf extension if present
+    // Copy script name and remove .rfl extension if present
     size_t name_len = strlen(base);
     if (name_len >= sizeof(script_name)) {
         name_len = sizeof(script_name) - 1;
@@ -510,18 +530,18 @@ void process_script_file(const char* filename, bench_results_t* results) {
     script_name[name_len] = '\0';
 
     char* ext = strrchr(script_name, '.');
-    if (ext && strcmp(ext, ".rf") == 0) {
+    if (ext && strcmp(ext, ".rfl") == 0) {
         *ext = '\0';
         name_len = ext - script_name;  // Update name_len after removing extension
     }
 
     // Construct paths with bounds checking
-    size_t written = snprintf(script_path, sizeof(script_path), "%s/%s.rf", BENCH_SCRIPTS_DIR, script_name);
+    size_t written = snprintf(script_path, sizeof(script_path), "%s/%s.rfl", BENCH_SCRIPTS_DIR, script_name);
     if (written >= sizeof(script_path)) {
         printf("Error: Script path too long for %s\n", script_name);
         return;
     }
-    written = snprintf(init_path, sizeof(init_path), "%s/%s%s", BENCH_SCRIPTS_DIR, script_name, BENCH_INIT_SUFFIX);
+    written = snprintf(init_path, sizeof(init_path), "%s/%s%s.rfl", BENCH_SCRIPTS_DIR, script_name, BENCH_INIT_SUFFIX);
     if (written >= sizeof(init_path)) {
         printf("Error: Init path too long for %s\n", script_name);
         return;
@@ -551,6 +571,9 @@ void process_script_file(const char* filename, bench_results_t* results) {
         size_t init_size = fread(script.init_script, 1, sizeof(script.init_script) - 1, init_file);
         script.init_script[init_size] = '\0';
         fclose(init_file);
+    } else {
+        // Clear the init script buffer explicitly to ensure it's empty
+        script.init_script[0] = '\0';
     }
 
     // Parse script parameters
@@ -568,7 +591,7 @@ void process_script_file(const char* filename, bench_results_t* results) {
 
 void scan_benchmark_scripts(bench_results_t* results) {
     char cmd[MAX_SCRIPT_NAME];
-    snprintf(cmd, sizeof(cmd), "find %s -name '*.rf' -not -name '*%s.rf'", BENCH_SCRIPTS_DIR, BENCH_INIT_SUFFIX);
+    snprintf(cmd, sizeof(cmd), "find %s -name '*.rfl' -not -name '*%s.rfl'", BENCH_SCRIPTS_DIR, BENCH_INIT_SUFFIX);
 
     FILE* pipe = popen(cmd, "r");
     if (!pipe) {
@@ -576,25 +599,26 @@ void scan_benchmark_scripts(bench_results_t* results) {
         return;
     }
 
-    // Get system info from the first script
-    char filename[MAX_SCRIPT_NAME];
-    if (fgets(filename, sizeof(filename), pipe) != NULL) {
-        filename[strcspn(filename, "\n")] = 0;
-        bench_script_t script = {0};
-        strncpy(script.name, "system", sizeof(script.name) - 1);
-        script.name[sizeof(script.name) - 1] = '\0';
-        run_benchmark(&script, &results->results[0]);
-        print_system_info(&results->results[0]);
-        results->result_count = 1;  // Initialize result count after system info
-    }
+    // Initialize result count - we'll start with actual benchmark scripts
+    results->result_count = 0;
 
-    // Reset pipe to start from beginning
-    pclose(pipe);
-    pipe = popen(cmd, "r");
+    // Get system info and print it directly
+    get_system_info(results->results[0].os_info, sizeof(results->results[0].os_info), results->results[0].cpu_info,
+                    sizeof(results->results[0].cpu_info));
+    get_git_commit(results->results[0].git_commit, sizeof(results->results[0].git_commit));
 
-    while (fgets(filename, sizeof(filename), pipe) != NULL) {
-        filename[strcspn(filename, "\n")] = 0;
-        process_script_file(filename, results);
+    // Get current timestamp
+    time_t now;
+    time(&now);
+    strftime(results->results[0].timestamp, sizeof(results->results[0].timestamp), "%Y-%m-%d %H:%M:%S",
+             localtime(&now));
+
+    // Print system info without running a benchmark
+    print_system_info(&results->results[0]);
+
+    while (fgets(cmd, sizeof(cmd), pipe) != NULL) {
+        cmd[strcspn(cmd, "\n")] = 0;
+        process_script_file(cmd, results);
     }
 
     pclose(pipe);
@@ -609,11 +633,6 @@ int main(int argc, char* argv[]) {
     // Load previous results first
     load_previous_results(&previous_results);
 
-    // Get system info first
-    get_system_info(results.results[0].os_info, sizeof(results.results[0].os_info), results.results[0].cpu_info,
-                    sizeof(results.results[0].cpu_info));
-    results.result_count = 1;  // Initialize result count after system info
-
     // Check if specific tests were requested via command line or BENCH env var
     if (argc > 1) {
         specific_tests = true;
@@ -622,12 +641,12 @@ int main(int argc, char* argv[]) {
             const char* test_name = argv[i];
             char script_path[MAX_PATH_LEN];
 
-            // Check if .rf extension is already present
-            const char* ext = strstr(test_name, ".rf");
+            // Check if .rfl extension is already present
+            const char* ext = strstr(test_name, ".rfl");
             if (ext) {
                 snprintf(script_path, sizeof(script_path), "%s/%s", BENCH_SCRIPTS_DIR, test_name);
             } else {
-                snprintf(script_path, sizeof(script_path), "%s/%s.rf", BENCH_SCRIPTS_DIR, test_name);
+                snprintf(script_path, sizeof(script_path), "%s/%s.rfl", BENCH_SCRIPTS_DIR, test_name);
             }
 
             process_script_file(script_path, &results);
@@ -638,7 +657,7 @@ int main(int argc, char* argv[]) {
         if (bench_var && *bench_var) {
             specific_tests = true;
             char script_path[MAX_PATH_LEN];
-            snprintf(script_path, sizeof(script_path), "%s/%s.rf", BENCH_SCRIPTS_DIR, bench_var);
+            snprintf(script_path, sizeof(script_path), "%s/%s.rfl", BENCH_SCRIPTS_DIR, bench_var);
             process_script_file(script_path, &results);
         } else {
             // If no BENCH variable, scan all benchmark scripts

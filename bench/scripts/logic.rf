@@ -1,3 +1,0 @@
-;; --expected-time=84 --iterations=1000
-
-(== l l)
