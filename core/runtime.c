@@ -188,20 +188,10 @@ i32_t runtime_create(i32_t argc, str_p argv[]) {
 }
 
 i32_t runtime_run(nil_t) {
-    repl_p repl;
-
-    // REPL
     if (__RUNTIME->poll) {
-        repl = repl_create(__RUNTIME->poll);
-
-        if (repl == NULL)
-            return -1;
-
-        repl_on_open(__RUNTIME->poll, poll_get_selector(__RUNTIME->poll, repl->id));
-    }
-
-    if (__RUNTIME->poll)
+        repl_create(__RUNTIME->poll);
         return poll_run(__RUNTIME->poll);
+    }
 
     return 0;
 }

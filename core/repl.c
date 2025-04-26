@@ -109,6 +109,8 @@ repl_p repl_create(poll_p poll) {
         return NULL;
     }
 
+    term_prompt(repl->term);
+
     return repl;
 }
 
@@ -116,17 +118,6 @@ nil_t repl_destroy(repl_p repl) {
     drop_obj(repl->name);
     term_destroy(repl->term);
     heap_free(repl);
-}
-
-poll_result_t repl_on_open(poll_p poll, selector_p selector) {
-    UNUSED(poll);
-    UNUSED(selector);
-
-    repl_p repl = (repl_p)selector->data;
-
-    term_prompt(repl->term);
-
-    return POLL_READY;
 }
 
 poll_result_t repl_on_close(poll_p poll, selector_p selector) {
@@ -139,5 +130,7 @@ poll_result_t repl_on_error(poll_p poll, selector_p selector) {
     UNUSED(poll);
     UNUSED(selector);
 
-    return POLL_READY;
+    perror("repl_on_error");
+
+    return POLL_ERROR;
 }
