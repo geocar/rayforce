@@ -197,23 +197,24 @@ obj_p sys_timeit_activate(i32_t argc, str_p argv[]) {
     return i64(0);
 }
 
+// TODO: implement
 obj_p sys_listen(i32_t argc, str_p argv[]) {
     i64_t res;
 
-    if (argc != 1)
-        THROW(ERR_LENGTH, "listen: expected 1 argument");
+    // if (argc != 1)
+    //     THROW(ERR_LENGTH, "listen: expected 1 argument");
 
-    res = i64_from_str(argv[0], strlen(argv[0]));
-    if (res < 0)
-        THROW(ERR_TYPE, "listen: expected integer");
+    // res = i64_from_str(argv[0], strlen(argv[0]));
+    // if (res < 0)
+    //     THROW(ERR_TYPE, "listen: expected integer");
 
-    res = poll_listen(runtime_get()->poll, res);
+    // res = poll_listen(runtime_get()->poll, res);
 
-    if (res == -1)
-        return sys_error(ERROR_TYPE_SOCK, "listen");
+    // if (res == -1)
+    //     return sys_error(ERROR_TYPE_SOCK, "listen");
 
-    if (res == -2)
-        THROW(ERR_LENGTH, "listen: already listening");
+    // if (res == -2)
+    //     THROW(ERR_LENGTH, "listen: already listening");
 
     return i64(res);
 }

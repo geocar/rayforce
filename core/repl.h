@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2023 Anton Kundenko <singaraiona@gmail.com>
+ *   Copyright (c) 2025 Anton Kundenko <singaraiona@gmail.com>
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,22 +21,25 @@
  *   SOFTWARE.
  */
 
+#ifndef REPL_H
+#define REPL_H
+
+#include "rayforce.h"
 #include "poll.h"
-#include "format.h"
-#include "sock.h"
+#include "term.h"
 
-#if defined(OS_WINDOWS)
-#include "iocp.c"
-#elif defined(OS_MACOS)
-#include "kqueue.c"
-#elif defined(OS_LINUX)
-#include "epoll.c"
-#elif defined(OS_WASM)
-#include "wasm.c"
-#endif
+typedef struct repl_t {
+    i64_t id;
+    obj_p name;
+    term_p term;
+} *repl_p;
 
-selector_p poll_get_selector(poll_p poll, i64_t id) {
-    return (selector_p)freelist_get(poll->selectors, id - SELECTOR_ID_OFFSET);
-}
+repl_p repl_create();
+nil_t repl_destroy(repl_p repl);
 
-nil_t poll_exit(poll_p poll, i64_t code) { poll->code = code; }
+poll_result_t repl_on_open(poll_p poll, selector_p selector);
+poll_result_t repl_on_close(poll_p poll, selector_p selector);
+poll_result_t repl_recv(poll_p poll, selector_p selector);
+poll_result_t repl_on_error(poll_p poll, selector_p selector);
+
+#endif  // REPL_H

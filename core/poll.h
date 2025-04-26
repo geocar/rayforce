@@ -24,6 +24,7 @@
 #ifndef POLL_H
 #define POLL_H
 
+#include <sys/epoll.h>
 #include "rayforce.h"
 #include "parse.h"
 #include "serde.h"
@@ -35,19 +36,29 @@
 
 #define MAX_EVENTS 1024
 #define BUF_SIZE 2048
-
-#define MSG_TYPE_ASYN 0
-#define MSG_TYPE_SYNC 1
-#define MSG_TYPE_RESP 2
-
 #define TX_QUEUE_SIZE 16
 #define SELECTOR_ID_OFFSET 3  // shifts all selector ids by 2 to avoid 0, 1 ,2 ids (stdin, stdout, stderr)
 
+// forward declarations
+struct poll_t;
+struct selector_t;
+
 typedef enum poll_result_t {
-    POLL_DONE = 0,
+    POLL_READY = 0,
     POLL_PENDING = 1,
     POLL_ERROR = 2,
+    POLL_EXIT = 3,
 } poll_result_t;
+
+typedef enum selector_type_t {
+    SELECTOR_TYPE_STDIN = 0,
+    SELECTOR_TYPE_STDOUT = 1,
+    SELECTOR_TYPE_STDERR = 2,
+    SELECTOR_TYPE_SOCKET = 3,
+    SELECTOR_TYPE_FILE = 4,
+} selector_type_t;
+
+typedef poll_result_t (*poll_event_fn)(struct poll_t *, struct selector_t *);
 
 #if defined(OS_WINDOWS)
 
@@ -86,7 +97,17 @@ typedef struct selector_t {
 typedef struct selector_t {
     i64_t fd;  // socket fd
     i64_t id;  // selector id
-    u8_t version;
+
+    selector_type_t type;
+
+    poll_event_fn open_fn;
+    poll_event_fn close_fn;
+    poll_event_fn recv_fn;
+    poll_event_fn recv_error_fn;
+    poll_event_fn send_fn;
+    poll_event_fn send_error_fn;
+
+    raw_p data;
 
     struct {
         u8_t msgtype;
@@ -100,39 +121,49 @@ typedef struct selector_t {
         i64_t bytes_transfered;
         i64_t size;
         u8_t *buf;
-        queue_p queue;  // queue for async messages waiting to be sent
+        queue_p queue;  // queue for data waiting to be sent
     } tx;
 
 } *selector_p;
 
-#endif
+typedef enum poll_events_t {
+    POLL_EVENT_READ = EPOLLIN,
+    POLL_EVENT_WRITE = EPOLLOUT,
+    POLL_EVENT_ERROR = EPOLLERR,
+    POLL_EVENT_HUP = EPOLLHUP,
+} poll_events_t;
 
 typedef struct poll_t {
     i64_t code;
-    i64_t poll_fd;
-    i64_t ipc_fd;
-    obj_p replfile;
-    obj_p ipcfile;
+    i64_t fd;
     term_p term;
     freelist_p selectors;  // freelist of selectors
     timers_p timers;       // timers heap
 } *poll_p;
 
-poll_p poll_init(i64_t port);
-i64_t poll_listen(poll_p poll, i64_t port);
+typedef struct poll_registry_t {
+    i64_t fd;
+    selector_type_t type;
+    poll_events_t events;
+    poll_event_fn open_fn;
+    poll_event_fn close_fn;
+    poll_event_fn recv_fn;
+    poll_event_fn recv_error_fn;
+    poll_event_fn send_fn;
+    poll_event_fn send_error_fn;
+    raw_p data;
+} *poll_registry_p;
+
+poll_p poll_create();
 nil_t poll_destroy(poll_p poll);
 i64_t poll_run(poll_p poll);
-nil_t poll_set_usr_fd(i64_t fd);
-i64_t poll_register(poll_p poll, i64_t fd, u8_t version);
+i64_t poll_register(poll_p poll, poll_registry_p registry);
 nil_t poll_deregister(poll_p poll, i64_t id);
-nil_t poll_call_usr_on_open(poll_p poll, i64_t id);
-nil_t poll_call_usr_on_close(poll_p poll, i64_t id);
-
-// send ipc messages
-obj_p ipc_send_sync(poll_p poll, i64_t id, obj_p msg);
-obj_p ipc_send_async(poll_p poll, i64_t id, obj_p msg);
+selector_p poll_get_selector(poll_p poll, i64_t id);
 
 // Exit the app
 nil_t poll_exit(poll_p poll, i64_t code);
+
+#endif  // OS_WINDOWS
 
 #endif  // POLL_H

@@ -27,6 +27,7 @@
 #include "error.h"
 #include "eval.h"
 #include "io.h"
+#include "ipc.h"
 
 #if defined(OS_WINDOWS)
 

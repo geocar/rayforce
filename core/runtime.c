@@ -28,6 +28,7 @@
 #include "io.h"
 #include "string.h"
 #include "signal.h"
+#include "repl.h"
 
 // Global runtime reference
 runtime_p __RUNTIME = NULL;
@@ -113,8 +114,9 @@ obj_p parse_cmdline(i32_t argc, str_p argv[]) {
 i32_t runtime_create(i32_t argc, str_p argv[]) {
     u64_t n;
     obj_p arg, fmt, res;
-    symbols_p symbols = symbols_create();
+    symbols_p symbols;
 
+    symbols = symbols_create();
     heap_create(0);
 
     __RUNTIME = (runtime_p)heap_mmap(sizeof(struct runtime_t));
@@ -152,7 +154,7 @@ i32_t runtime_create(i32_t argc, str_p argv[]) {
             drop_obj(arg);
         }
 
-        __RUNTIME->poll = poll_init(__RUNTIME->addr.port);
+        __RUNTIME->poll = poll_create();
 
         // timeit
         arg = runtime_get_arg("timeit");
@@ -186,6 +188,18 @@ i32_t runtime_create(i32_t argc, str_p argv[]) {
 }
 
 i32_t runtime_run(nil_t) {
+    repl_p repl;
+
+    // REPL
+    if (__RUNTIME->poll) {
+        repl = repl_create(__RUNTIME->poll);
+
+        if (repl == NULL)
+            return -1;
+
+        repl_on_open(__RUNTIME->poll, poll_get_selector(__RUNTIME->poll, repl->id));
+    }
+
     if (__RUNTIME->poll)
         return poll_run(__RUNTIME->poll);
 

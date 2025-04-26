@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2023 Anton Kundenko <singaraiona@gmail.com>
+ *   Copyright (c) 2025 Anton Kundenko <singaraiona@gmail.com>
  *   All rights reserved.
 
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,22 +21,31 @@
  *   SOFTWARE.
  */
 
+#ifndef IPC_H
+#define IPC_H
+
+#include "rayforce.h"
 #include "poll.h"
-#include "format.h"
-#include "sock.h"
 
-#if defined(OS_WINDOWS)
-#include "iocp.c"
-#elif defined(OS_MACOS)
-#include "kqueue.c"
-#elif defined(OS_LINUX)
-#include "epoll.c"
-#elif defined(OS_WASM)
-#include "wasm.c"
-#endif
+#define MSG_TYPE_ASYN 0
+#define MSG_TYPE_SYNC 1
+#define MSG_TYPE_RESP 2
 
-selector_p poll_get_selector(poll_p poll, i64_t id) {
-    return (selector_p)freelist_get(poll->selectors, id - SELECTOR_ID_OFFSET);
-}
+// recv ipc messages
+poll_result_t ipc_on_open(poll_p poll, selector_p selector);
+poll_result_t ipc_on_close(poll_p poll, selector_p selector);
+poll_result_t ipc_recv_handshake(poll_p poll, selector_p selector);
+poll_result_t ipc_recv_msg(poll_p poll, selector_p selector);
+poll_result_t ipc_recv_header(poll_p poll, selector_p selector);
+poll_result_t ipc_recv(poll_p poll, selector_p selector);
+poll_result_t ipc_on_error(poll_p poll, selector_p selector);
 
-nil_t poll_exit(poll_p poll, i64_t code) { poll->code = code; }
+// send ipc messages
+poll_result_t ipc_send_handshake(poll_p poll, selector_p selector);
+poll_result_t ipc_send_msg(poll_p poll, selector_p selector);
+poll_result_t ipc_send_header(poll_p poll, selector_p selector);
+
+obj_p ipc_send_sync(poll_p poll, i64_t id, obj_p msg);
+obj_p ipc_send_async(poll_p poll, i64_t id, obj_p msg);
+
+#endif  // IPC_H

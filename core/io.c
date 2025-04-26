@@ -42,11 +42,13 @@
 #include "binary.h"
 #include "compose.h"
 #include "items.h"
+#include "ipc.h"
 
 obj_p ray_hopen(obj_p *x, u64_t n) {
     i64_t fd, timeout = 0;
     sock_addr_t addr;
     u8_t handshake[2] = {RAYFORCE_VERSION, 0x00};
+    struct poll_registry_t registry;
     obj_p path, err;
 
     if (n == 0)
@@ -86,7 +88,10 @@ obj_p ray_hopen(obj_p *x, u64_t n) {
 
         sock_set_nonblocking(fd, B8_TRUE);
 
-        return i64(poll_register(runtime_get()->poll, fd, RAYFORCE_VERSION));
+        registry.fd = fd;
+        registry.type = SELECTOR_TYPE_SOCKET;
+
+        return i64(poll_register(runtime_get()->poll, &registry));
     }
 
     // Otherwise, open file
