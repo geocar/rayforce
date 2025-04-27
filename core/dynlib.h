@@ -33,6 +33,6 @@
  *  @param nargs Number of arguments the function takes. (NULL_I64 or > 2 means vary)
  */
 obj_p dynlib_loadfn(str_p path, str_p func, i64_t nargs);
-obj_p ray_loadfn(obj_p *args, u64_t n);
+obj_p ray_loadfn(obj_p *args, i64_t n);
 
 #endif  // DYNLIB_H

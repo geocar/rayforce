@@ -48,8 +48,8 @@ obj_p lambda(obj_p args, obj_p body, obj_p nfo) {
     return obj;
 }
 
-obj_p lambda_call(obj_p f, obj_p *x, u64_t n) {
-    u64_t i;
+obj_p lambda_call(obj_p f, obj_p *x, i64_t n) {
+    i64_t i;
     obj_p res;
 
     if (f->attrs & FN_ATOMIC) {

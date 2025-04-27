@@ -34,8 +34,8 @@
 #include "ops.h"
 #include "atomic.h"
 
-str_p string_intern(symbols_p symbols, lit_p str, u64_t len) {
-    u64_t rounds = 0, cap;
+str_p string_intern(symbols_p symbols, lit_p str, i64_t len) {
+    i64_t rounds = 0, cap;
     str_p curr, node;
 
     assert(len > 0);
@@ -74,8 +74,8 @@ str_p string_intern(symbols_p symbols, lit_p str, u64_t len) {
     return curr;
 }
 
-i64_t symbols_intern(lit_p str, u64_t len) {
-    u64_t rounds = 0;
+i64_t symbols_intern(lit_p str, i64_t len) {
+    i64_t rounds = 0;
     i64_t index;
     str_p intr;
     symbols_p symbols = runtime_get()->symbols;
@@ -172,7 +172,7 @@ symbols_p symbols_create(nil_t) {
 }
 
 nil_t symbols_destroy(symbols_p symbols) {
-    u64_t i;
+    i64_t i;
     symbol_p b, next;
 
     // free the symbol pool nodes
@@ -190,14 +190,14 @@ nil_t symbols_destroy(symbols_p symbols) {
     heap_unmap(symbols, sizeof(struct symbols_t));
 }
 
-str_p str_from_symbol(i64_t key) { return (key == NULL_I64) ? (str_p)"" : (str_p)key; }
+str_p str_from_symbol(i64_t key) { return (key == NULL_I64) ? (str_p) "" : (str_p)key; }
 
-u64_t symbols_count(symbols_p symbols) { return symbols->count; }
+i64_t symbols_count(symbols_p symbols) { return symbols->count; }
 
 // TODO
 nil_t symbols_rebuild(symbols_p symbols) {
     UNUSED(symbols);
-    // u64_t i, size, new_size;
+    // i64_t i, size, new_size;
     // symbol_p bucket, *syms, *new_syms;
 
     // syms = symbols->syms;

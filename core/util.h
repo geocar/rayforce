@@ -89,7 +89,7 @@ nil_t dump_stack(nil_t);
 
 #define PRINTBITS_N(x, n)                                                \
     {                                                                    \
-        for (u64_t __i = n; __i; __i--, putchar('0' | ((x >> __i) & 1))) \
+        for (i64_t __i = n; __i; __i--, putchar('0' | ((x >> __i) & 1))) \
             ;                                                            \
         printf("\n");                                                    \
     }
@@ -210,6 +210,6 @@ nil_t dump_stack(nil_t);
 
 b8_t is_valid(obj_p obj);
 u32_t next_power_of_two_u32(u32_t n);
-u64_t next_power_of_two_u64(u64_t n);
+i64_t next_power_of_two_u64(i64_t n);
 
 #endif  // UTIL_H

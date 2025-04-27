@@ -35,17 +35,17 @@ typedef struct header_t {
     u8_t flags;    // 0 - no flags
     u8_t endian;   // 0 - little, 1 - big
     u8_t msgtype;  // used for ipc: 0 - async, 1 - sync, 2 - response
-    u64_t size;    // size of the payload (in bytes)
+    i64_t size;    // size of the payload (in bytes)
 } header_t;
 
 RAYASSERT(sizeof(header_t) == 16, header_t)
 
-obj_p de_raw(u8_t *buf, u64_t len);
+obj_p de_raw(u8_t *buf, i64_t len);
 i64_t ser_raw(u8_t **buf, obj_p obj);
-u64_t size_of_type(i8_t type);
-u64_t size_of(obj_p obj);
-u64_t size_obj(obj_p obj);
-u64_t save_obj(u8_t *buf, u64_t len, obj_p obj);
-obj_p load_obj(u8_t **buf, u64_t *len);
+i64_t size_of_type(i8_t type);
+i64_t size_of(obj_p obj);
+i64_t size_obj(obj_p obj);
+i64_t save_obj(u8_t *buf, i64_t len, obj_p obj);
+obj_p load_obj(u8_t **buf, i64_t *len);
 
 #endif  // SERDE_H

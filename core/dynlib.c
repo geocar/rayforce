@@ -93,7 +93,7 @@ obj_p dynlib_loadfn(str_p path, str_p func, i64_t nargs) {
 
 #endif
 
-obj_p ray_loadfn(obj_p *args, u64_t n) {
+obj_p ray_loadfn(obj_p *args, i64_t n) {
     if (n != 3)
         THROW(ERR_ARITY, "Expected 3 arguments, got %llu", n);
 

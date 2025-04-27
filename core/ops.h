@@ -54,8 +54,10 @@ extern struct obj_t __NULL_OBJECT;
 #define IS_EXTERNAL_COMPOUND(x) ((x)->mmod == MMOD_EXTERNAL_COMPOUND)
 #define IS_EXTERNAL_SERIALIZED(x) ((x)->mmod == MMOD_EXTERNAL_SERIALIZED)
 
+#define ISIZEOF(type) ((i64_t)sizeof(type))
+
 #define ALIGNUP(x, a) (((x) + (a) - 1) & ~((a) - 1))
-#define ALIGN8(x) ((str_p)(((u64_t)x + 7) & ~7))
+#define ALIGN8(x) ((str_p)(((i64_t)x + 7) & ~7))
 #define MTYPE2(x, y) ((u8_t)(x) | ((u8_t)(y) << 8))
 #define EQI8(x, y) ((x) == (y))
 #define EQC8(x, y) ((x) == (y))
@@ -154,25 +156,25 @@ extern struct obj_t __NULL_OBJECT;
 #define XBARF64(x, y) (FLOORF64((x) / (y)) * (y))
 
 // Function types
-typedef u64_t (*hash_f)(i64_t, raw_p);
+typedef i64_t (*hash_f)(i64_t, raw_p);
 typedef i64_t (*cmp_f)(i64_t, i64_t, raw_p);
 typedef obj_p (*unary_f)(obj_p);
 typedef obj_p (*binary_f)(obj_p, obj_p);
-typedef obj_p (*vary_f)(obj_p *, u64_t);
+typedef obj_p (*vary_f)(obj_p *, i64_t);
 
 typedef enum { ERROR_TYPE_OS, ERROR_TYPE_SYS, ERROR_TYPE_SOCK } os_ray_error_type_t;
 
 b8_t ops_as_b8(obj_p x);
 b8_t ops_is_nan(f64_t x);
-b8_t ops_is_prime(u64_t x);
-u64_t ops_next_prime(u64_t x);
-u64_t ops_rand_u64(nil_t);
-u64_t ops_count(obj_p x);
-u64_t ops_count_ones(b8_t *mask, u64_t len);
-u64_t ops_rank(obj_p *x, u64_t n);
+b8_t ops_is_prime(i64_t x);
+i64_t ops_next_prime(i64_t x);
+i64_t ops_rand_u64(nil_t);
+i64_t ops_count(obj_p x);
+i64_t ops_count_ones(b8_t *mask, i64_t len);
+i64_t ops_rank(obj_p *x, i64_t n);
 b8_t ops_eq_idx(obj_p a, i64_t ai, obj_p b, i64_t bi);
-obj_p index_find_i64(i64_t x[], u64_t xl, i64_t y[], u64_t yl);
-obj_p ops_where(b8_t *mask, u64_t n);
+obj_p index_find_i64(i64_t x[], i64_t xl, i64_t y[], i64_t yl);
+obj_p ops_where(b8_t *mask, i64_t n);
 obj_p sys_error(os_ray_error_type_t, lit_p msg);
 
 // Binary ops/coersions

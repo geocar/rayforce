@@ -773,7 +773,7 @@ obj_p parse_symbol(parser_t *parser) {
 
 obj_p parse_vector(parser_t *parser) {
     obj_p tok, vec = I64(0), err;
-    u64_t i;
+    i64_t i;
     f64_t v;
     span_t span = span_start(parser);
 

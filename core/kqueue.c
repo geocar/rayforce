@@ -49,7 +49,7 @@ __thread u8_t __STDIN_BUF[BUF_SIZE + 1];
 
 nil_t sigint_handler(i32_t signo) {
     UNUSED(signo);
-    u64_t val = 1;
+    i64_t val = 1;
     // Write to the eventfd to wake up the epoll loop.
     write(__EVENT_FD[1], &val, sizeof(val));
 }

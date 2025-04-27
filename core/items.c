@@ -42,7 +42,7 @@
 #include "iter.h"
 
 obj_p ray_at(obj_p x, obj_p y) {
-    u64_t i, j, yl, xl, n, size;
+    i64_t i, j, yl, xl, n, size;
     obj_p res, k, s, v, cols;
     u8_t *buf;
 
@@ -343,7 +343,7 @@ obj_p ray_find(obj_p x, obj_p y) {
     })
 
 obj_p ray_filter(obj_p x, obj_p y) {
-    u64_t i, j = 0, l;
+    i64_t i, j = 0, l;
     obj_p res, vals;
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(TYPE_B8, TYPE_B8):
@@ -390,7 +390,11 @@ obj_p ray_filter(obj_p x, obj_p y) {
 }
 
 obj_p ray_take(obj_p x, obj_p y) {
+<<<<<<< HEAD
     u64_t i, j, f, l, m, n, size;
+=======
+    i64_t i, l, m, n, size;
+>>>>>>> e88847ec (wip)
     obj_p k, s, v, res;
     u8_t *buf;
 
@@ -844,7 +848,7 @@ obj_p ray_first(obj_p x) {
 }
 
 obj_p ray_last(obj_p x) {
-    u64_t l;
+    i64_t l;
 
     switch (x->type) {
         case TYPE_MAPGROUP:
@@ -856,7 +860,7 @@ obj_p ray_last(obj_p x) {
 }
 
 obj_p ray_key(obj_p x) {
-    u64_t l;
+    i64_t l;
     lit_p k;
 
     switch (x->type) {
@@ -877,7 +881,7 @@ obj_p ray_key(obj_p x) {
 obj_p ray_value(obj_p x) {
     obj_p sym, k, v, res, e, *objptr;
     u8_t *u8ptr, *buf;
-    u64_t size;
+    i64_t size;
     i64_t i, j, l, n, sl, xl, *i64ptr;
     f64_t *f64ptr;
     guid_t *guidptr;
@@ -1087,7 +1091,7 @@ obj_p ray_value(obj_p x) {
 }
 
 obj_p ray_where(obj_p x) {
-    u64_t i, l;
+    i64_t i, l;
     obj_p res;
 
     switch (x->type) {

@@ -60,7 +60,7 @@ obj_p binary_call(obj_p f, obj_p x, obj_p y) {
 
 obj_p binary_set(obj_p x, obj_p y) {
     i64_t fd, c = 0;
-    u64_t i, l, sz, size;
+    i64_t i, l, sz, size;
     u32_t rc;
     u8_t *b, mmod;
     obj_p res, col, s, p, k, v, e, path, buf;
@@ -187,7 +187,7 @@ obj_p binary_set(obj_p x, obj_p y) {
                     drop_obj(s);
 
                     l = y->len;
-                    size = size_obj(y) - sizeof(i8_t) - sizeof(u64_t);
+                    size = size_obj(y) - sizeof(i8_t) - sizeof(i64_t);
                     buf = U8(size);
                     b = AS_U8(buf);
                     k = I64(l);

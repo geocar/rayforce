@@ -113,7 +113,7 @@ obj_p parse_cmdline(i32_t argc, str_p argv[]) {
 }
 
 i32_t runtime_create(i32_t argc, str_p argv[]) {
-    u64_t n;
+    i64_t n;
     obj_p arg, fmt, res;
     symbols_p symbols;
 

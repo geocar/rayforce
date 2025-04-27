@@ -34,7 +34,7 @@ __thread i32_t __EVENT_FD;  // eventfd to notify epoll loop of shutdown
 #define INITIAL_RX_BUFFER_SIZE 16
 
 nil_t sigint_handler(i32_t signo) {
-    u64_t val = 1;
+    i64_t val = 1;
     i32_t res;
 
     UNUSED(signo);

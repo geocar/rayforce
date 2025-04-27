@@ -35,10 +35,10 @@ typedef obj_p (*logic_op_f)(raw_p, raw_p, raw_p, raw_p);
 // Operation functions
 static obj_p and_op_partial(raw_p x, raw_p y, raw_p z, raw_p k) {
     b8_t *mask, *next_mask;
-    u64_t i, n, offset;
+    i64_t i, n, offset;
 
-    offset = (u64_t)k;
-    n = (u64_t)z;
+    offset = (i64_t)k;
+    n = (i64_t)z;
 
     mask = AS_B8((obj_p)x) + offset;
     next_mask = AS_B8((obj_p)y) + offset;
@@ -51,10 +51,10 @@ static obj_p and_op_partial(raw_p x, raw_p y, raw_p z, raw_p k) {
 
 static obj_p or_op_partial(raw_p x, raw_p y, raw_p z, raw_p k) {
     b8_t *mask, *next_mask;
-    u64_t i, n, offset;
+    i64_t i, n, offset;
 
-    offset = (u64_t)k;
-    n = (u64_t)z;
+    offset = (i64_t)k;
+    n = (i64_t)z;
 
     mask = AS_B8((obj_p)x) + offset;
     next_mask = AS_B8((obj_p)y) + offset;
@@ -66,8 +66,8 @@ static obj_p or_op_partial(raw_p x, raw_p y, raw_p z, raw_p k) {
 }
 
 // Actual logic operation
-static obj_p logic_map(obj_p *x, u64_t n, lit_p op_name, logic_op_f op_func) {
-    u64_t i, m, l, chunk;
+static obj_p logic_map(obj_p *x, i64_t n, lit_p op_name, logic_op_f op_func) {
+    i64_t i, m, l, chunk;
     obj_p next, res, v;
     pool_p pool = runtime_get()->pool;
 
@@ -137,12 +137,12 @@ static obj_p logic_map(obj_p *x, u64_t n, lit_p op_name, logic_op_f op_func) {
     return res;
 }
 
-obj_p ray_and(obj_p *x, u64_t n) { return logic_map(x, n, "and", and_op_partial); }
+obj_p ray_and(obj_p *x, i64_t n) { return logic_map(x, n, "and", and_op_partial); }
 
-obj_p ray_or(obj_p *x, u64_t n) { return logic_map(x, n, "or", or_op_partial); }
+obj_p ray_or(obj_p *x, i64_t n) { return logic_map(x, n, "or", or_op_partial); }
 
 // obj_p ray_or(obj_p x, obj_p y) {
-//     u64_t i, l;
+//     i64_t i, l;
 //     obj_p v, res;
 
 //     switch (MTYPE2(x->type, y->type)) {

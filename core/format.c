@@ -113,7 +113,7 @@ i64_t prompt_fmt_into(obj_p *dst) {
 }
 
 nil_t debug_str(obj_p str) {
-    u64_t i, l;
+    i64_t i, l;
     str_p s;
 
     l = str->len;
@@ -409,7 +409,7 @@ i64_t symbol_fmt_into(obj_p *dst, i64_t limit, b8_t full, i64_t val) {
 
 i64_t string_fmt_into(obj_p *dst, i64_t limit, b8_t full, obj_p obj) {
     i64_t n;
-    u64_t i, l;
+    i64_t i, l;
     str_p s;
 
     n = 0;
@@ -857,7 +857,7 @@ i64_t anymap_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p ob
 i64_t dict_fmt_into(obj_p *dst, i64_t indent, i64_t limit, b8_t full, obj_p obj) {
     obj_p keys = AS_LIST(obj)[0], vals = AS_LIST(obj)[1];
     i64_t n;
-    u64_t i, dict_height = ops_count(keys);
+    i64_t i, dict_height = ops_count(keys);
 
     if (dict_height == 0)
         return str_fmt_into(dst, 3, "{}");
@@ -1208,8 +1208,8 @@ obj_p obj_fmt(obj_p obj, b8_t full) {
  * using format string as a template with
  * '%' placeholders.
  */
-obj_p obj_fmt_n(obj_p *x, u64_t n) {
-    u64_t i;
+obj_p obj_fmt_n(obj_p *x, i64_t n) {
+    i64_t i;
     i64_t sz = 0;
     str_p p, start = NULL, end = NULL;
     obj_p res = NULL_OBJ;
@@ -1264,9 +1264,9 @@ obj_p ray_show(obj_p obj) {
     return NULL_OBJ;
 }
 
-i64_t timeit_fmt_into(obj_p *dst, u64_t indent, u64_t *index, timeit_t *timeit) {
+i64_t timeit_fmt_into(obj_p *dst, i64_t indent, i64_t *index, timeit_t *timeit) {
     i64_t n;
-    u64_t i;
+    i64_t i;
     f64_t elapsed = 0.0;
     b8_t unicode = __USE_UNICODE;
     timeit_span_t span;
@@ -1318,7 +1318,7 @@ i64_t timeit_fmt_into(obj_p *dst, u64_t indent, u64_t *index, timeit_t *timeit) 
 
 obj_p timeit_fmt(nil_t) {
     timeit_t *timeit = &interpreter_current()->timeit;
-    u64_t index = 0;
+    i64_t index = 0;
     obj_p dst = NULL_OBJ;
 
     timeit_fmt_into(&dst, 0, &index, timeit);

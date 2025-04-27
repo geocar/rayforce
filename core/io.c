@@ -44,7 +44,7 @@
 #include "items.h"
 #include "ipc.h"
 
-obj_p ray_hopen(obj_p *x, u64_t n) {
+obj_p ray_hopen(obj_p *x, i64_t n) {
     i64_t fd, timeout = 0;
     sock_addr_t addr;
     u8_t handshake[2] = {RAYFORCE_VERSION, 0x00};
@@ -119,7 +119,7 @@ obj_p ray_hclose(obj_p x) {
 }
 
 obj_p ray_read(obj_p x) {
-    u64_t sz, rs = 0;
+    i64_t sz, rs = 0;
     i64_t fd, size, c = 0;
     u8_t *map, *cur;
     str_p buf;
@@ -420,9 +420,9 @@ obj_p parse_csv_line(i8_t types[], i64_t cnt, str_p start, str_p end, i64_t row,
     return NULL_OBJ;
 }
 
-obj_p parse_csv_range(i8_t *types, i64_t num_types, str_p buf, i64_t size, u64_t lines, i64_t start_line, obj_p cols,
+obj_p parse_csv_range(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t lines, i64_t start_line, obj_p cols,
                       c8_t sep) {
-    u64_t i, j, k, l;
+    i64_t i, j, k, l;
     str_p line_end, prev;
     obj_p res = NULL_OBJ;
 
@@ -455,9 +455,9 @@ obj_p parse_csv_range(i8_t *types, i64_t num_types, str_p buf, i64_t size, u64_t
     return NULL_OBJ;  // Success
 }
 
-obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, u64_t total_lines, obj_p cols, c8_t sep) {
+obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, i64_t total_lines, obj_p cols, c8_t sep) {
     obj_p err, res = NULL_OBJ;
-    u64_t i, l, batch, batch_size, num_batches, lines_per_batch, start_line, end_line, lines_in_batch;
+    i64_t i, l, batch, batch_size, num_batches, lines_per_batch, start_line, end_line, lines_in_batch;
     str_p batch_start, batch_end;
     pool_p pool = runtime_get()->pool;
 
@@ -521,7 +521,7 @@ obj_p parse_csv_lines(i8_t *types, i64_t num_types, str_p buf, i64_t size, u64_t
 
 obj_p ray_read_csv(obj_p *x, i64_t n) {
     i64_t fd, size;
-    u64_t i, l, len, lines;
+    i64_t i, l, len, lines;
     str_p buf, prev, pos, line;
     obj_p types, names, cols, path, res;
     i8_t type;
@@ -710,7 +710,7 @@ obj_p ray_eval(obj_p x) {
 }
 
 obj_p ray_load(obj_p x) {
-    u64_t flen;
+    i64_t flen;
     obj_p file, sym, tab, res;
     lit_p fname;
 
@@ -746,9 +746,9 @@ obj_p ray_load(obj_p x) {
     return res;
 }
 
-obj_p distinct_syms(obj_p *x, u64_t n) {
+obj_p distinct_syms(obj_p *x, i64_t n) {
     i64_t p;
-    u64_t i, j, h, l;
+    i64_t i, j, h, l;
     obj_p vec, set, a;
 
     if (n == 0 || (*x)->len == 0)
@@ -850,7 +850,7 @@ obj_p io_set_table(obj_p path, obj_p table) {
 }
 
 obj_p io_set_table_splayed(obj_p path, obj_p table, obj_p symfile) {
-    u64_t i, l;
+    i64_t i, l;
     obj_p res, col, s, p, v, e, cols, sym;
 
     // save columns schema

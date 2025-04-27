@@ -14,7 +14,7 @@ typedef struct header_t
     u8_t  version;    // Serialization format version (current: 1)
     u8_t  flags;      // Additional flags for special handling (compression, encryption)
     u16_t reserved;   // Reserved for future use (must be 0)
-    u64_t size;       // Total size of the payload in bytes
+    i64_t size;       // Total size of the payload in bytes
 } header_t;
 ```
 

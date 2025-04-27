@@ -28,7 +28,7 @@
 #include "string.h"
 #include "util.h"
 
-i64_t sock_addr_from_str(str_p str, u64_t len, sock_addr_t *addr) {
+i64_t sock_addr_from_str(str_p str, i64_t len, sock_addr_t *addr) {
     str_p tok;
 
     // Check for NULL pointers

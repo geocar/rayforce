@@ -17,7 +17,7 @@ def create_header(msg_type, size):
     # u8_t flags (0)
     # u8_t endian (0 for little)
     # u8_t msgtype (0=async, 1=sync, 2=response)
-    # u64_t size
+    # i64_t size
     return struct.pack('=IBBBBBQ', 
         SERDE_PREFIX,  # prefix
         RAYFORCE_VERSION,  # version

@@ -36,7 +36,7 @@
     ({                                             \
         __BASE_##lt##_t *$lhs = __AS_##lt(x) + of; \
         __BASE_##lt##_t $out = iv;                 \
-        for (u64_t $i = 0; $i < ln; $i++)          \
+        for (i64_t $i = 0; $i < ln; $i++)          \
             $out = op($out, $lhs[$i]);             \
         ot(lt##_to_##ot($out));                    \
     })
@@ -45,7 +45,7 @@
     ({                                        \
         lt##_t *$lhs = __AS_##lt(x) + of;     \
         ot##_t *$out = __AS_##lt(ov) + of;    \
-        for (u64_t $i = 0; $i < ln; $i++)     \
+        for (i64_t $i = 0; $i < ln; $i++)     \
             $out[$i] = op($lhs[$i]);          \
         NULL_OBJ;                             \
     })
@@ -56,7 +56,7 @@
         __BASE_##ot##_t *$out;                                                                 \
         $rhs = __AS_##rt(y) + of;                                                              \
         $out = __AS_##ot(ov) + of;                                                             \
-        for (u64_t $i = 0; $i < ln; $i++)                                                      \
+        for (i64_t $i = 0; $i < ln; $i++)                                                      \
             $out[$i] = mt##_to_##ot(op(lt##_to_##mt(x->__BASE_##lt), rt##_to_##mt($rhs[$i]))); \
         NULL_OBJ;                                                                              \
     })
@@ -67,7 +67,7 @@
         __BASE_##ot##_t *$out;                                                                 \
         $lhs = __AS_##lt(x) + of;                                                              \
         $out = __AS_##ot(ov) + of;                                                             \
-        for (u64_t $i = 0; $i < ln; $i++)                                                      \
+        for (i64_t $i = 0; $i < ln; $i++)                                                      \
             $out[$i] = mt##_to_##ot(op(lt##_to_##mt($lhs[$i]), rt##_to_##mt(y->__BASE_##rt))); \
         NULL_OBJ;                                                                              \
     })
@@ -80,7 +80,7 @@
         $lhs = __AS_##lt(x) + of;                                                        \
         $rhs = __AS_##rt(y) + of;                                                        \
         $out = __AS_##ot(ov) + of;                                                       \
-        for (u64_t $i = 0; $i < ln; $i++)                                                \
+        for (i64_t $i = 0; $i < ln; $i++)                                                \
             $out[$i] = mt##_to_##ot(op(lt##_to_##mt($lhs[$i]), rt##_to_##mt($rhs[$i]))); \
         NULL_OBJ;                                                                        \
     })
@@ -181,7 +181,7 @@ i8_t infer_xbar_type(obj_p x, obj_p y) {
     }
 }
 
-obj_p ray_add_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_add_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(ADDI32(x->i32, y->i32));
@@ -406,7 +406,7 @@ obj_p ray_add_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_sub_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(SUBI32(x->i32, y->i32));
@@ -600,7 +600,7 @@ obj_p ray_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_mul_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_mul_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(MULI32(x->i32, y->i32));
@@ -718,7 +718,7 @@ obj_p ray_mul_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_div_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_div_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(DIVI32(x->i32, y->i32));
@@ -827,7 +827,7 @@ obj_p ray_div_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_fdiv_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_fdiv_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return f64(FDIVI32(x->i32, y->i32));
@@ -911,7 +911,7 @@ obj_p ray_fdiv_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_mod_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_mod_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(MODI32(x->i32, y->i32));
@@ -1012,7 +1012,7 @@ obj_p ray_mod_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_xbar_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_xbar_partial(obj_p x, obj_p y, i64_t len, i64_t offset, obj_p out) {
     switch (MTYPE2(x->type, y->type)) {
         case MTYPE2(-TYPE_I32, -TYPE_I32):
             return i32(XBARI32(x->i32, y->i32));
@@ -1162,7 +1162,7 @@ obj_p ray_xbar_partial(obj_p x, obj_p y, u64_t len, u64_t offset, obj_p out) {
 }
 
 // count non-null values
-obj_p ray_cnt_partial(obj_p x, u64_t len, u64_t offset) {
+obj_p ray_cnt_partial(obj_p x, i64_t len, i64_t offset) {
     switch (x->type) {
         case -TYPE_I32:
             return i64(CNTI32(0, x->i32));
@@ -1193,7 +1193,7 @@ obj_p ray_cnt_partial(obj_p x, u64_t len, u64_t offset) {
     }
 }
 
-obj_p ray_sum_partial(obj_p x, u64_t len, u64_t offset) {
+obj_p ray_sum_partial(obj_p x, i64_t len, i64_t offset) {
     switch (x->type) {
         case -TYPE_I32:
         case -TYPE_I64:
@@ -1238,7 +1238,7 @@ obj_p ray_sum_partial(obj_p x, u64_t len, u64_t offset) {
     }
 }
 
-obj_p ray_min_partial(obj_p x, u64_t len, u64_t offset) {
+obj_p ray_min_partial(obj_p x, i64_t len, i64_t offset) {
     switch (x->type) {
         case -TYPE_I32:
         case -TYPE_I64:
@@ -1266,7 +1266,7 @@ obj_p ray_min_partial(obj_p x, u64_t len, u64_t offset) {
     }
 }
 
-obj_p ray_max_partial(obj_p x, u64_t len, u64_t offset) {
+obj_p ray_max_partial(obj_p x, i64_t len, i64_t offset) {
     switch (x->type) {
         case -TYPE_I32:
         case -TYPE_I64:
@@ -1294,7 +1294,7 @@ obj_p ray_max_partial(obj_p x, u64_t len, u64_t offset) {
     }
 }
 
-obj_p ray_round_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_round_partial(obj_p x, i64_t len, i64_t offset, obj_p out) {
     switch (x->type) {
         case -TYPE_I32:
         case -TYPE_I64:
@@ -1318,7 +1318,7 @@ obj_p ray_round_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_floor_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_floor_partial(obj_p x, i64_t len, i64_t offset, obj_p out) {
     switch (x->type) {
         case -TYPE_I32:
         case -TYPE_I64:
@@ -1342,7 +1342,7 @@ obj_p ray_floor_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
     }
 }
 
-obj_p ray_ceil_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
+obj_p ray_ceil_partial(obj_p x, i64_t len, i64_t offset, obj_p out) {
     switch (x->type) {
         case -TYPE_I32:
         case -TYPE_I64:
@@ -1366,14 +1366,14 @@ obj_p ray_ceil_partial(obj_p x, u64_t len, u64_t offset, obj_p out) {
     }
 }
 // TODO: DRY
-obj_p ray_sq_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset) {
+obj_p ray_sq_sub_partial(obj_p x, obj_p y, i64_t len, i64_t offset) {
     switch (x->type) {
         case TYPE_I32:
         case TYPE_DATE:
         case TYPE_TIME: {
             i32_t *lhs = __AS_i32(x) + offset;
             f64_t out = 0.0;
-            for (u64_t i = 0; i < len; i++)
+            for (i64_t i = 0; i < len; i++)
                 if (lhs[i] != NULL_I32) {
                     f64_t t = ((f64_t)lhs[i]) - y->f64;
                     out += t * t;
@@ -1384,7 +1384,7 @@ obj_p ray_sq_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset) {
         case TYPE_TIMESTAMP: {
             i64_t *lhs = __AS_i64(x) + offset;
             f64_t out = 0.0;
-            for (u64_t i = 0; i < len; i++)
+            for (i64_t i = 0; i < len; i++)
                 if (lhs[i] != NULL_I64) {
                     f64_t t = ((f64_t)lhs[i]) - y->f64;
                     out += t * t;
@@ -1394,7 +1394,7 @@ obj_p ray_sq_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset) {
         default: {
             f64_t *lhs = __AS_f64(x) + offset;
             f64_t out = 0.0;
-            for (u64_t i = 0; i < len; i++)
+            for (i64_t i = 0; i < len; i++)
                 if (!ops_is_nan(lhs[i])) {
                     f64_t t = ((f64_t)lhs[i]) - y->f64;
                     out += t * t;
@@ -1406,13 +1406,13 @@ obj_p ray_sq_sub_partial(obj_p x, obj_p y, u64_t len, u64_t offset) {
 
 obj_p unop_fold(raw_p op, obj_p x) {
     pool_p pool;
-    u64_t i, l, n, chunk;
+    i64_t i, l, n, chunk;
     obj_p v, res;
     obj_p (*unop)(obj_p);
     raw_p argv[3];
 
     if (IS_ATOM(x)) {
-        unop = (obj_p (*)(obj_p))op;
+        unop = (obj_p(*)(obj_p))op;
         return unop(x);
     }
 
@@ -1454,13 +1454,13 @@ obj_p unop_fold(raw_p op, obj_p x) {
 
 obj_p unop_map(raw_p op, obj_p x) {
     pool_p pool;
-    u64_t i, l, n, chunk;
+    i64_t i, l, n, chunk;
     obj_p v, out;
     obj_p (*unop)(obj_p);
     raw_p argv[4];
 
     if (IS_ATOM(x)) {
-        unop = (obj_p (*)(obj_p))op;
+        unop = (obj_p(*)(obj_p))op;
         return unop(x);
     }
 
@@ -1503,7 +1503,7 @@ obj_p unop_map(raw_p op, obj_p x) {
 
 obj_p binop_map(raw_p op, obj_p x, obj_p y) {
     pool_p pool;
-    u64_t i, l, n, chunk;
+    i64_t i, l, n, chunk;
     obj_p v, out;
     raw_p argv[5];
     i8_t t;
@@ -1570,7 +1570,7 @@ obj_p binop_map(raw_p op, obj_p x, obj_p y) {
 
 obj_p binop_fold(raw_p op, obj_p x, obj_p y) {
     pool_p pool;
-    u64_t i, n, chunk, l = x->len;
+    i64_t i, n, chunk, l = x->len;
     obj_p v, res;
     raw_p argv[4];
 
