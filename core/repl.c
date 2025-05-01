@@ -32,23 +32,20 @@
 #include "heap.h"
 #include "poll.h"
 #include "string.h"
+#include "log.h"
 
-poll_result_t repl_read(poll_p poll, selector_p selector) {
+nil_t repl_on_data(poll_p poll, selector_p selector, raw_p data) {
+    UNUSED(poll);
+
     b8_t error;
-    obj_p str, res;
     repl_p repl;
+    obj_p res, str;
+
+    LOG_TRACE("repl_on_data");
 
     repl = (repl_p)selector->data;
-
-    if (!term_getc(repl->term)) {
-        poll->code = 1;
-        return POLL_ERROR;
-    }
-
-    str = term_read(repl->term);
-
-    if (str == NULL)
-        return POLL_OK;
+    res = NULL_OBJ;
+    str = (obj_p)data;
 
     if (IS_ERR(str))
         io_write(STDERR_FILENO, 2, str);
@@ -60,17 +57,35 @@ poll_result_t repl_read(poll_p poll, selector_p selector) {
         else
             io_write(STDOUT_FILENO, 2, res);
 
-        drop_obj(res);
-
         if (!error)
             timeit_print();
     }
 
+    drop_obj(res);
     drop_obj(str);
 
     term_prompt(repl->term);
+}
 
-    return POLL_OK;
+option_t repl_read(poll_p poll, selector_p selector) {
+    obj_p str;
+    repl_p repl;
+
+    LOG_TRACE("repl_read");
+
+    repl = (repl_p)selector->data;
+
+    if (!term_getc(repl->term)) {
+        poll->code = 1;
+        return option_error("term_getc failed");
+    }
+
+    str = term_read(repl->term);
+
+    if (str == NULL)
+        return option_none();
+
+    return option_some(str);
 }
 
 repl_p repl_create(poll_p poll) {
@@ -88,6 +103,7 @@ repl_p repl_create(poll_p poll) {
     registry.read_fn = repl_read;
     registry.close_fn = repl_on_close;
     registry.error_fn = repl_on_error;
+    registry.data_fn = repl_on_data;
     registry.data = repl;
 
     repl->id = poll_register(poll, &registry);
@@ -108,19 +124,15 @@ nil_t repl_destroy(repl_p repl) {
     heap_free(repl);
 }
 
-poll_result_t repl_on_close(poll_p poll, selector_p selector) {
+nil_t repl_on_close(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     repl_destroy(selector->data);
-
-    return POLL_READY;
 }
 
-poll_result_t repl_on_error(poll_p poll, selector_p selector) {
+nil_t repl_on_error(poll_p poll, selector_p selector) {
     UNUSED(poll);
     UNUSED(selector);
 
     perror("repl_on_error");
-
-    return POLL_ERROR;
 }

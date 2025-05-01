@@ -26,6 +26,7 @@
 #include <signal.h>
 #include <sys/eventfd.h>
 #include <sys/epoll.h>
+#include <fcntl.h>
 #include "poll.h"
 #include "heap.h"
 #include "log.h"
@@ -120,7 +121,7 @@ nil_t poll_destroy(poll_p poll) {
     heap_free(poll);
 }
 
-poll_result_t poll_register(poll_p poll, poll_registry_p registry) {
+i64_t poll_register(poll_p poll, poll_registry_p registry) {
     i64_t id;
     selector_p selector;
     struct epoll_event ev;
@@ -140,6 +141,7 @@ poll_result_t poll_register(poll_p poll, poll_registry_p registry) {
     selector->tx.write_fn = registry->write_fn;
     selector->rx.recv_fn = registry->recv_fn;
     selector->tx.send_fn = registry->send_fn;
+    selector->data_fn = registry->data_fn;
     selector->data = registry->data;
     selector->rx.buf = NULL;
     selector->tx.buf = NULL;
@@ -151,7 +153,7 @@ poll_result_t poll_register(poll_p poll, poll_registry_p registry) {
 
     if (epoll_ctl(poll->fd, EPOLL_CTL_ADD, selector->fd, &ev) == -1) {
         perror("epoll_ctl: add");
-        return POLL_ERROR;
+        return -1;
     }
 
     LOG_DEBUG("Calling open function");
@@ -162,7 +164,7 @@ poll_result_t poll_register(poll_p poll, poll_registry_p registry) {
     return id;
 }
 
-poll_result_t poll_deregister(poll_p poll, i64_t id) {
+i64_t poll_deregister(poll_p poll, i64_t id) {
     i64_t idx;
     selector_p selector;
     poll_buffer_p buf;
@@ -172,7 +174,7 @@ poll_result_t poll_deregister(poll_p poll, i64_t id) {
     idx = freelist_pop(poll->selectors, id - SELECTOR_ID_OFFSET);
 
     if (idx == NULL_I64)
-        return POLL_ERROR;
+        return -1;
 
     selector = (selector_p)idx;
 
@@ -196,10 +198,10 @@ poll_result_t poll_deregister(poll_p poll, i64_t id) {
 
     heap_free(selector);
 
-    return POLL_OK;
+    return 0;
 }
 
-poll_result_t poll_recv(poll_p poll, selector_p selector) {
+i64_t poll_recv(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     i64_t size, total;
@@ -213,10 +215,10 @@ poll_result_t poll_recv(poll_p poll, selector_p selector) {
 
         LOG_TRACE("Received %lld bytes from selector %lld", size, selector->id);
 
-        if (size == POLL_ERROR)
-            return POLL_ERROR;
-        else if (size == POLL_OK)
-            return POLL_OK;
+        if (size == -1)
+            return -1;
+        else if (size == 0)
+            return 0;
 
         selector->rx.buf->offset += size;
 
@@ -224,12 +226,12 @@ poll_result_t poll_recv(poll_p poll, selector_p selector) {
 
     total = selector->rx.buf->offset - total;
 
-    LOG_TRACE("Received %lld bytes from selector %lld", total, selector->id);
+    LOG_TRACE("Total bytes received from selector %lld: %lld", selector->id, total);
 
     return total;
 }
 
-poll_result_t poll_send(poll_p poll, selector_p selector) {
+i64_t poll_send(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     i64_t size, total;
@@ -247,10 +249,10 @@ send_loop:
 
         LOG_TRACE("Sent %lld bytes to selector %lld", size, selector->id);
 
-        if (size == POLL_ERROR)
-            return POLL_ERROR;
+        if (size == -1)
+            return -1;
 
-        if (size == POLL_OK) {
+        if (size == 0) {
             // setup epoll for write event if it's not already set
             if ((selector->interest & POLL_EVENT_WRITE) == 0) {
                 LOG_TRACE("Setting up epoll for write event");
@@ -258,10 +260,10 @@ send_loop:
                 ev.events = selector->interest;
                 ev.data.ptr = selector;
                 if (epoll_ctl(poll->fd, EPOLL_CTL_MOD, selector->fd, &ev) == -1)
-                    return POLL_ERROR;
+                    return -1;
             }
 
-            return POLL_OK;
+            return 0;
         }
 
         selector->tx.buf->offset += size;
@@ -286,17 +288,17 @@ send_loop:
         ev.events = selector->interest;
         ev.data.ptr = selector;
         if (epoll_ctl(poll->fd, EPOLL_CTL_MOD, selector->fd, &ev) == -1)
-            return POLL_ERROR;
+            return -1;
     }
 
-    LOG_TRACE("Sent %lld bytes to selector %lld", total, selector->id);
+    LOG_TRACE("Total bytes sent to selector %lld: %lld", selector->id, total);
 
     return total;
 }
 
-poll_result_t poll_run(poll_p poll) {
-    i64_t n, nfds, timeout;
-    poll_result_t poll_result;
+i64_t poll_run(poll_p poll) {
+    i64_t n, nbytes, nfds, timeout;
+    option_t poll_result;
     selector_p selector;
     struct epoll_event ev, events[MAX_EVENTS];
 
@@ -312,7 +314,7 @@ poll_result_t poll_run(poll_p poll) {
             if (errno == EINTR)
                 continue;
 
-            return POLL_ERROR;
+            return -1;
         }
 
         for (n = 0; n < nfds; n++) {
@@ -335,46 +337,54 @@ poll_result_t poll_run(poll_p poll) {
 
             // read
             if (ev.events & POLL_EVENT_READ) {
-                poll_result = POLL_READY;
-
                 LOG_TRACE("Read event received for selector %lld", selector->id);
-
-                do {
+                while (B8_TRUE) {
                     // In case we have a low level IO recv function, use it
-                    if (selector->rx.buf != NULL && selector->rx.recv_fn != NULL) {
-                        poll_result = poll_recv(poll, selector);
+                    nbytes = 0;
+                    if (selector->rx.recv_fn != NULL) {
+                        nbytes = poll_recv(poll, selector);
 
-                        if (poll_result == POLL_ERROR) {
+                        if (nbytes == -1) {
                             poll_deregister(poll, selector->id);
                             goto next_event;
                         }
 
-                        if (poll_result == POLL_OK)
+                        if (nbytes == 0)
                             break;
                     }
 
-                    if (POLL_IS_READY(poll_result) && selector->rx.read_fn != NULL)
+                    poll_result = option_none();
+
+                    if (selector->rx.read_fn != NULL)
                         poll_result = selector->rx.read_fn(poll, selector);
 
-                    if (poll_result == POLL_ERROR)
+                    if (option_is_some(&poll_result)) {
+                        if (poll_result.value != NULL && selector->data_fn != NULL)
+                            selector->data_fn(poll, selector, poll_result.value);
+
+                        continue;
+                    }
+
+                    if (option_is_error(&poll_result))
                         poll_deregister(poll, selector->id);
 
-                } while (poll_result == POLL_READY);
+                    break;
+                }
             }
 
             // write
             if (ev.events & POLL_EVENT_WRITE) {
                 LOG_TRACE("Write event received for selector %lld", selector->id);
-
+                nbytes = 0;
                 while (selector->tx.buf != NULL) {
-                    poll_result = poll_send(poll, selector);
+                    nbytes = poll_send(poll, selector);
 
-                    if (poll_result == POLL_ERROR) {
+                    if (nbytes == -1) {
                         poll_deregister(poll, selector->id);
                         goto next_event;
                     }
 
-                    if (poll_result == POLL_OK)
+                    if (nbytes == 0)
                         break;
                 }
             }
@@ -384,4 +394,60 @@ poll_result_t poll_run(poll_p poll) {
     }
 
     return poll->code;
+}
+
+option_t poll_block_on(poll_p poll, selector_p selector) {
+    option_t result;
+    fd_set readfds;
+    struct timeval timeout;
+    i64_t nbytes, ret;
+
+    LOG_TRACE("Blocking on selector %lld", selector->id);
+
+    // Setup select
+    FD_ZERO(&readfds);
+    FD_SET(selector->fd, &readfds);
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 30000000;  // 30 seconds
+
+    LOG_TRACE("File descriptor %lld is ready for reading", selector->id);
+
+    // Perform the read operation
+    while (selector->rx.buf != NULL) {
+        // Wait for the file descriptor to become readable
+        ret = select(selector->fd + 1, &readfds, NULL, NULL, &timeout);
+        if (ret == -1) {
+            LOG_ERROR("select failed");
+            return option_error("recv select failed");
+        }
+
+        if (ret == 0)
+            return option_error("recv timeout");
+
+        // In case we have a low level IO recv function, use it
+        if (selector->rx.buf != NULL && selector->rx.recv_fn != NULL) {
+            nbytes = poll_recv(poll, selector);
+
+            if (nbytes == -1) {
+                poll_deregister(poll, selector->id);
+                return option_error("recv failed");
+            }
+
+            if (nbytes == 0)
+                return option_none();
+        }
+
+        if (selector->rx.read_fn != NULL)
+            result = selector->rx.read_fn(poll, selector);
+
+        if (option_is_error(&result)) {
+            poll_deregister(poll, selector->id);
+            return result;
+        }
+
+        if (option_is_some(&result) && result.value != NULL)
+            return result;
+    }
+
+    return option_none();
 }

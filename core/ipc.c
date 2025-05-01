@@ -32,39 +32,10 @@
 #include "log.h"
 
 // ============================================================================
-// Forward Declarations
-// ============================================================================
-
-static poll_result_t ipc_read_handshake(poll_p poll, selector_p selector);
-static poll_result_t ipc_read_header(poll_p poll, selector_p selector);
-static poll_result_t ipc_read_msg(poll_p poll, selector_p selector);
-static poll_result_t ipc_on_open(poll_p poll, selector_p selector);
-static poll_result_t ipc_on_close(poll_p poll, selector_p selector);
-static poll_result_t ipc_on_error(poll_p poll, selector_p selector);
-static poll_result_t ipc_send_handshake(poll_p poll, selector_p selector);
-static poll_result_t ipc_send_msg(poll_p poll, selector_p selector);
-static poll_result_t ipc_send_header(poll_p poll, selector_p selector);
-
-// ============================================================================
-// User FD Management
-// ============================================================================
-
-nil_t poll_set_usr_fd(i64_t fd) {
-    obj_p s, k, v;
-
-    s = symbol(".z.w", 4);
-    k = i64(fd);
-    v = binary_set(s, k);
-    drop_obj(k);
-    drop_obj(v);
-    drop_obj(s);
-}
-
-// ============================================================================
 // Listener Management
 // ============================================================================
 
-poll_result_t ipc_listener_accept(poll_p poll, selector_p selector) {
+option_t ipc_listener_accept(poll_p poll, selector_p selector) {
     i64_t fd;
     struct poll_registry_t registry = ZERO_INIT_STRUCT;
     ipc_ctx_p ctx;
@@ -86,37 +57,36 @@ poll_result_t ipc_listener_accept(poll_p poll, selector_p selector) {
         registry.read_fn = ipc_read_handshake;
         registry.recv_fn = sock_recv;
         registry.send_fn = sock_send;
+        registry.data_fn = ipc_on_data;
         registry.data = ctx;
 
         if (poll_register(poll, &registry) == -1) {
             LOG_ERROR("Failed to register new connection in poll registry");
             heap_free(ctx);
-            return POLL_ERROR;
+            return option_error("ipc_listener_accept: failed to register new connection in poll registry");
         }
 
         LOG_INFO("New connection registered successfully");
     }
 
-    return POLL_OK;
+    return option_none();
 }
 
-poll_result_t ipc_listener_close(poll_p poll, selector_p selector) {
+nil_t ipc_listener_close(poll_p poll, selector_p selector) {
     UNUSED(poll);
     UNUSED(selector);
-
-    return POLL_OK;
 }
 
-poll_result_t ipc_listen(poll_p poll, i64_t port) {
+i64_t ipc_listen(poll_p poll, i64_t port) {
     i64_t fd;
     struct poll_registry_t registry = ZERO_INIT_STRUCT;
 
     if (poll == NULL)
-        return POLL_ERROR;
+        return -1;
 
     fd = sock_listen(port);
     if (fd == -1)
-        return POLL_ERROR;
+        return -1;
 
     registry.fd = fd;
     registry.type = SELECTOR_TYPE_SOCKET;
@@ -136,7 +106,7 @@ poll_result_t ipc_listen(poll_p poll, i64_t port) {
 // User Callback Management
 // ============================================================================
 
-poll_result_t ipc_call_usr_cb(poll_p poll, selector_p selector, lit_p sym, i64_t len) {
+nil_t ipc_call_usr_cb(poll_p poll, selector_p selector, lit_p sym, i64_t len) {
     UNUSED(poll);
     i64_t clbnm;
     obj_p v, f, *clbfn;
@@ -161,15 +131,13 @@ poll_result_t ipc_call_usr_cb(poll_p poll, selector_p selector, lit_p sym, i64_t
 
         drop_obj(v);
     }
-
-    return POLL_OK;
 }
 
 // ============================================================================
 // Connection Management
 // ============================================================================
 
-poll_result_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout) {
+i64_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout) {
     i64_t fd, id;
     selector_p selector;
     struct poll_registry_t registry = ZERO_INIT_STRUCT;
@@ -182,13 +150,13 @@ poll_result_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout) {
     LOG_DEBUG("Connection opened on fd %lld", fd);
 
     if (fd == -1)
-        return POLL_ERROR;
+        return -1;
 
     if (sock_send(fd, handshake, 2) == -1)
-        return POLL_ERROR;
+        return -1;
 
     if (sock_recv(fd, handshake, 2) == -1)
-        return POLL_ERROR;
+        return -1;
 
     LOG_TRACE("Setting socket to non-blocking mode");
     sock_set_nonblocking(fd, B8_TRUE);
@@ -213,9 +181,9 @@ poll_result_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout) {
 
     // request rx buffer
     selector = poll_get_selector(poll, id);
-    if (poll_rx_buf_request(poll, selector, ISIZEOF(struct ipc_header_t)) == POLL_ERROR) {
+    if (poll_rx_buf_request(poll, selector, ISIZEOF(struct ipc_header_t)) == -1) {
         poll_deregister(poll, id);
-        return POLL_ERROR;
+        return -1;
     }
 
     return id;
@@ -225,7 +193,7 @@ poll_result_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout) {
 // Message Reading
 // ============================================================================
 
-poll_result_t ipc_read_handshake(poll_p poll, selector_p selector) {
+option_t ipc_read_handshake(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     poll_buffer_p buf;
@@ -233,7 +201,8 @@ poll_result_t ipc_read_handshake(poll_p poll, selector_p selector) {
 
     if (selector->rx.buf == NULL) {
         LOG_DEBUG("No handshake buffer received, closing connection");
-        return poll_deregister(poll, selector->id);
+        poll_deregister(poll, selector->id);
+        return option_error("ipc_read_handshake: no handshake buffer received, closing connection");
     }
 
     if (selector->rx.buf->offset > 0 && selector->rx.buf->data[selector->rx.buf->offset - 1] == '\0') {
@@ -252,13 +221,13 @@ poll_result_t ipc_read_handshake(poll_p poll, selector_p selector) {
         poll_rx_buf_request(poll, selector, ISIZEOF(struct ipc_header_t));
         poll_rx_buf_reset(poll, selector);
 
-        return POLL_READY;
+        return option_some(NULL);
     }
 
-    return POLL_OK;
+    return option_none();
 }
 
-poll_result_t ipc_read_header(poll_p poll, selector_p selector) {
+option_t ipc_read_header(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     ipc_header_t *header;
@@ -277,100 +246,111 @@ poll_result_t ipc_read_header(poll_p poll, selector_p selector) {
     LOG_DEBUG("Switching to message reading mode");
     selector->rx.read_fn = ipc_read_msg;
 
-    return POLL_READY;
+    return option_some(NULL);
 }
 
-poll_result_t ipc_read_msg(poll_p poll, selector_p selector) {
+option_t ipc_read_msg(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
-    i64_t size;
-    obj_p v, res;
+    obj_p res;
     ipc_ctx_p ctx;
-    ipc_header_t *header;
-    poll_buffer_p buf;
-
-    if (selector == NULL || selector->rx.buf == NULL) {
-        LOG_DEBUG("Connection closed or no buffer available");
-        return POLL_ERROR;
-    }
 
     ctx = (ipc_ctx_p)selector->data;
-    if (ctx == NULL || ctx->name == NULL) {
-        LOG_DEBUG("Invalid context or name");
-        return POLL_ERROR;
-    }
 
     LOG_DEBUG("Reading message from connection %.*s", (i32_t)ctx->name->len, AS_C8(ctx->name));
 
-    header = (ipc_header_t *)selector->rx.buf->data;
     res = de_raw(selector->rx.buf->data, selector->rx.buf->size);
 
-    poll_set_usr_fd(selector->id);
-
-    if (IS_ERR(res) || is_null(res))
-        v = res;
-    else if (res->type == TYPE_C8) {
-        LOG_TRACE("Evaluating string message: %.*s", (i32_t)res->len, AS_C8(res));
-        v = ray_eval_str(res, ctx->name);
-        drop_obj(res);
-    } else {
-        LOG_TRACE("Evaluating object message");
-        v = eval_obj(res);
-        drop_obj(res);
-    }
-
-    LOG_TRACE_OBJ("Resulting object: ", v);
-
-    poll_set_usr_fd(0);
-
+    // Prepare for the next message
     poll_rx_buf_release(poll, selector);
     poll_rx_buf_request(poll, selector, ISIZEOF(struct ipc_header_t));
-
     selector->rx.read_fn = ipc_read_header;
 
-    // respond
-    if (header->msgtype == MSG_TYPE_SYNC) {
-        LOG_TRACE("Serializing response message");
-        size = size_obj(v);
-        buf = poll_buf_create(ISIZEOF(struct ipc_header_t) + size);
-        ser_raw(buf->data, size, v);
-        header = (ipc_header_t *)buf->data;
-        header->msgtype = MSG_TYPE_RESP;
-        drop_obj(v);
-        LOG_DEBUG("Sending response message of size %lld", size);
-        return poll_send_buf(poll, selector, buf);
-    }
-
-    drop_obj(v);
-
-    return POLL_OK;
+    return option_some(res);
 }
 
-poll_result_t ipc_read_msg_async(poll_p poll, selector_p selector) {
+option_t ipc_read_msg_async(poll_p poll, selector_p selector) {
     UNUSED(poll);
     UNUSED(selector);
 
-    return POLL_OK;
+    return option_none();
 }
 
 // ============================================================================
 // Event Handlers
 // ============================================================================
 
-poll_result_t ipc_on_open(poll_p poll, selector_p selector) {
-    LOG_DEBUG("Connection opened, requesting handshake buffer");
-    // request the minimal handshake buffer
-    return poll_rx_buf_request(poll, selector, 2);
+obj_p ipc_process_msg(poll_p poll, selector_p selector, obj_p msg) {
+    UNUSED(poll);
+
+    obj_p res;
+    ipc_ctx_p ctx;
+
+    ctx = (ipc_ctx_p)selector->data;
+
+    if (IS_ERR(msg) || is_null(msg))
+        res = msg;
+    else if (msg->type == TYPE_C8) {
+        LOG_TRACE("Evaluating string message: %.*s", (i32_t)msg->len, AS_C8(msg));
+        res = ray_eval_str(msg, ctx->name);
+        drop_obj(msg);
+    } else {
+        LOG_TRACE("Evaluating object message");
+        res = eval_obj(msg);
+        drop_obj(msg);
+    }
+
+    LOG_TRACE_OBJ("Resulting object: ", res);
+
+    return res;
 }
 
-poll_result_t ipc_on_error(poll_p poll, selector_p selector) {
+nil_t ipc_send_msg(poll_p poll, selector_p selector, obj_p msg, u8_t msgtype) {
+    i64_t size;
+    poll_buffer_p buf;
+    ipc_header_t *header;
+
+    LOG_TRACE("Serializing response message");
+    size = size_obj(msg);
+    buf = poll_buf_create(ISIZEOF(struct ipc_header_t) + size);
+    ser_raw(buf->data, size, msg);
+    header = (ipc_header_t *)buf->data;
+    header->msgtype = msgtype;
+    LOG_DEBUG("Sending response message of size %lld", size);
+    poll_send_buf(poll, selector, buf);
+
+    drop_obj(msg);
+}
+
+nil_t ipc_on_data(poll_p poll, selector_p selector, raw_p data) {
+    UNUSED(poll);
+
+    LOG_TRACE("Received data from connection %lld", selector->id);
+
+    obj_p v, res;
+
+    res = (obj_p)data;
+
+    poll_set_usr_fd(selector->id);
+    v = ipc_process_msg(poll, selector, res);
+    poll_set_usr_fd(0);
+
+    ipc_send_msg(poll, selector, v, MSG_TYPE_RESP);
+}
+
+nil_t ipc_on_open(poll_p poll, selector_p selector) {
+    LOG_DEBUG("Connection opened, requesting handshake buffer");
+    // request the minimal handshake buffer
+    poll_rx_buf_request(poll, selector, 2);
+}
+
+nil_t ipc_on_error(poll_p poll, selector_p selector) {
     UNUSED(poll);
     UNUSED(selector);
     LOG_ERROR("Error occurred on connection %lld", selector->id);
-    return POLL_OK;
 }
 
-poll_result_t ipc_on_close(poll_p poll, selector_p selector) {
+nil_t ipc_on_close(poll_p poll, selector_p selector) {
     ipc_ctx_p ctx;
 
     LOG_INFO("Connection %lld closed", selector->id);
@@ -390,8 +370,6 @@ poll_result_t ipc_on_close(poll_p poll, selector_p selector) {
         drop_obj(ctx->name);
         heap_free(ctx);
     }
-
-    return POLL_OK;
 }
 
 // ============================================================================
@@ -400,12 +378,10 @@ poll_result_t ipc_on_close(poll_p poll, selector_p selector) {
 
 obj_p ipc_send_sync(poll_p poll, i64_t id, obj_p msg) {
     selector_p selector;
-    poll_result_t result;
+    option_t result;
     poll_buffer_p buf;
-    i64_t idx, size;
-    obj_p res = NULL_OBJ;
-    fd_set fds;
-    struct timeval timeout;
+    i64_t nb, idx, size;
+    obj_p res;
 
     LOG_DEBUG("Starting synchronous IPC send for id %lld", id);
 
@@ -436,13 +412,25 @@ obj_p ipc_send_sync(poll_p poll, i64_t id, obj_p msg) {
     ((ipc_header_t *)buf->data)->msgtype = MSG_TYPE_SYNC;
 
     LOG_DEBUG("Sending message on fd %lld", selector->fd);
-    result = poll_send_buf(poll, selector, buf);
-    if (result == POLL_ERROR) {
+    nb = poll_send_buf(poll, selector, buf);
+    if (nb == -1) {
         LOG_ERROR("Failed to send message on fd %lld", selector->fd);
         return sys_error(ERR_IO, "ipc_send_sync: error sending message");
     }
 
-    return NULL_OBJ;
+    res = NULL_OBJ;
+
+    do {
+        result = poll_block_on(poll, selector);
+
+        if (option_is_some(&result)) {
+            res = option_take(&result);
+            break;
+        }
+
+    } while (option_is_none(&result));
+
+    return res;
 }
 
 obj_p ipc_send_async(poll_p poll, i64_t id, obj_p msg) {

@@ -192,7 +192,7 @@ i32_t runtime_run(nil_t) {
         if (!is_null(arg)) {
             port = i64_from_str(AS_C8(arg), arg->len);
             drop_obj(arg);
-            if (ipc_listen(__RUNTIME->poll, port) == POLL_ERROR) {
+            if (ipc_listen(__RUNTIME->poll, port) == -1) {
                 printf("Failed to listen on port %lld\n", port);
                 return 1;
             }

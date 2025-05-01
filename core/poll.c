@@ -24,6 +24,7 @@
 #include "poll.h"
 #include "format.h"
 #include "sock.h"
+#include "binary.h"
 
 #if defined(OS_WINDOWS)
 #include "iocp.c"
@@ -38,8 +39,6 @@
 selector_p poll_get_selector(poll_p poll, i64_t id) {
     return (selector_p)freelist_get(poll->selectors, id - SELECTOR_ID_OFFSET);
 }
-
-nil_t poll_exit(poll_p poll, i64_t code) { poll->code = code; }
 
 poll_buffer_p poll_buf_create(i64_t size) {
     poll_buffer_p buf;
@@ -58,14 +57,14 @@ poll_buffer_p poll_buf_create(i64_t size) {
 
 nil_t poll_buf_destroy(poll_buffer_p buf) { heap_free(buf); }
 
-poll_result_t poll_rx_buf_request(poll_p poll, selector_p selector, i64_t size) {
+i64_t poll_rx_buf_request(poll_p poll, selector_p selector, i64_t size) {
     UNUSED(poll);
 
     if (selector->rx.buf == NULL) {
         selector->rx.buf = heap_alloc(ISIZEOF(struct poll_buffer_t) + size);
 
         if (selector->rx.buf == NULL)
-            return POLL_ERROR;
+            return -1;
 
         selector->rx.buf->next = NULL;
         selector->rx.buf->size = size;
@@ -75,32 +74,32 @@ poll_result_t poll_rx_buf_request(poll_p poll, selector_p selector, i64_t size) 
         selector->rx.buf = heap_realloc(selector->rx.buf, ISIZEOF(struct poll_buffer_t) + size);
 
         if (selector->rx.buf == NULL)
-            return POLL_ERROR;
+            return -1;
 
         selector->rx.buf->size = size;
     }
 
-    return POLL_OK;
+    return 0;
 }
 
-poll_result_t poll_rx_buf_release(poll_p poll, selector_p selector) {
+i64_t poll_rx_buf_release(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     heap_free(selector->rx.buf);
     selector->rx.buf = NULL;
 
-    return POLL_OK;
+    return 0;
 }
 
-poll_result_t poll_rx_buf_reset(poll_p poll, selector_p selector) {
+i64_t poll_rx_buf_reset(poll_p poll, selector_p selector) {
     UNUSED(poll);
 
     selector->rx.buf->offset = 0;
 
-    return POLL_OK;
+    return 0;
 }
 
-poll_result_t poll_send_buf(poll_p poll, selector_p selector, poll_buffer_p buf) {
+i64_t poll_send_buf(poll_p poll, selector_p selector, poll_buffer_p buf) {
     // Attach the buffer to the end of the list
     if (selector->tx.buf != NULL)
         selector->tx.buf->next = buf;
@@ -108,4 +107,21 @@ poll_result_t poll_send_buf(poll_p poll, selector_p selector, poll_buffer_p buf)
         selector->tx.buf = buf;
 
     return poll_send(poll, selector);
+}
+
+nil_t poll_exit(poll_p poll, i64_t code) { poll->code = code; }
+
+// ============================================================================
+// User FD setup for a duration of a callback
+// ============================================================================
+
+nil_t poll_set_usr_fd(i64_t fd) {
+    obj_p s, k, v;
+
+    s = symbol(".z.w", 4);
+    k = i64(fd);
+    v = binary_set(s, k);
+    drop_obj(k);
+    drop_obj(v);
+    drop_obj(s);
 }

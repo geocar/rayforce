@@ -73,7 +73,7 @@ obj_p ray_hopen(obj_p *x, i64_t n) {
     if (sock_addr_from_str(AS_C8(x[0]), x[0]->len, &addr) != -1) {
         id = ipc_open(runtime_get()->poll, &addr, timeout);
 
-        if (id == POLL_ERROR)
+        if (id == -1)
             return sys_error(ERROR_TYPE_SYS, AS_C8(x));
 
         return i64(id);

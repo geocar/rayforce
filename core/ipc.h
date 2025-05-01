@@ -36,11 +36,21 @@ typedef struct ipc_ctx_t {
     obj_p name;
 } *ipc_ctx_p;
 
+option_t ipc_read_handshake(poll_p poll, selector_p selector);
+option_t ipc_read_header(poll_p poll, selector_p selector);
+option_t ipc_read_msg(poll_p poll, selector_p selector);
+nil_t ipc_on_open(poll_p poll, selector_p selector);
+nil_t ipc_on_close(poll_p poll, selector_p selector);
+nil_t ipc_on_error(poll_p poll, selector_p selector);
+nil_t ipc_on_data(poll_p poll, selector_p selector, raw_p data);
+nil_t ipc_send_msg(poll_p poll, selector_p selector, obj_p msg, u8_t msgtype);
+obj_p ipc_process_msg(poll_p poll, selector_p selector, obj_p msg);
+
 // listen for incoming connections
-poll_result_t ipc_listen(poll_p poll, i64_t port);
+i64_t ipc_listen(poll_p poll, i64_t port);
 
 // open a connection
-poll_result_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout);
+i64_t ipc_open(poll_p poll, sock_addr_t *addr, i64_t timeout);
 
 // send messages
 obj_p ipc_send_sync(poll_p poll, i64_t id, obj_p msg);
