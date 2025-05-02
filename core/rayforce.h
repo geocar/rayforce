@@ -234,7 +234,7 @@ extern nil_t drop_obj(obj_p obj);  // Free an object
 extern nil_t drop_raw(raw_p ptr);  // Free a raw pointer
 
 // Accessors
-#define AS_C8(obj) ((str_p)__builtin_assume_aligned((obj + 1), sizeof(struct obj_t)))
+#define AS_C8(obj) ((str_p)(obj + 1))
 #define AS_B8(obj) ((b8_t *)(AS_C8(obj)))
 #define AS_I8(obj) ((i8_t *)(AS_C8(obj)))
 #define AS_U8(obj) ((u8_t *)(AS_C8(obj)))
