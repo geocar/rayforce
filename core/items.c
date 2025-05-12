@@ -390,11 +390,7 @@ obj_p ray_filter(obj_p x, obj_p y) {
 }
 
 obj_p ray_take(obj_p x, obj_p y) {
-<<<<<<< HEAD
-    u64_t i, j, f, l, m, n, size;
-=======
-    i64_t i, l, m, n, size;
->>>>>>> e88847ec (wip)
+    i64_t i, j, f, l, m, n, size;
     obj_p k, s, v, res;
     u8_t *buf;
 
