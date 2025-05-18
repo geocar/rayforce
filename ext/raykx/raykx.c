@@ -321,7 +321,7 @@ obj_p raykx_process_msg(poll_p poll, selector_p selector, obj_p msg) {
     if (IS_ERR(msg) || is_null(msg))
         res = msg;
     else if (msg->type == TYPE_C8) {
-        LOG_TRACE("Evaluating string message: %s", AS_C8(msg));
+        LOG_TRACE("Evaluating string message: %.*s", (i32_t)msg->len, AS_C8(msg));
         res = ray_eval_str(msg, ctx->name);
         drop_obj(msg);
     } else {

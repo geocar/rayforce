@@ -481,7 +481,7 @@ i64_t error_frame_fmt_into(obj_p *dst, obj_p obj, i64_t idx, str_p msg, i32_t ms
 
         if (end == NULL) {
             done = 1;
-            end = source + strlen(source) - 1;
+            end = source + frame[3]->len - 1;
             lf = "\n";
         }
 
@@ -951,7 +951,7 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj) {
     // Calculate each column maximum width
     for (i = 0; i < table_width; i++) {
         // First check the column name
-        l = strlen(str_from_symbol(header[i]));
+        l = SYMBOL_STRLEN(header[i]);
 
         // Then traverse first n elements of column
         for (j = 0; j < table_height / 2; j++) {
@@ -1015,7 +1015,7 @@ i64_t table_fmt_into(obj_p *dst, i64_t indent, b8_t full, obj_p obj) {
     n += glyph_fmt_into(dst, GLYPH_VLINE, unicode);
     for (i = 0; i < table_width; i++) {
         p = str_from_symbol(header[i]);
-        m = AS_I64(column_widths)[i] - strlen(p) - 2;
+        m = AS_I64(column_widths)[i] - SYMBOL_STRLEN(header[i]) - 2;
         n += str_fmt_into(dst, NO_LIMIT, " %s ", p);
         n += str_fmt_into_n(dst, NO_LIMIT, m, " ");
         n += glyph_fmt_into(dst, GLYPH_VLINE, unicode);
