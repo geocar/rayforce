@@ -160,8 +160,10 @@ obj_p raykx_hopen(obj_p addr) {
         return error(ERR_IO, "raykx_open: failed to send handshake");
 
     // Receive handshake response
-    if (sock_recv(fd, handshake, 2) == -1)
+    if (sock_recv(fd, handshake, 1) == -1)
         return error(ERR_IO, "raykx_open: failed to receive handshake");
+
+    LOG_DEBUG("Handshake response: %d", handshake[0]);
 
     LOG_TRACE("Setting socket to non-blocking mode");
     sock_set_nonblocking(fd, B8_TRUE);
@@ -187,7 +189,7 @@ obj_p raykx_hopen(obj_p addr) {
     LOG_DEBUG("Connection registered in poll registry with id %lld", id);
 
     selector = poll_get_selector(runtime_get()->poll, id);
-    poll_rx_buf_request(runtime_get()->poll, selector, 2);
+    poll_rx_buf_request(runtime_get()->poll, selector, ISIZEOF(struct raykx_header_t));
 
     return i64(id);
 }

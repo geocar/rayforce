@@ -154,6 +154,32 @@ static const i8_t raykx_type_to_k_table[128] = {
         ISIZEOF(i8_t) + 1 + sizeof(i32_t) + n; \
     })
 
+#define RAYKX_DES_ATOM(b, l, t, r)        \
+    ({                                    \
+        obj_p $o = t(0);                  \
+        memcpy(&$o->t, b, sizeof(t##_t)); \
+        b += sizeof(t##_t);               \
+        (*l) -= sizeof(t##_t);            \
+        $o->type = -TYPE_##r;             \
+        $o;                               \
+    })
+
+#define RAYKX_DES_VEC(b, l, t, r)         \
+    ({                                    \
+        i32_t $n;                         \
+        i64_t $m;                         \
+        obj_p $o;                         \
+        memcpy(&$n, ++b, sizeof(i32_t));  \
+        b += sizeof(i32_t);               \
+        $o = t($n);                       \
+        $m = $n * ISIZEOF(t##_t);         \
+        printf("M: %lld\n", $m);          \
+        memcpy($o->raw, b, $m);           \
+        (*l) -= ($m + sizeof(i32_t) + 1); \
+        $o->type = TYPE_##r;              \
+        $o;                               \
+    })
+
 i64_t raykx_ser_obj(u8_t *buf, obj_p obj) {
     i32_t i, n, l;
     u8_t *b;
@@ -266,7 +292,7 @@ i64_t raykx_ser_obj(u8_t *buf, obj_p obj) {
 }
 
 obj_p raykx_load_obj(u8_t *buf, i64_t *len) {
-    i64_t l;
+    i64_t id, i, l, n;
     obj_p k, v, obj;
     i8_t type;
 
@@ -275,133 +301,122 @@ obj_p raykx_load_obj(u8_t *buf, i64_t *len) {
 
     type = *buf;
     buf++;
-    len--;
+    (*len)--;
 
     switch (type) {
         case -KB:
-            obj = b8(buf[0]);
-            buf++;
-            len--;
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, u8, U8);
         case -KC:
-            obj = c8(buf[0]);
-            buf++;
-            len--;
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, c8, C8);
         case -KG:
-            obj = u8(buf[0]);
-            buf++;
-            len--;
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, u8, U8);
         case -KH:
-            obj = i16(0);
-            memcpy(&obj->i16, buf, sizeof(i16_t));
-            buf += sizeof(i16_t);
-            len -= sizeof(i16_t);
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, i16, I16);
         case -KI:
-            obj = i32(0);
-            memcpy(&obj->i32, buf, sizeof(i32_t));
-            buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, i32, I32);
         case -KJ:
-            obj = i64(0);
-            memcpy(&obj->i64, buf, sizeof(i64_t));
-            buf += sizeof(i64_t);
-            len -= sizeof(i64_t);
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, i64, I64);
+        case -KZ:
+            return NULL_OBJ;
         case -KS:
             l = strlen((lit_p)buf);
             obj = symbol((lit_p)buf, l);
             buf += l + 1;
-            len -= l + 1;
+            (*len) -= l + 1;
             return obj;
         case -KF:
-            obj = f64(0);
-            memcpy(&obj->f64, buf, sizeof(f64_t));
-            buf += sizeof(f64_t);
-            len -= sizeof(f64_t);
-            return obj;
-        case -KZ:
-            obj = NULL_OBJ;
-            return obj;
+            return RAYKX_DES_ATOM(buf, len, f64, F64);
         case KC:
-            buf++;  // attrs
-            memcpy(&l, buf, sizeof(i32_t));
-            buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
-            obj = C8(l);
-            memcpy(obj->raw, buf, l);
-            buf += l;
-            len -= l;
-            return obj;
+            return RAYKX_DES_VEC(buf, len, c8, C8);
         case KG:
-            buf++;  // attrs
-            memcpy(&l, buf, sizeof(i32_t));
-            buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
-            obj = U8(l);
-            memcpy(obj->raw, buf, l);
-            buf += l;
-            len -= l;
-            return obj;
+            return RAYKX_DES_VEC(buf, len, u8, U8);
         case KH:
-            buf++;  // attrs
-            memcpy(&l, buf, sizeof(i32_t));
-            buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
-            obj = I16(l);
-            memcpy(obj->raw, buf, l * ISIZEOF(i16_t));
-            buf += l;
-            len -= l;
-            return obj;
+            return RAYKX_DES_VEC(buf, len, i16, I16);
         case KI:
-            buf++;  // attrs
-            memcpy(&l, buf, sizeof(i32_t));
-            buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
-            obj = I32(l);
-            memcpy(obj->raw, buf, l * ISIZEOF(i32_t));
-            buf += l;
-            len -= l;
-            return obj;
+            return RAYKX_DES_VEC(buf, len, i32, I32);
         case KJ:
+            return RAYKX_DES_VEC(buf, len, i64, I64);
+        case KS:
             buf++;  // attrs
+            (*len)--;
             memcpy(&l, buf, sizeof(i32_t));
             buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
-            obj = I64(l);
-            memcpy(obj->raw, buf, l * ISIZEOF(i64_t));
-            buf += l;
-            len -= l;
+            (*len) -= sizeof(i32_t);
+            obj = SYMBOL(l);
+            for (i = 0; i < l; i++) {
+                n = strlen((lit_p)buf);
+                id = symbols_intern((lit_p)buf, n);
+                AS_SYMBOL(obj)[i] = id;
+                buf += n + 1;
+                (*len) -= n + 1;
+            }
             return obj;
         case KF:
             buf++;  // attrs
             memcpy(&l, buf, sizeof(i32_t));
             buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
+            (*len) -= sizeof(i32_t);
             obj = F64(l);
             memcpy(obj->raw, buf, l * ISIZEOF(f64_t));
-            buf += l;
-            len -= l;
             return obj;
         case KT:
             buf++;  // attrs
             memcpy(&l, buf, sizeof(i32_t));
             buf += sizeof(i32_t);
-            len -= sizeof(i32_t);
+            (*len) -= sizeof(i32_t);
             obj = TIME(l);
             memcpy(obj->raw, buf, l * ISIZEOF(i32_t));
             buf += l;
-            len -= l;
+            (*len) -= l;
             return obj;
         case XD:
             l = *len;
             k = raykx_load_obj(buf, len);
+            if (IS_ERR(k))
+                return k;
             buf += l - *len;
             v = raykx_load_obj(buf, len);
-            return dict(k, v);
+            if (IS_ERR(v))
+                return v;
+            obj = table(k, v);
+            obj->type = TYPE_DICT;
+            return obj;
+        case XT:
+            buf++;  // attrs
+            buf++;  // dict
+            (*len) -= 2;
+            l = *len;
+            k = raykx_load_obj(buf, len);
+            DEBUG_OBJ(k);
+            if (IS_ERR(k))
+                return k;
+            buf += l - *len;
+            v = raykx_load_obj(buf, len);
+            DEBUG_OBJ(v);
+            if (IS_ERR(v))
+                return v;
+            return table(k, v);
+        case 0:     // LIST
+            buf++;  // attrs
+            (*len)--;
+            memcpy(&l, buf, sizeof(i32_t));
+            buf += sizeof(i32_t);
+            (*len) -= sizeof(i32_t);
+            obj = LIST(l);
+            n = *len;
+            for (i = 0; i < l; i++) {
+                printf("LEN: %lld\n", *len);
+                k = raykx_load_obj(buf + (n - *len), len);
+                if (IS_ERR(k)) {
+                    obj->len = i;
+                    drop_obj(obj);
+                    return k;
+                }
+                AS_LIST(obj)[i] = k;
+            }
+            return obj;
+        case -128:  // ERROR
+            return error_str(ERR_IO, (lit_p)buf);
         default:
             return NULL_OBJ;
     }
@@ -410,6 +425,7 @@ obj_p raykx_load_obj(u8_t *buf, i64_t *len) {
 obj_p raykx_des_obj(u8_t *buf, i64_t len) {
     i64_t l;
     raykx_header_p header;
+    obj_p res;
 
     // Check if buffer is large enough to contain a header
     if (len < ISIZEOF(struct raykx_header_t))
@@ -427,7 +443,19 @@ obj_p raykx_des_obj(u8_t *buf, i64_t len) {
         return error_str(ERR_IO, "raykx_des_obj: corrupted data in a buffer");
 
     buf += sizeof(struct raykx_header_t);
-    l = header->size;
+    l = header->size - sizeof(struct raykx_header_t);
 
-    return raykx_load_obj(buf, &l);
+    LOG_TRACE("Deserializing object of size %lld", l);
+
+    res = raykx_load_obj(buf, &l);
+    if (IS_ERR(res))
+        return res;
+
+    if (l != 0) {
+        LOG_ERROR("raykx_des_obj: corrupted data in a buffer: l = %lld", l);
+        drop_obj(res);
+        return error_str(ERR_IO, "raykx_des_obj: corrupted data in a buffer");
+    }
+
+    return res;
 }
