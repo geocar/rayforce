@@ -1977,7 +1977,9 @@ i64_t find_raw(obj_p obj, raw_p val) {
 
 obj_p cast_obj(i8_t type, obj_p obj) {
     obj_p v, res, err, msg;
+    u8_t *g;
     i64_t i, l;
+    lit_p str;
 
     // Do nothing if the type is the same
     if (type == obj->type)
@@ -2222,19 +2224,37 @@ obj_p cast_obj(i8_t type, obj_p obj) {
         case MTYPE2(-TYPE_GUID, TYPE_C8):
             res = guid(NULL);
 
-            if (obj->len != 36)
-                break;
-
-            i = sscanf(AS_C8(obj),
-                       "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%"
-                       "02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
-                       &AS_GUID(res)[0][0], &AS_GUID(res)[0][1], &AS_GUID(res)[0][2], &AS_GUID(res)[0][3],
-                       &AS_GUID(res)[0][4], &AS_GUID(res)[0][5], &AS_GUID(res)[0][6], &AS_GUID(res)[0][7],
-                       &AS_GUID(res)[0][8], &AS_GUID(res)[0][9], &AS_GUID(res)[0][10], &AS_GUID(res)[0][11],
-                       &AS_GUID(res)[0][12], &AS_GUID(res)[0][13], &AS_GUID(res)[0][14], &AS_GUID(res)[0][15]);
-
-            if (i != sizeof(guid_t))
+            // Validate input length and format
+            if (obj->len != 36) {
                 memset(AS_GUID(res)[0], 0, sizeof(guid_t));
+                return res;
+            }
+
+            // Validate format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+            str = AS_C8(obj);
+            if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-') {
+                memset(AS_GUID(res)[0], 0, sizeof(guid_t));
+                return res;
+            }
+
+            // Parse hex values safely
+            g = AS_GUID(res)[0];
+            for (int i = 0; i < 16; i++) {
+                int pos = i < 4    ? i * 2
+                          : i < 6  ? 9 + (i - 4) * 2
+                          : i < 8  ? 14 + (i - 6) * 2
+                          : i < 10 ? 19 + (i - 8) * 2
+                                   : 24 + (i - 10) * 2;
+
+                c8_t hex[3] = {str[pos], str[pos + 1], '\0'};
+                c8_t *end;
+                u64_t val = strtoul(hex, &end, 16);
+                if (end != hex + 2) {
+                    memset(AS_GUID(res)[0], 0, sizeof(guid_t));
+                    return res;
+                }
+                g[i] = (u8_t)val;
+            }
 
             return res;
         default:
