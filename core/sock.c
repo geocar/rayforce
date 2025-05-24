@@ -41,9 +41,6 @@ i64_t sock_addr_from_str(str_p str, i64_t len, sock_addr_t *addr) {
     if (tok == NULL)
         return -1;
 
-    if ((tok - str) > 15)
-        return -1;
-
     memcpy(addr->ip, str, tok - str);
     addr->ip[tok - str] = '\0';
     tok++;
