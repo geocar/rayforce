@@ -412,7 +412,7 @@ insert:
  */
 obj_p ray_upsert(obj_p *x, i64_t n) {
     i64_t i, j, m, p, l, keys;
-    i64_t row, *rows;
+    i64_t row;
     obj_p obj, k1, k2, idx, col, lst, *val = NULL, v;
     b8_t single_rec;
 
@@ -503,30 +503,56 @@ upsert:
                 }
             }
 
-            rows = AS_I64(idx);
+            for (j = 0; j < p; j++) {
+                col = cow_obj(AS_LIST(AS_LIST(obj)[1])[j]);
+                if (col != AS_LIST(AS_LIST(obj)[1])[j]) {
+                    drop_obj(AS_LIST(AS_LIST(obj)[1])[j]);
+                    AS_LIST(AS_LIST(obj)[1])[j] = col;
+                }
+            }
 
-            // Process each column
-            for (i = 0; i < p; i++) {
-                col = cow_obj(AS_LIST(AS_LIST(obj)[1])[i]);
-                if (col != AS_LIST(AS_LIST(obj)[1])[i]) {
-                    drop_obj(AS_LIST(AS_LIST(obj)[1])[i]);
-                    AS_LIST(AS_LIST(obj)[1])[i] = col;
+            // traverse matched indexes in idx 
+            row = 0;
+            for (i = 0; i < AS_LIST(idx)[0]->len; i++) {
+                i64_t upd_idx = AS_I64(AS_LIST(idx)[0])[i];
+
+                // insert up to upd_idx
+                for (; row < upd_idx; row++) {
+                    // Process each column
+                    for (j = 0; j < p; j++) {
+                        if (j < l) {
+                            v = single_rec ? clone_obj(AS_LIST(lst)[j]) : at_idx(AS_LIST(lst)[j], row);
+                        } else {
+                            v = null(AS_LIST(AS_LIST(obj)[1])[j]->type);
+                        }
+                        push_obj(AS_LIST(AS_LIST(obj)[1]) + j, v);
+                    }
+
                 }
 
-                for (j = 0; j < m; j++) {
-                    row = rows[j];
+                // update from upd_idx
+                for (j = keys; j < p; j++) {
+                    if (j < l) {
+                        v = single_rec ? clone_obj(AS_LIST(lst)[j]) : at_idx(AS_LIST(lst)[j], upd_idx);
+                    } else {
+                        v = null(AS_LIST(AS_LIST(obj)[1])[j]->type);
+                    }
+                    set_idx(AS_LIST(AS_LIST(obj)[1]) + j, AS_I64(AS_LIST(idx)[1])[i], v);
+                }
 
-                    // Insert record
-                    if (row == NULL_I64) {
-                        v = (i < l) ? (single_rec ? clone_obj(AS_LIST(lst)[i]) : at_idx(AS_LIST(lst)[i], j))
-                                    : null(AS_LIST(AS_LIST(obj)[1])[i]->type);
-                        push_obj(AS_LIST(AS_LIST(obj)[1]) + i, v);
+                if (row == upd_idx) row++;
+            }
+
+            // insert rest
+            for (; row < AS_LIST(lst)[0]->len; row++) {
+                // Process each column
+                for (j = 0; j < p; j++) {
+                    if (j < l) {
+                        v = single_rec ? clone_obj(AS_LIST(lst)[j]) : at_idx(AS_LIST(lst)[j], row);
+                    } else {
+                        v = null(AS_LIST(AS_LIST(obj)[1])[j]->type);
                     }
-                    // Update record (we can skip the keys since they are matches)
-                    else if (i >= keys && i < l) {
-                        v = single_rec ? clone_obj(AS_LIST(lst)[i]) : at_idx(AS_LIST(lst)[i], j);
-                        set_idx(AS_LIST(AS_LIST(obj)[1]) + i, row, v);
-                    }
+                    push_obj(AS_LIST(AS_LIST(obj)[1]) + j, v);
                 }
             }
 
