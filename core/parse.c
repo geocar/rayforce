@@ -259,9 +259,11 @@ obj_p parse_timestamp(parser_t *parser) {
     span_t span = span_start(parser);
     i64_t remaining = parser->input_len - (current - parser->input);
 
+    if (remaining < 10 || current[4] != '.' || current[7] != '.')
+        return PARSE_ADVANCE;
+
     // parse year
-    if (remaining >= 4 && is_digit(*current) && is_digit(*(current + 1)) && is_digit(*(current + 2)) &&
-        is_digit(*(current + 3))) {
+    if (is_digit(*current) && is_digit(*(current + 1)) && is_digit(*(current + 2)) && is_digit(*(current + 3))) {
         ts.year = (*current - '0') * 1000 + (*(current + 1) - '0') * 100 + (*(current + 2) - '0') * 10 +
                   (*(current + 3) - '0');
         current += 4;
@@ -1153,7 +1155,7 @@ obj_p parser_advance(parser_t *parser) {
     if (*parser->current == '{')
         return parse_dict(parser);
 
-    if (is_digit(*parser->current)) {
+    if (((*parser->current) == '-' && is_digit(*(parser->current + 1))) || is_digit(*parser->current)) {
         tok = parse_0Nx(parser);
         if (tok != PARSE_ADVANCE)
             return tok;
@@ -1162,10 +1164,6 @@ obj_p parser_advance(parser_t *parser) {
         if (tok != PARSE_ADVANCE)
             return tok;
 
-        drop_obj(tok);
-    }
-
-    if (((*parser->current) == '-' && is_digit(*(parser->current + 1))) || is_digit(*parser->current)) {
         tok = parse_time(parser);
         if (tok != PARSE_ADVANCE)
             return tok;
@@ -1173,6 +1171,7 @@ obj_p parser_advance(parser_t *parser) {
         tok = parse_number(parser);
         if (at_eof(parser))
             return tok;
+        
         return tok;
     }
 
