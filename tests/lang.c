@@ -3456,3 +3456,13 @@ test_result_t test_lang_and() {
 
     PASS();
 }
+
+test_result_t test_lang_bin() {
+    TEST_ASSERT_EQ("(bin [1 2 3 4 5] 3)", "2");
+    TEST_ASSERT_EQ("(bin [0 2 4 6 8 10] 5)", "2");
+    TEST_ASSERT_EQ("(bin [0 2 4 6 8 10] [-10 0 4 5 6 20])", "[-1 0 2 2 3 5]");
+    TEST_ASSERT_EQ("(bin [0 1 1 2] [0 1 2])", "[0 2 3]");
+    TEST_ASSERT_EQ("(binr [0 1 1 2] [0 1 2])", "[0 1 3]");
+    
+    PASS();
+}

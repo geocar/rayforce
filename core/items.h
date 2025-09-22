@@ -40,5 +40,7 @@ obj_p ray_last(obj_p x);
 obj_p ray_key(obj_p x);
 obj_p ray_value(obj_p x);
 obj_p ray_where(obj_p x);
+obj_p ray_bin(obj_p x, obj_p y);
+obj_p ray_binr(obj_p x, obj_p y);
 
 #endif  // ITEMS_H

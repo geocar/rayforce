@@ -205,7 +205,7 @@ test_entry_t tests[] = {
     {"test_lang_except", test_lang_except},
     {"test_lang_or", test_lang_or},
     {"test_lang_and", test_lang_and},
-    {"test_timsort_numbers", test_timsort_numbers},
+    {"test_lang_bin", test_lang_bin},
 };
 // ---
 

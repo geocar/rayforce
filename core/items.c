@@ -1093,3 +1093,83 @@ obj_p ray_where(obj_p x) {
             THROW(ERR_TYPE, "where: unsupported type: '%s", type_name(x->type));
     }
 }
+
+obj_p ray_bin(obj_p x, obj_p y) {
+    i64_t left, right, mid, idx;
+    
+    switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(TYPE_I32, -TYPE_I32):
+        case MTYPE2(TYPE_DATE, -TYPE_DATE):
+        case MTYPE2(TYPE_TIME, -TYPE_TIME):
+        left = 0;
+        right = x->len - 1;
+        idx = -1;
+        while (left <= right) {
+            mid = left + (right - left) / 2;
+            if (AS_I32(x)[mid] <= y->i32) {
+                idx = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return i32(idx);
+        case MTYPE2(TYPE_I64, -TYPE_I64):
+        case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+        left = 0;
+        right = x->len - 1;
+        idx = -1;
+        while (left <= right) {
+            mid = left + (right - left) / 2;
+            if (AS_I64(x)[mid] <= y->i64) {
+                idx = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return i64(idx);
+        default:
+            THROW(ERR_TYPE, "bin: unsupported types: '%s, '%s", type_name(x->type), type_name(y->type));
+    }
+}
+
+obj_p ray_binr(obj_p x, obj_p y) {
+    i64_t left, right, mid, idx;
+    
+    switch (MTYPE2(x->type, y->type)) {
+        case MTYPE2(TYPE_I32, -TYPE_I32):
+        case MTYPE2(TYPE_DATE, -TYPE_DATE):
+        case MTYPE2(TYPE_TIME, -TYPE_TIME):
+        left = 0;
+        right = x->len - 1;
+        idx = x->len;
+        while (left <= right) {
+            mid = left + (right - left) / 2;
+            if (AS_I32(x)[mid] >= y->i32) {
+                idx = mid;
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return i64(idx);
+        case MTYPE2(TYPE_I64, -TYPE_I64):
+        case MTYPE2(TYPE_TIMESTAMP, -TYPE_TIMESTAMP):
+        left = 0;
+        right = x->len - 1;
+        idx = x->len;
+        while (left <= right) {
+            mid = left + (right - left) / 2;
+            if (AS_I64(x)[mid] >= y->i64) {
+                idx = mid;
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return i64(idx);
+        default:
+            THROW(ERR_TYPE, "binr: unsupported types: '%s, '%s", type_name(x->type), type_name(y->type));
+    }
+}
