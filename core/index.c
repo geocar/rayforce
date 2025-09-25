@@ -2293,3 +2293,79 @@ obj_p index_upsert_obj(obj_p lcols, obj_p rcols, i64_t len) {
 
     return res;
 }
+
+static inline i64_t __asof_idx_i32(i32_t lv, i32_t rvs[], i64_t ids[], i64_t len) {
+    i64_t v, i, l, *filter;
+    v = NULL_I64;
+    for (i = 0; i < len; i++) {
+        if (rvs[ids[i]] <= lv && rvs[ids[i]] > v)
+            v = ids[i];
+    }
+    return v;
+}
+
+obj_p index_asof_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol) {
+    i64_t i, j, ll, rl;
+    obj_p v, ht, ids, hashes;
+    i64_t idx;
+    __index_list_ctx_t ctx;
+
+    ll = ops_count(AS_LIST(lcols)[0]);
+    rl = ops_count(AS_LIST(rcols)[0]);
+    ht = ht_oa_create(rl, TYPE_I64);
+    hashes = I64(MAXI64(ll, rl));
+
+    // Right hashes
+    __index_list_precalc_hash(rcols, (i64_t *)AS_I64(hashes), rcols->len, rl, NULL, B8_TRUE);
+    ctx = (__index_list_ctx_t){rcols, rcols, (i64_t *)AS_I64(hashes), NULL};
+    for (i = 0; i < rl; i++) {
+        idx = ht_oa_tab_next_with(&ht, i, &__index_list_hash_get, &__index_list_cmp_row, &ctx);
+        if (AS_I64(AS_LIST(ht)[0])[idx] == NULL_I64) {
+            AS_I64(AS_LIST(ht)[0])[idx] = i;
+            v = I64(1);
+            AS_I64(v)[0] = i;
+            AS_LIST(AS_LIST(ht)[1])[idx] = v;
+        } else {
+            push_raw(AS_LIST(AS_LIST(ht)[1]) + idx, (raw_p)&i);
+        }
+    }
+
+    ids = I64(ll);
+
+    // Left hashes
+    __index_list_precalc_hash(lcols, (i64_t *)AS_I64(hashes), lcols->len, ll, NULL, B8_TRUE);
+    ctx = (__index_list_ctx_t){rcols, lcols, (i64_t *)AS_I64(hashes), NULL};
+
+    switch (lxcol->type) {
+        case TYPE_I32:
+        case TYPE_DATE:
+        case TYPE_TIME:
+            for (i = 0, j = 0; i < ll; i++) {
+                idx = ht_oa_tab_get_with(ht, i, &__index_list_hash_get, &__index_list_cmp_row, &ctx);
+                if (idx != NULL_I64)
+                    AS_I64(ids)
+                [i] = __asof_idx_i32(AS_I32(lxcol)[i], AS_I32(rxcol), AS_I64(AS_LIST(AS_LIST(ht)[1])[idx]),
+                                     AS_LIST(AS_LIST(ht)[1])[idx]->len);
+                else AS_I64(ids)[i] = NULL_I64;
+            }
+            break;
+        default:
+            drop_obj(ids);
+            drop_obj(hashes);
+            for (i = 0; i < rl; i++)
+                if (AS_I64(AS_LIST(ht)[0])[i] != NULL_I64)
+                    drop_obj(AS_LIST(AS_LIST(ht)[1])[i]);
+
+            drop_obj(ht);
+            THROW(ERR_TYPE, "index_asof_join_obj: invalid type: %s", type_name(lxcol->type));
+    }
+
+    drop_obj(hashes);
+    for (i = 0; i < rl; i++)
+        if (AS_I64(AS_LIST(ht)[0])[i] != NULL_I64)
+            drop_obj(AS_LIST(AS_LIST(ht)[1])[i]);
+
+    drop_obj(ht);
+
+    return ids;
+}
