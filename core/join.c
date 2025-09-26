@@ -388,7 +388,7 @@ obj_p ray_window_join(obj_p *x, i64_t n) {
     lvals = at_obj(x[1], keys);
     rvals = at_obj(x[2], keys);
 
-    idx = index_window_join_obj(lvals, ajkl, rvals, ajkr, x[1], x[2], x[3]);
+    idx = index_window_join_obj(lvals, ajkl, rvals, ajkr, x[1], x[2], x[3], AS_LIST(x[4])[1]);
 
     drop_obj(keys);
     drop_obj(lvals);

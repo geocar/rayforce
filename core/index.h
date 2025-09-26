@@ -93,7 +93,8 @@ obj_p index_group_list(obj_p obj, obj_p filter);
 obj_p index_left_join_obj(obj_p lcols, obj_p rcols, i64_t len);
 obj_p index_inner_join_obj(obj_p lcols, obj_p rcols, i64_t len);
 obj_p index_asof_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol);
-obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, obj_p windows, obj_p ltab, obj_p rtab);
+obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, obj_p windows, obj_p ltab, obj_p rtab,
+                            obj_p aggr);
 obj_p index_upsert_obj(obj_p lcols, obj_p rcols, i64_t len);
 nil_t index_hash_obj(obj_p obj, i64_t out[], i64_t filter[], i64_t len, b8_t resolve);
 

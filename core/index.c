@@ -2295,13 +2295,19 @@ obj_p index_upsert_obj(obj_p lcols, obj_p rcols, i64_t len) {
 }
 
 static inline i64_t __asof_idx_i32(i32_t lv, i32_t rvs[], i64_t ids[], i64_t len) {
-    i64_t v, i;
-    v = NULL_I64;
-    for (i = 0; i < len; i++) {
-        if (rvs[ids[i]] <= lv && rvs[ids[i]] > v)
-            v = ids[i];
+    i64_t v, i, left, right, mid, idx;
+    left = 0, right = len - 1, idx = NULL_I64;
+    while (left <= right) {
+        mid = left + (right - left) / 2;
+        if (rvs[ids[mid]] <= lv) {
+            idx = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
     }
-    return v;
+
+    return idx;
 }
 
 static obj_p __asof_ids_partial(__index_list_ctx_t *ctx, obj_p lxcol, obj_p rxcol, obj_p ht, obj_p hashes, i64_t ll,
@@ -2402,9 +2408,12 @@ clean:
     return ids;
 }
 
-obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, obj_p windows, obj_p ltab, obj_p rtab) {
+obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, obj_p windows, obj_p ltab, obj_p rtab,
+                            obj_p aggr) {
     DEBUG_OBJ(windows);
     DEBUG_OBJ(ltab);
     DEBUG_OBJ(rtab);
+    DEBUG_OBJ(aggr);
+
     return i64(1231245);
 }

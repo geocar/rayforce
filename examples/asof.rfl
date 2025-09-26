@@ -4,3 +4,6 @@
 ;; (asof-join [Sym Ts] trades quotes)
 ;; (window-join [Sym Ts] windows trades quotes {a:(avg Ask)})
 
+;; (set n 1000000)
+;; (set quotes (table [Sym Ts Bid Ask] (list (take n [AAPL AAPL AAPL MSFT]) (as 'Time (* 1000 (til n))) (as 'F64 (til n)) (as 'F64 (til n)))))
+;;(set trades (table [Sym Ts Qty Price] (list (take n [AAPL MSFT]) (as 'Time (+ 2 (* 1000 (til n)))) (til n) (as 'F64 (til n)))))
