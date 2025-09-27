@@ -29,4 +29,7 @@
 obj_p ray_sort_asc(obj_p vec);
 obj_p ray_sort_desc(obj_p vec);
 
+// Internal merge sort function
+obj_p mergesort_generic_obj(obj_p vec, i64_t asc);
+
 #endif  // SORT_H

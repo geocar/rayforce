@@ -40,12 +40,108 @@ inline __attribute__((always_inline)) nil_t swap(i64_t *a, i64_t *b) {
 // Function pointer for comparison
 typedef i64_t (*compare_func_t)(obj_p vec, i64_t idx_i, i64_t idx_j);
 
+// Forward declarations for optimized sorting functions
+static obj_p ray_iasc_optimized(obj_p x);
+static obj_p ray_idesc_optimized(obj_p x);
+
 static i64_t compare_symbols(obj_p vec, i64_t idx_i, i64_t idx_j) {
-    return strcmp(str_from_symbol(AS_I64(vec)[idx_i]), str_from_symbol(AS_I64(vec)[idx_j]));
+    i64_t sym_i = AS_I64(vec)[idx_i];
+    i64_t sym_j = AS_I64(vec)[idx_j];
+
+    // Fast path: if symbols are identical, no need to compare strings
+    if (sym_i == sym_j)
+        return 0;
+
+    // For NULL symbols
+    if (sym_i == NULL_I64 && sym_j == NULL_I64)
+        return 0;
+    if (sym_i == NULL_I64)
+        return -1;
+    if (sym_j == NULL_I64)
+        return 1;
+
+    // Compare string representations
+    return strcmp(str_from_symbol(sym_i), str_from_symbol(sym_j));
 }
 
 static i64_t compare_lists(obj_p vec, i64_t idx_i, i64_t idx_j) {
     return cmp_obj(AS_LIST(vec)[idx_i], AS_LIST(vec)[idx_j]);
+}
+
+// Merge Sort implementation for comparison with TimSort
+static void merge_sort_indices(obj_p vec, i64_t *indices, i64_t *temp, i64_t left, i64_t right,
+                               compare_func_t compare_fn, i64_t asc) {
+    if (left >= right)
+        return;
+
+    i64_t mid = left + (right - left) / 2;
+
+    // Recursively sort both halves
+    merge_sort_indices(vec, indices, temp, left, mid, compare_fn, asc);
+    merge_sort_indices(vec, indices, temp, mid + 1, right, compare_fn, asc);
+
+    // Merge the sorted halves
+    i64_t i = left, j = mid + 1, k = left;
+
+    while (i <= mid && j <= right) {
+        if (asc * compare_fn(vec, indices[i], indices[j]) <= 0) {
+            temp[k++] = indices[i++];
+        } else {
+            temp[k++] = indices[j++];
+        }
+    }
+
+    // Copy remaining elements
+    while (i <= mid)
+        temp[k++] = indices[i++];
+    while (j <= right)
+        temp[k++] = indices[j++];
+
+    // Copy back to original array
+    for (i = left; i <= right; i++) {
+        indices[i] = temp[i];
+    }
+}
+
+obj_p mergesort_generic_obj(obj_p vec, i64_t asc) {
+    i64_t len = vec->len;
+
+    if (len == 0)
+        return I64(0);
+
+    obj_p indices = I64(len);
+    i64_t *ov = AS_I64(indices);
+
+    // Initialize indices
+    for (i64_t i = 0; i < len; i++) {
+        ov[i] = i;
+    }
+
+    // Select comparison function
+    compare_func_t compare_fn;
+    switch (vec->type) {
+        case TYPE_SYMBOL:
+            compare_fn = compare_symbols;
+            break;
+        case TYPE_LIST:
+            compare_fn = compare_lists;
+            break;
+        default:
+            return I64(0);
+    }
+
+    // Allocate temporary array for merging
+    i64_t *temp = malloc(len * sizeof(i64_t));
+    if (!temp) {
+        drop_obj(indices);
+        return I64(0);
+    }
+
+    // Perform merge sort
+    merge_sort_indices(vec, ov, temp, 0, len - 1, compare_fn, asc);
+
+    free(temp);
+    return indices;
 }
 
 static obj_p timsort_generic_obj(obj_p vec, i64_t asc) {
@@ -577,9 +673,10 @@ obj_p ray_sort_asc(obj_p vec) {
         case TYPE_F64:
             return ray_sort_asc_f64(vec);
         case TYPE_SYMBOL:
-            return timsort_generic_obj(vec, 1);
+            // Use optimized sorting
+            return ray_iasc_optimized(vec);
         case TYPE_LIST:
-            return timsort_generic_obj(vec, 1);
+            return mergesort_generic_obj(vec, 1);
         case TYPE_DICT:
             return at_obj(AS_LIST(vec)[0], ray_sort_asc(AS_LIST(vec)[1]));
         default:
@@ -805,12 +902,106 @@ obj_p ray_sort_desc(obj_p vec) {
         case TYPE_F64:
             return ray_sort_desc_f64(vec);
         case TYPE_SYMBOL:
-            return timsort_generic_obj(vec, -1);
+            // Use optimized sorting
+            return ray_idesc_optimized(vec);
         case TYPE_LIST:
-            return timsort_generic_obj(vec, -1);
+            return mergesort_generic_obj(vec, -1);
         case TYPE_DICT:
             return at_obj(AS_LIST(vec)[0], ray_sort_desc(AS_LIST(vec)[1]));
         default:
             THROW(ERR_TYPE, "sort: unsupported type: '%s", type_name(vec->type));
     }
 }
+
+// Optimized sorting implementations
+
+// Fast binary insertion sort for small arrays with proper symbol comparison
+static void binary_insertion_sort_symbols(i64_t *indices, obj_p vec, i64_t len, i64_t asc) {
+    for (i64_t i = 1; i < len; i++) {
+        i64_t key_idx = indices[i];
+
+        // Binary search for insertion position
+        i64_t left = 0, right = i;
+        while (left < right) {
+            i64_t mid = (left + right) / 2;
+            i64_t cmp = compare_symbols(vec, key_idx, indices[mid]);
+
+            if ((asc > 0 && cmp < 0) || (asc <= 0 && cmp > 0)) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        // Shift elements and insert
+        for (i64_t j = i; j > left; j--) {
+            indices[j] = indices[j - 1];
+        }
+        indices[left] = key_idx;
+    }
+}
+
+// Fast binary insertion sort for small arrays with numeric comparison
+static void binary_insertion_sort_numeric(i64_t *indices, i64_t *data, i64_t len, i64_t asc) {
+    for (i64_t i = 1; i < len; i++) {
+        i64_t key_idx = indices[i];
+        i64_t key_val = data[key_idx];
+
+        // Binary search for insertion position
+        i64_t left = 0, right = i;
+        while (left < right) {
+            i64_t mid = (left + right) / 2;
+            i64_t mid_val = data[indices[mid]];
+
+            if ((asc > 0 && key_val < mid_val) || (asc <= 0 && key_val > mid_val)) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        // Shift elements and insert
+        for (i64_t j = i; j > left; j--) {
+            indices[j] = indices[j - 1];
+        }
+        indices[left] = key_idx;
+    }
+}
+
+// Optimized sort dispatcher
+static obj_p optimized_sort(obj_p vec, i64_t asc) {
+    i64_t len = vec->len;
+
+    if (len <= 1) {
+        return I64(len);
+    }
+
+    // Small arrays: use insertion sort
+    if (len <= 32) {
+        obj_p indices = I64(len);
+        i64_t *result = AS_I64(indices);
+
+        // Initialize indices
+        for (i64_t i = 0; i < len; i++) {
+            result[i] = i;
+        }
+
+        switch (vec->type) {
+            case TYPE_I64:
+            case TYPE_TIME:
+                binary_insertion_sort_numeric(result, AS_I64(vec), len, asc);
+                return indices;
+            case TYPE_SYMBOL:
+                // For symbols, use proper symbol comparison
+                binary_insertion_sort_symbols(result, vec, len, asc);
+                return indices;
+        }
+    }
+
+    // Fall back to merge sort for larger arrays
+    return mergesort_generic_obj(vec, asc);
+}
+
+// Optimized sorting functions
+static obj_p ray_iasc_optimized(obj_p x) { return optimized_sort(x, 1); }
+static obj_p ray_idesc_optimized(obj_p x) { return optimized_sort(x, -1); }
