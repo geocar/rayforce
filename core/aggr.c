@@ -44,14 +44,14 @@
         Incoerse##_t *$in;                                                                                    \
         Outcoerse##_t *$out;                                                                                  \
         index_type = index_group_type(Index);                                                                 \
-        $n = (index_type == INDEX_TYPE_PARTEDCOMMON) ? 1 : index_group_count(index);                          \
+        $n = (index_type == INDEX_TYPE_PARTEDCOMMON) ? 1 : index_group_count(Index);                          \
         group_ids = index_group_ids(Index);                                                                   \
         $in = __AS_##Incoerse(Val);                                                                           \
         $out = __AS_##Outcoerse(Res);                                                                         \
         for ($y = 0; $y < $n; ++$y) {                                                                         \
             Ini;                                                                                              \
         }                                                                                                     \
-        filter = index_group_filter_ids(index);                                                               \
+        filter = index_group_filter_ids(Index);                                                               \
         switch (index_type) {                                                                                 \
             case INDEX_TYPE_SHIFT:                                                                            \
                 source = index_group_source(Index);                                                           \
@@ -94,15 +94,15 @@
                 break;                                                                                        \
             case INDEX_TYPE_WINDOW:                                                                           \
                 for ($i = 0; $i < Len; ++$i) {                                                                \
-                    $c = AS_LIST(AS_LIST(index)[5])[$i]->len;                                                 \
-                    $li = index_bin_i32(AS_I32(AS_LIST(AS_LIST(index)[4])[0])[$i], AS_I32(AS_LIST(index)[3]), \
-                                        AS_I64(AS_LIST(AS_LIST(index)[5])[$i]), $c);                          \
-                    $ri = index_bin_i32(AS_I32(AS_LIST(AS_LIST(index)[4])[1])[$i], AS_I32(AS_LIST(index)[3]), \
-                                        AS_I64(AS_LIST(AS_LIST(index)[5])[$i]), $c);                          \
+                    $c = AS_LIST(AS_LIST(Index)[5])[$i]->len;                                                 \
+                    $li = index_bin_i32(AS_I32(AS_LIST(AS_LIST(Index)[4])[0])[$i], AS_I32(AS_LIST(Index)[3]), \
+                                        AS_I64(AS_LIST(AS_LIST(Index)[5])[$i]), $c);                          \
+                    $ri = index_bin_i32(AS_I32(AS_LIST(AS_LIST(Index)[4])[1])[$i], AS_I32(AS_LIST(Index)[3]), \
+                                        AS_I64(AS_LIST(AS_LIST(Index)[5])[$i]), $c);                          \
                     if ($li == NULL_I64)                                                                      \
                         $li = 0;                                                                              \
                     if ($ri == NULL_I64)                                                                      \
-                        $ri = AS_LIST(AS_LIST(index)[5])[$i]->len - 1;                                        \
+                        $ri = AS_LIST(AS_LIST(Index)[5])[$i]->len - 1;                                        \
                     $y = $i;                                                                                  \
                     for ($x = $li; $x <= $ri; ++$x) {                                                         \
                         Aggr;                                                                                 \
@@ -554,10 +554,10 @@ obj_p aggr_max_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
     switch (val->type) {
         case TYPE_I64:
         case TYPE_TIMESTAMP:
-            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = MAXI64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = $in[0], $out[$y] = MAXI64($out[$y], $in[$x]));
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = MAXF64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = $in[0], $out[$y] = MAXF64($out[$y], $in[$x]));
             return res;
         default:
             destroy_partial_result(res);
@@ -602,10 +602,10 @@ obj_p aggr_min_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
     switch (val->type) {
         case TYPE_I64:
         case TYPE_TIMESTAMP:
-            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = MINI64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = $in[0], $out[$y] = MINI64($out[$y], $in[$x]));
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = MINF64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = $in[0], $out[$y] = MINF64($out[$y], $in[$x]));
             return res;
         default:
             res->len = 0;
