@@ -383,6 +383,9 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
         case MTYPE2(TYPE_C8, -TYPE_C8):
         case MTYPE2(-TYPE_C8, TYPE_C8):
             return cmp_fn(x, y, 1, 0, NULL_OBJ);
+        case MTYPE2(TYPE_DICT, TYPE_DICT):
+        case MTYPE2(TYPE_TABLE, TYPE_TABLE):
+            return b8(cmp_obj(x, y) == 0);
     }
 
     if (IS_VECTOR(x) && IS_VECTOR(y)) {
@@ -415,10 +418,11 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
     }
 
     // --- PAGE-ALIGNED CHUNKING ---
-    i64_t elem_size = sizeof(b8_t); // result is always B8 vector
+    i64_t elem_size = sizeof(b8_t);  // result is always B8 vector
     i64_t page_size = RAY_PAGE_SIZE;
     i64_t elems_per_page = page_size / elem_size;
-    if (elems_per_page == 0) elems_per_page = 1;
+    if (elems_per_page == 0)
+        elems_per_page = 1;
     i64_t base_chunk = (l + n - 1) / n;
     base_chunk = ((base_chunk + elems_per_page - 1) / elems_per_page) * elems_per_page;
 
@@ -426,10 +430,12 @@ obj_p cmp_map(raw_p op, obj_p x, obj_p y) {
     i64_t offset = 0;
     for (i = 0; i < n - 1; i++) {
         i64_t this_chunk = base_chunk;
-        if (offset + this_chunk > l) this_chunk = l - offset;
+        if (offset + this_chunk > l)
+            this_chunk = l - offset;
         pool_add_task(pool, op, 5, x, y, this_chunk, offset, res);
         offset += this_chunk;
-        if (offset >= l) break;
+        if (offset >= l)
+            break;
     }
     if (offset < l)
         pool_add_task(pool, op, 5, x, y, l - offset, offset, res);

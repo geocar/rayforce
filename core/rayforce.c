@@ -1895,6 +1895,8 @@ b8_t is_null(obj_p obj) {
 
 i64_t cmp_obj(obj_p a, obj_p b) {
     i64_t i, l, d;
+    obj_p obj_a, obj_b;
+    str_p str_a, str_b;
 
     if (a == b)
         return 0;
@@ -1949,11 +1951,10 @@ i64_t cmp_obj(obj_p a, obj_p b) {
         case TYPE_BINARY:
         case TYPE_VARY:
             return a->i64 - b->i64;
-        case -TYPE_SYMBOL: {
-            str_p str_a = str_from_symbol(a->i64);
-            str_p str_b = str_from_symbol(b->i64);
+        case -TYPE_SYMBOL:
+            str_a = str_from_symbol(a->i64);
+            str_b = str_from_symbol(b->i64);
             return strcmp(str_a, str_b);
-        }
         case -TYPE_F64:
             return (ISNANF64(a->f64) && ISNANF64(b->f64))   ? 0
                    : (ISNANF64(a->f64) || ISNANF64(b->f64)) ? 1
@@ -1963,14 +1964,14 @@ i64_t cmp_obj(obj_p a, obj_p b) {
             return memcmp(AS_GUID(a), AS_GUID(b), sizeof(guid_t));
         case TYPE_B8:
         case TYPE_C8:
-        case TYPE_U8: {
+        case TYPE_U8:
             l = a->len < b->len ? a->len : b->len;
             d = memcmp(AS_C8(a), AS_C8(b), l);
             if (d != 0)
                 return d;
             return a->len - b->len;
-        }
-        case TYPE_I16: {
+
+        case TYPE_I16:
             l = a->len < b->len ? a->len : b->len;
             for (i = 0; i < l; i++) {
                 d = (i64_t)(AS_I16(a)[i] - AS_I16(b)[i]);
@@ -1978,10 +1979,10 @@ i64_t cmp_obj(obj_p a, obj_p b) {
                     return d;
             }
             return a->len - b->len;
-        }
+
         case TYPE_I32:
         case TYPE_DATE:
-        case TYPE_TIME: {
+        case TYPE_TIME:
             l = a->len < b->len ? a->len : b->len;
             for (i = 0; i < l; i++) {
                 d = (i64_t)(AS_I32(a)[i] - AS_I32(b)[i]);
@@ -1989,9 +1990,9 @@ i64_t cmp_obj(obj_p a, obj_p b) {
                     return d;
             }
             return a->len - b->len;
-        }
+
         case TYPE_I64:
-        case TYPE_TIMESTAMP: {
+        case TYPE_TIMESTAMP:
             l = a->len < b->len ? a->len : b->len;
             for (i = 0; i < l; i++) {
                 d = AS_I64(a)[i] > AS_I64(b)[i] ? 1 : AS_I64(a)[i] < AS_I64(b)[i] ? -1 : 0;
@@ -1999,19 +2000,19 @@ i64_t cmp_obj(obj_p a, obj_p b) {
                     return d;
             }
             return a->len - b->len;
-        }
-        case TYPE_SYMBOL: {
+
+        case TYPE_SYMBOL:
             l = a->len < b->len ? a->len : b->len;
             for (i = 0; i < l; i++) {
-                str_p str_a = str_from_symbol(AS_I64(a)[i]);
-                str_p str_b = str_from_symbol(AS_I64(b)[i]);
+                str_a = str_from_symbol(AS_I64(a)[i]);
+                str_b = str_from_symbol(AS_I64(b)[i]);
                 d = strcmp(str_a, str_b);
                 if (d != 0)
                     return d;
             }
             return a->len - b->len;
-        }
-        case TYPE_F64: {
+
+        case TYPE_F64:
             l = a->len < b->len ? a->len : b->len;
             for (i = 0; i < l; i++) {
                 d = (ISNANF64(AS_F64(a)[i]) && ISNANF64(AS_F64(b)[i]))   ? 0
@@ -2022,19 +2023,24 @@ i64_t cmp_obj(obj_p a, obj_p b) {
                     return d;
             }
             return a->len - b->len;
-        }
-        case TYPE_LIST: {
+
+        case TYPE_LIST:
             l = a->len < b->len ? a->len : b->len;
             for (i = 0; i < l; i++) {
-                obj_p elem_a = AS_LIST(a)[i];
-                obj_p elem_b = AS_LIST(b)[i];
-                d = cmp_obj(elem_a, elem_b);
+                obj_a = AS_LIST(a)[i];
+                obj_b = AS_LIST(b)[i];
+                d = cmp_obj(obj_a, obj_b);
                 if (d != 0)
                     return d;
             }
             return a->len - b->len;
-        }
 
+        case TYPE_DICT:
+        case TYPE_TABLE:
+            d = cmp_obj(AS_LIST(a)[0], AS_LIST(b)[0]);
+            if (d != 0)
+                return d;
+            return cmp_obj(AS_LIST(a)[1], AS_LIST(b)[1]);
         default:
             return -1;
     }
