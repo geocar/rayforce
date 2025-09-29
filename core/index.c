@@ -2397,6 +2397,7 @@ obj_p index_asof_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol) {
 
 clean:
     drop_obj(hashes);
+    rl = AS_LIST(ht)[0]->len;
     for (i = 0; i < rl; i++)
         if (AS_I64(AS_LIST(ht)[0])[i] != NULL_I64)
             drop_obj(AS_LIST(AS_LIST(ht)[1])[i]);
