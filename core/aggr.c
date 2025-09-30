@@ -37,80 +37,101 @@
 #include "cmp.h"
 #include "pool.h"
 
-#define AGGR_ITER(Index, Len, Offset, Val, Res, Incoerse, Outcoerse, Ini, Aggr)                               \
-    ({                                                                                                        \
-        i64_t $i, $x, $y, $n, $li, $ri, $fi, $ti;                                                             \
-        i64_t *group_ids, *source, *filter, shift;                                                            \
-        index_type_t index_type;                                                                              \
-        Incoerse##_t *$in;                                                                                    \
-        Outcoerse##_t *$out;                                                                                  \
-        index_type = index_group_type(Index);                                                                 \
-        $n = (index_type == INDEX_TYPE_PARTEDCOMMON) ? 1 : index_group_count(Index);                          \
-        group_ids = index_group_ids(Index);                                                                   \
-        $in = __AS_##Incoerse(Val);                                                                           \
-        $out = __AS_##Outcoerse(Res);                                                                         \
-        for ($y = 0; $y < $n; ++$y) {                                                                         \
-            Ini;                                                                                              \
-        }                                                                                                     \
-        filter = index_group_filter_ids(Index);                                                               \
-        switch (index_type) {                                                                                 \
-            case INDEX_TYPE_SHIFT:                                                                            \
-                source = index_group_source(Index);                                                           \
-                shift = index_group_shift(Index);                                                             \
-                if (filter != NULL) {                                                                         \
-                    for ($i = 0; $i < Len; ++$i) {                                                            \
-                        $x = filter[$i + Offset];                                                             \
-                        $y = group_ids[source[$x] - shift];                                                   \
-                        Aggr;                                                                                 \
-                    }                                                                                         \
-                } else {                                                                                      \
-                    for ($i = 0; $i < Len; ++$i) {                                                            \
-                        $x = $i + Offset;                                                                     \
-                        $y = group_ids[source[$x] - shift];                                                   \
-                        Aggr;                                                                                 \
-                    }                                                                                         \
-                }                                                                                             \
-                break;                                                                                        \
-            case INDEX_TYPE_IDS:                                                                              \
-                if (filter != NULL) {                                                                         \
-                    for ($i = 0; $i < Len; ++$i) {                                                            \
-                        $x = filter[$i + Offset];                                                             \
-                        $y = group_ids[$i + Offset];                                                          \
-                        Aggr;                                                                                 \
-                    }                                                                                         \
-                } else {                                                                                      \
-                    for ($i = 0; $i < Len; ++$i) {                                                            \
-                        $x = $i + Offset;                                                                     \
-                        $y = group_ids[$x];                                                                   \
-                        Aggr;                                                                                 \
-                    }                                                                                         \
-                }                                                                                             \
-                break;                                                                                        \
-            case INDEX_TYPE_PARTEDCOMMON:                                                                     \
-                for ($i = 0; $i < Len; ++$i) {                                                                \
-                    $x = $i + Offset;                                                                         \
-                    $y = 0;                                                                                   \
-                    Aggr;                                                                                     \
-                }                                                                                             \
-                break;                                                                                        \
-            case INDEX_TYPE_WINDOW:                                                                           \
-                for ($i = 0; $i < Len; ++$i) {                                                                \
-                    $c = (i64_t *)AS_I64(AS_LIST(Index)[5])[$i][0];                                           \
-                    $li = index_bin_i32(AS_I32(AS_LIST(AS_LIST(Index)[4])[0])[$i], AS_I32(AS_LIST(Index)[3]), \
-                                        AS_I64(AS_LIST(AS_LIST(Index)[5])[$i]), $c);                          \
-                    $ri = index_bin_i32(AS_I32(AS_LIST(AS_LIST(Index)[4])[1])[$i], AS_I32(AS_LIST(Index)[3]), \
-                                        AS_I64(AS_LIST(AS_LIST(Index)[5])[$i]), $c);                          \
-                    if ($li == NULL_I64)                                                                      \
-                        $li = 0;                                                                              \
-                    if ($ri == NULL_I64)                                                                      \
-                        $ri = AS_LIST(AS_LIST(Index)[5])[$i]->len - 1;                                        \
-                    $y = $i;                                                                                  \
-                    for ($x = $li; $x <= $ri; ++$x) {                                                         \
-                        Aggr;                                                                                 \
-                    }                                                                                         \
-                }                                                                                             \
-                break;                                                                                        \
-        }                                                                                                     \
+i64_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len) {
+    i64_t left, right, mid, idx;
+    left = 0, right = len - 1, idx = 0;
+    vals += offset;
+    while (left <= right) {
+        mid = left + (right - left) / 2;
+        if (vals[mid] <= val) {
+            idx = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return idx + offset;
+}
+
+#define AGGR_ITER(Index, Len, Offset, Val, Res, Incoerce, Outcoerse, Ini, Aggr)                                     \
+    ({                                                                                                              \
+        i64_t $i, $x, $y, $n, $li, $ri, $fi, $ti;                                                                   \
+        i64_t *group_ids, *source, *filter, shift;                                                                  \
+        obj_p $rn;                                                                                                  \
+        index_type_t index_type;                                                                                    \
+        Incoerce##_t *$in;                                                                                          \
+        Outcoerse##_t *$out;                                                                                        \
+        index_type = index_group_type(Index);                                                                       \
+        $n = (index_type == INDEX_TYPE_PARTEDCOMMON) ? 1 : index_group_count(Index);                                \
+        group_ids = index_group_ids(Index);                                                                         \
+        $in = __AS_##Incoerce(Val);                                                                                 \
+        $out = __AS_##Outcoerse(Res);                                                                               \
+        for ($y = 0; $y < $n; ++$y) {                                                                               \
+            Ini;                                                                                                    \
+        }                                                                                                           \
+        filter = index_group_filter_ids(Index);                                                                     \
+        switch (index_type) {                                                                                       \
+            case INDEX_TYPE_SHIFT:                                                                                  \
+                source = index_group_source(Index);                                                                 \
+                shift = index_group_shift(Index);                                                                   \
+                if (filter != NULL) {                                                                               \
+                    for ($i = 0; $i < Len; ++$i) {                                                                  \
+                        $x = filter[$i + Offset];                                                                   \
+                        $y = group_ids[source[$x] - shift];                                                         \
+                        Aggr;                                                                                       \
+                    }                                                                                               \
+                } else {                                                                                            \
+                    for ($i = 0; $i < Len; ++$i) {                                                                  \
+                        $x = $i + Offset;                                                                           \
+                        $y = group_ids[source[$x] - shift];                                                         \
+                        Aggr;                                                                                       \
+                    }                                                                                               \
+                }                                                                                                   \
+                break;                                                                                              \
+            case INDEX_TYPE_IDS:                                                                                    \
+                if (filter != NULL) {                                                                               \
+                    for ($i = 0; $i < Len; ++$i) {                                                                  \
+                        $x = filter[$i + Offset];                                                                   \
+                        $y = group_ids[$i + Offset];                                                                \
+                        Aggr;                                                                                       \
+                    }                                                                                               \
+                } else {                                                                                            \
+                    for ($i = 0; $i < Len; ++$i) {                                                                  \
+                        $x = $i + Offset;                                                                           \
+                        $y = group_ids[$x];                                                                         \
+                        Aggr;                                                                                       \
+                    }                                                                                               \
+                }                                                                                                   \
+                break;                                                                                              \
+            case INDEX_TYPE_PARTEDCOMMON:                                                                           \
+                for ($i = 0; $i < Len; ++$i) {                                                                      \
+                    $x = $i + Offset;                                                                               \
+                    $y = 0;                                                                                         \
+                    Aggr;                                                                                           \
+                }                                                                                                   \
+                break;                                                                                              \
+            case INDEX_TYPE_WINDOW:                                                                                 \
+                for ($i = 0; $i < Len; ++$i) {                                                                      \
+                    $rn = AS_LIST(AS_LIST(Index)[5])[$i];                                                           \
+                    if ($rn == NULL_OBJ) {                                                                          \
+                        Incoerce##_t $nil = __NULL_##Incoerce;                                                      \
+                        memcpy(&$out[$y], &$nil, __SIZE_OF_##Incoerce);                                             \
+                        continue;                                                                                   \
+                    }                                                                                               \
+                    $fi = AS_I64($rn)[0];                                                                           \
+                    $ti = AS_I64($rn)[1];                                                                           \
+                    $li = index_bin_i32_(AS_I32(AS_LIST(AS_LIST(Index)[4])[0])[$i], AS_I32(AS_LIST(Index)[3]), $fi, \
+                                         $ti - $fi);                                                                \
+                    $ri = index_bin_i32_(AS_I32(AS_LIST(AS_LIST(Index)[4])[1])[$i], AS_I32(AS_LIST(Index)[3]), $fi, \
+                                         $ti - $fi);                                                                \
+                    $y = $i;                                                                                        \
+                    for ($x = $li; $x <= $ri; ++$x) {                                                               \
+                        Aggr;                                                                                       \
+                    }                                                                                               \
+                }                                                                                                   \
+                break;                                                                                              \
+        }                                                                                                           \
     })
 
 #define AGGR_COLLECT(parts, groups, incoerse, outcoerse, aggr) \

@@ -205,6 +205,10 @@ nil_t dump_stack(nil_t);
 #define __NULL_i64 __NULL_X(I64)
 #define __NULL_timestamp NULL_I64
 #define __NULL_f64 NULL_F64
+#define __NULL_list NULL_OBJ
+#define __NULL_guid {0}
+#define __NULL_symbol NULL_I64
+#define __NULL_enum NULL_I64
 
 #define XFIRST(x, p) ((x->len == 0) ? __NULL_##p : __AS_##p(x)[0])
 
