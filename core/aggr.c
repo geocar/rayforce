@@ -39,7 +39,7 @@
 
 #define AGGR_ITER(Index, Len, Offset, Val, Res, Incoerse, Outcoerse, Ini, Aggr)                               \
     ({                                                                                                        \
-        i64_t $i, $x, $y, $n, $li, $ri, $c;                                                                   \
+        i64_t $i, $x, $y, $n, $li, $ri, $fi, $ti;                                                             \
         i64_t *group_ids, *source, *filter, shift;                                                            \
         index_type_t index_type;                                                                              \
         Incoerse##_t *$in;                                                                                    \
@@ -95,7 +95,7 @@
                 break;                                                                                        \
             case INDEX_TYPE_WINDOW:                                                                           \
                 for ($i = 0; $i < Len; ++$i) {                                                                \
-                    $c = AS_LIST(AS_LIST(Index)[5])[$i]->len;                                                 \
+                    $c = (i64_t *)AS_I64(AS_LIST(Index)[5])[$i][0];                                           \
                     $li = index_bin_i32(AS_I32(AS_LIST(AS_LIST(Index)[4])[0])[$i], AS_I32(AS_LIST(Index)[3]), \
                                         AS_I64(AS_LIST(AS_LIST(Index)[5])[$i]), $c);                          \
                     $ri = index_bin_i32(AS_I32(AS_LIST(AS_LIST(Index)[4])[1])[$i], AS_I32(AS_LIST(Index)[3]), \

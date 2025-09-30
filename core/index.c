@@ -2494,8 +2494,8 @@ clean:
 
 obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, obj_p windows, obj_p ltab, obj_p rtab) {
     i64_t i, ll, rl;
-    obj_p v, ht, hashes, index;
-    i64_t idx;
+    obj_p ht, hashes, index;
+    i64_t idx, *v;
     __index_list_ctx_t ctx;
 
     ll = ops_count(ltab);
@@ -2510,11 +2510,13 @@ obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, 
         idx = ht_oa_tab_next_with(&ht, i, &__index_list_hash_get, &__index_list_cmp_row, &ctx);
         if (AS_I64(AS_LIST(ht)[0])[idx] == NULL_I64) {
             AS_I64(AS_LIST(ht)[0])[idx] = i;
-            v = I64(1);
-            AS_I64(v)[0] = i;
-            AS_LIST(AS_LIST(ht)[1])[idx] = v;
+            v = (i64_t *)heap_alloc(2 * sizeof(i64_t));
+            v[0] = i;
+            v[1] = i;
+            AS_I64(AS_LIST(ht)[1])[idx] = (i64_t)v;
         } else {
-            push_raw(AS_LIST(AS_LIST(ht)[1]) + idx, (raw_p)&i);
+            v = (i64_t *)AS_I64(AS_LIST(ht)[1])[idx];
+            v[1] = i;
         }
     }
 
@@ -2538,6 +2540,13 @@ obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, 
             }
             break;
         default:
+            drop_obj(hashes);
+            rl = AS_LIST(ht)[0]->len;
+            for (i = 0; i < rl; i++)
+                if (AS_I64(AS_LIST(ht)[0])[i] != NULL_I64)
+                    heap_free((raw_p)AS_LIST(AS_LIST(ht)[1])[i]);
+
+            drop_obj(ht);
             THROW(ERR_TYPE, "index_asof_join_obj: invalid type: %s", type_name(lxcol->type));
     }
 
@@ -2545,7 +2554,7 @@ obj_p index_window_join_obj(obj_p lcols, obj_p lxcol, obj_p rcols, obj_p rxcol, 
     rl = AS_LIST(ht)[0]->len;
     for (i = 0; i < rl; i++)
         if (AS_I64(AS_LIST(ht)[0])[i] != NULL_I64)
-            drop_obj(AS_LIST(AS_LIST(ht)[1])[i]);
+            heap_free((raw_p)AS_LIST(AS_LIST(ht)[1])[i]);
 
     drop_obj(ht);
 
