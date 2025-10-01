@@ -56,7 +56,7 @@ i64_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len) {
 
 #define AGGR_ITER(Index, Len, Offset, Val, Res, Incoerce, Outcoerse, Ini, Aggr)                                     \
     ({                                                                                                              \
-        i64_t $i, $x, $y, $n, $li, $ri, $fi, $ti;                                                                   \
+        i64_t $i, $x, $y, $n, $o, $li, $ri, $fi, $ti;                                                               \
         i64_t *group_ids, *source, *filter, shift;                                                                  \
         obj_p $rn;                                                                                                  \
         index_type_t index_type;                                                                                    \
@@ -64,10 +64,13 @@ i64_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len) {
         Outcoerse##_t *$out;                                                                                        \
         index_type = index_group_type(Index);                                                                       \
         $n = (index_type == INDEX_TYPE_PARTEDCOMMON) ? 1 : index_group_count(Index);                                \
+        if (index_type == INDEX_TYPE_WINDOW)                                                                        \
+            $n = Len;                                                                                               \
+        $o = (index_type == INDEX_TYPE_WINDOW) ? Offset : 0;                                                        \
         group_ids = index_group_ids(Index);                                                                         \
         $in = __AS_##Incoerce(Val);                                                                                 \
         $out = __AS_##Outcoerse(Res);                                                                               \
-        for ($y = 0; $y < $n; ++$y) {                                                                               \
+        for ($y = $o; $y < $n + $o; ++$y) {                                                                         \
             Ini;                                                                                                    \
         }                                                                                                           \
         filter = index_group_filter_ids(Index);                                                                     \
@@ -112,7 +115,8 @@ i64_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len) {
                 }                                                                                                   \
                 break;                                                                                              \
             case INDEX_TYPE_WINDOW:                                                                                 \
-                for ($i = 0; $i < Len; ++$i) {                                                                      \
+                for ($i = Offset; $i < Offset + Len; ++$i) {                                                        \
+                    $y = $i;                                                                                        \
                     $rn = AS_LIST(AS_LIST(Index)[5])[$i];                                                           \
                     if ($rn == NULL_OBJ) {                                                                          \
                         Incoerce##_t $nil = __NULL_##Incoerce;                                                      \
@@ -125,7 +129,6 @@ i64_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len) {
                                          $ti - $fi);                                                                \
                     $ri = index_bin_i32_(AS_I32(AS_LIST(AS_LIST(Index)[4])[1])[$i], AS_I32(AS_LIST(Index)[3]), $fi, \
                                          $ti - $fi);                                                                \
-                    $y = $i;                                                                                        \
                     for ($x = $li; $x <= $ri; ++$x) {                                                               \
                         Aggr;                                                                                       \
                     }                                                                                               \
@@ -173,20 +176,15 @@ i64_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len) {
         $$res;                                                                                        \
     })
 
-obj_p aggr_map(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
+static obj_p aggr_map_other(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
     pool_p pool = runtime_get()->pool;
     i64_t i, l, n, group_count, group_len, out_len, chunk;
     obj_p res;
-    index_type_t index_type;
     raw_p argv[6];
 
-    if (outype > TYPE_MAPLIST && outype < TYPE_TABLE)
-        outype = AS_LIST(val)[0]->type;
-
-    index_type = index_group_type(index);
     group_count = index_group_count(index);
-    group_len = (index_type == INDEX_TYPE_PARTEDCOMMON) ? val->len : index_group_len(index);
-    out_len = (index_type == INDEX_TYPE_PARTEDCOMMON) ? 1 : group_count;
+    group_len = index_group_len(index);
+    out_len = group_count;
 
     n = pool_split_by(pool, group_len, group_count);
 
@@ -195,9 +193,8 @@ obj_p aggr_map(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
         argv[1] = (raw_p)0;
         argv[2] = val;
         argv[3] = index;
-        argv[4] = (index_type == INDEX_TYPE_PARTEDCOMMON) ? vector(outype, 1) : vector(outype, out_len);
+        argv[4] = (raw_p)vector(outype, out_len);
         res = pool_call_task_fn(aggr, 5, argv);
-
         return vn_list(1, res);
     }
 
@@ -211,6 +208,102 @@ obj_p aggr_map(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
     pool_add_task(pool, aggr, 5, l - i * chunk, i * chunk, val, index, vector(outype, out_len));
 
     return pool_run(pool);
+}
+
+static obj_p aggr_map_parted(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
+    pool_p pool = runtime_get()->pool;
+    i64_t i, l, n, group_count, group_len, out_len, chunk;
+    obj_p res;
+    raw_p argv[6];
+
+    group_count = index_group_count(index);
+    group_len = val->len;
+    out_len = 1;
+
+    n = pool_split_by(pool, group_len, group_count);
+
+    if (n == 1) {
+        argv[0] = (raw_p)group_len;
+        argv[1] = (raw_p)0;
+        argv[2] = val;
+        argv[3] = index;
+        argv[4] = vector(outype, out_len);
+        res = pool_call_task_fn(aggr, 5, argv);
+        return vn_list(1, res);
+    }
+
+    pool_prepare(pool);
+    l = group_len;
+    chunk = l / n;
+
+    for (i = 0; i < n - 1; i++)
+        pool_add_task(pool, aggr, 5, chunk, i * chunk, val, index, vector(outype, out_len));
+
+    pool_add_task(pool, aggr, 5, l - i * chunk, i * chunk, val, index, vector(outype, out_len));
+
+    return pool_run(pool);
+}
+
+static obj_p aggr_map_window(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
+    pool_p pool = runtime_get()->pool;
+    i64_t i, l, n, group_count, group_len, out_len, chunk;
+    obj_p v, res;
+    raw_p argv[6];
+
+    group_count = index_group_count(index);
+    group_len = index_group_len(index);
+    out_len = group_count;
+
+    n = pool_get_executors_count(pool);
+    res = vector(outype, out_len);
+
+    if (n == 1) {
+        argv[0] = (raw_p)group_len;
+        argv[1] = (raw_p)0;
+        argv[2] = val;
+        argv[3] = index;
+        argv[4] = (raw_p)res;
+        v = pool_call_task_fn(aggr, 5, argv);
+        if (IS_ERR(v)) {
+            drop_obj(res);
+            return v;
+        }
+        return vn_list(1, res);
+    }
+
+    if (n > group_count)
+        n = group_count;
+
+    pool_prepare(pool);
+    l = group_len;
+    chunk = l / n;
+
+    for (i = 0; i < n - 1; i++)
+        pool_add_task(pool, aggr, 5, chunk, i * chunk, val, index, clone_obj(res));
+
+    pool_add_task(pool, aggr, 5, l - i * chunk, i * chunk, val, index, clone_obj(res));
+
+    v = pool_run(pool);
+    if (IS_ERR(v)) {
+        drop_obj(res);
+        return v;
+    }
+    drop_obj(v);
+    return vn_list(1, res);
+}
+
+static obj_p aggr_map(raw_p aggr, obj_p val, i8_t outype, obj_p index) {
+    if (outype > TYPE_MAPLIST && outype < TYPE_TABLE)
+        outype = AS_LIST(val)[0]->type;
+
+    switch (index_group_type(index)) {
+        case INDEX_TYPE_PARTEDCOMMON:
+            return aggr_map_parted(aggr, val, outype, index);
+        case INDEX_TYPE_WINDOW:
+            return aggr_map_window(aggr, val, outype, index);
+        default:
+            return aggr_map_other(aggr, val, outype, index);
+    }
 }
 
 nil_t destroy_partial_result(obj_p res) {

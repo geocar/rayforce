@@ -100,5 +100,6 @@ nil_t pool_add_task(pool_p pool, raw_p fn, i64_t argc, ...);
 obj_p pool_call_task_fn(raw_p fn, i64_t argc, raw_p argv[]);
 obj_p pool_run(pool_p pool);
 i64_t pool_split_by(pool_p pool, i64_t input_len, i64_t groups_len);
+i64_t pool_get_executors_count(pool_p pool);
 
 #endif  // POOL_H

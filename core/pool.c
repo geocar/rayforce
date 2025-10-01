@@ -449,3 +449,10 @@ i64_t pool_split_by(pool_p pool, i64_t input_len, i64_t groups_len) {
     else
         return pool->executors_count + 1;
 }
+
+i64_t pool_get_executors_count(pool_p pool) {
+    if (pool == NULL)
+        return 1;
+    else
+        return pool->executors_count + 1;
+}
