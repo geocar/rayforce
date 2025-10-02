@@ -111,7 +111,7 @@ nil_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len, i64_t *le
     *right_bound = idx + offset;
 }
 
-#define AGGR_ITER(Index, Len, Offset, Val, Res, Incoerce, Outcoerse, Ini, Aggr)                    \
+#define AGGR_ITER(Index, Len, Offset, Val, Res, Incoerce, Outcoerse, Ini, Aggr, Null)              \
     ({                                                                                             \
         i64_t $i, $x, $y, $n, $o, $li, $ri, $fi, $ti, $kl, $kr;                                    \
         i64_t *group_ids, *source, *filter, shift;                                                 \
@@ -186,8 +186,7 @@ nil_t index_bin_i32_(i32_t val, i32_t vals[], i32_t offset, i64_t len, i64_t *le
                     }                                                                              \
                     if ($rn == NULL_OBJ || AS_I32(AS_LIST(Index)[3])[$li] > $kr ||                 \
                         AS_I32(AS_LIST(Index)[3])[$ri] < $kl) {                                    \
-                        Incoerce##_t $nil = __NULL_##Incoerce;                                     \
-                        memcpy(&$out[$y], &$nil, __SIZE_OF_##Incoerce);                            \
+                        Null;                                                                      \
                         continue;                                                                  \
                     }                                                                              \
                     for ($x = $li; $x <= $ri; ++$x) {                                              \
@@ -376,33 +375,38 @@ obj_p aggr_first_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p a
         case TYPE_U8:
         case TYPE_B8:
         case TYPE_C8:
+            AGGR_ITER(index, len, offset, val, res, u8, u8, $out[$y] = 0, if ($out[$y] == 0) $out[$y] = $in[$x],
+                      $out[$y] = 0);
+            return res;
         case TYPE_I16:
-            AGGR_ITER(index, len, offset, val, res, u8, u8, $out[$y] = 0, if ($out[$y] == 0) $out[$y] = $in[$x]);
+            AGGR_ITER(index, len, offset, val, res, i16, i16, $out[$y] = NULL_I16,
+                      if ($out[$y] == NULL_I16) $out[$y] = $in[$x], $out[$y] = NULL_I16);
             return res;
         case TYPE_I32:
         case TYPE_DATE:
         case TYPE_TIME:
             AGGR_ITER(index, len, offset, val, res, i32, i32, $out[$y] = NULL_I32,
-                      if ($out[$y] == NULL_I32) $out[$y] = $in[$x]);
+                      if ($out[$y] == NULL_I32) $out[$y] = $in[$x], $out[$y] = NULL_I32);
             return res;
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
         case TYPE_ENUM:
             AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = NULL_I64,
-                      if ($out[$y] == NULL_I64) $out[$y] = $in[$x]);
+                      if ($out[$y] == NULL_I64) $out[$y] = $in[$x], $out[$y] = NULL_I64);
             return res;
         case TYPE_F64:
             AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = NULL_F64,
-                      if (ISNANF64($out[$y])) $out[$y] = $in[$x]);
+                      if (ISNANF64($out[$y])) $out[$y] = $in[$x], $out[$y] = NULL_F64);
             return res;
         case TYPE_GUID:
             AGGR_ITER(index, len, offset, val, res, guid, guid, memset($out[$y], 0, sizeof(guid_t)),
-                      if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
+                      if (memcmp($out[$y], NULL_GUID, sizeof(guid_t)) == 0) memcpy($out[$y], $in[$x], sizeof(guid_t)),
+                      memset($out[$y], 0, sizeof(guid_t)));
             return res;
         case TYPE_LIST:
             AGGR_ITER(index, len, offset, val, res, list, list, $out[$y] = NULL_OBJ,
-                      if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]));
+                      if ($out[$y] == NULL_OBJ) $out[$y] = clone_obj($in[$x]), $out[$y] = NULL_OBJ);
             return res;
         default:
             destroy_partial_result(res);
@@ -574,22 +578,25 @@ obj_p aggr_last_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p ar
         case TYPE_TIMESTAMP:
         case TYPE_ENUM:
             AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = NULL_I64,
-                      if ($in[$x] != NULL_I64) $out[$y] = $in[$x]);
+                      if ($in[$x] != NULL_I64) $out[$y] = $in[$x], $out[$y] = NULL_I64);
             return res;
         case TYPE_F64:
             AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = NULL_F64,
-                      if (!ISNANF64($in[$x])) $out[$y] = $in[$x]);
+                      if (!ISNANF64($in[$x])) $out[$y] = $in[$x], $out[$y] = NULL_F64);
             return res;
         case TYPE_GUID:
             AGGR_ITER(index, len, offset, val, res, guid, guid, memset($out[$y], 0, sizeof(guid_t)),
-                      if (memcmp($in[$x], NULL_GUID, sizeof(guid_t)) != 0) memcpy($out[$y], $in[$x], sizeof(guid_t)));
+                      if (memcmp($in[$x], NULL_GUID, sizeof(guid_t)) != 0) memcpy($out[$y], $in[$x], sizeof(guid_t)),
+                      memset($out[$y], 0, sizeof(guid_t)));
             return res;
         case TYPE_LIST:
             AGGR_ITER(
-                index, len, offset, val, res, list, list, $out[$y] = NULL_OBJ, if ($in[$x] != NULL_OBJ) {
+                index, len, offset, val, res, list, list, $out[$y] = NULL_OBJ,
+                if ($in[$x] != NULL_OBJ) {
                     drop_obj($out[$y]);
                     $out[$y] = clone_obj($in[$x]);
-                });
+                },
+                $out[$y] = NULL_OBJ);
             return res;
         default:
             destroy_partial_result(res);
@@ -678,10 +685,12 @@ obj_p aggr_sum_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
 
     switch (val->type) {
         case TYPE_I64:
-            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = ADDI64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, $out[$y] = ADDI64($out[$y], $in[$x]),
+                      $out[$y] = NULL_I64);
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = ADDF64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = 0.0, $out[$y] = ADDF64($out[$y], $in[$x]),
+                      $out[$y] = NULL_F64);
             return res;
         default:
             destroy_partial_result(res);
@@ -726,12 +735,12 @@ obj_p aggr_max_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
     switch (val->type) {
         case TYPE_I64:
         case TYPE_TIMESTAMP:
-            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = NULL_I64,
-                      $out[$y] = MAXI64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = NULL_I64, $out[$y] = MAXI64($out[$y], $in[$x]),
+                      $out[$y] = NULL_I64);
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = NULL_F64,
-                      $out[$y] = MAXF64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = NULL_F64, $out[$y] = MAXF64($out[$y], $in[$x]),
+                      $out[$y] = NULL_F64);
             return res;
         default:
             destroy_partial_result(res);
@@ -776,15 +785,15 @@ obj_p aggr_min_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p arg
     switch (val->type) {
         case TYPE_I64:
         case TYPE_TIMESTAMP:
-            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = INF_I64, $out[$y] = MINI64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = INF_I64, $out[$y] = MINI64($out[$y], $in[$x]),
+                      $out[$y] = NULL_I64);
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = INF_F64, $out[$y] = MINF64($out[$y], $in[$x]));
+            AGGR_ITER(index, len, offset, val, res, f64, f64, $out[$y] = INF_F64, $out[$y] = MINF64($out[$y], $in[$x]),
+                      $out[$y] = NULL_F64);
             return res;
         default:
-            res->len = 0;
-            drop_obj(res);
-            return error(ERR_TYPE, "min: unsupported type: '%s'", type_name(val->type));
+            THROW(ERR_TYPE, "min: unsupported type: '%s'", type_name(val->type));
     }
 }
 
@@ -819,36 +828,51 @@ obj_p aggr_count_partial(raw_p arg1, raw_p arg2, raw_p arg3, raw_p arg4, raw_p a
         case TYPE_I32:
         case TYPE_DATE:
         case TYPE_TIME:
-            AGGR_ITER(index, len, offset, val, res, i32, i64, $out[$y] = 0, {
-                UNUSED($in);
-                $out[$y]++;
-            });
+            AGGR_ITER(
+                index, len, offset, val, res, i32, i64, $out[$y] = 0,
+                {
+                    UNUSED($in);
+                    $out[$y]++;
+                },
+                $out[$y] = 0);
             return res;
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
-            AGGR_ITER(index, len, offset, val, res, i64, i64, $out[$y] = 0, {
-                UNUSED($in);
-                $out[$y]++;
-            });
+            AGGR_ITER(
+                index, len, offset, val, res, i64, i64, $out[$y] = 0,
+                {
+                    UNUSED($in);
+                    $out[$y]++;
+                },
+                $out[$y] = 0);
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, len, offset, val, res, f64, i64, $out[$y] = 0, {
-                UNUSED($in);
-                $out[$y]++;
-            });
+            AGGR_ITER(
+                index, len, offset, val, res, f64, i64, $out[$y] = 0,
+                {
+                    UNUSED($in);
+                    $out[$y]++;
+                },
+                $out[$y] = 0);
             return res;
         case TYPE_GUID:
-            AGGR_ITER(index, len, offset, val, res, guid, i64, $out[$y] = 0, {
-                UNUSED($in);
-                $out[$y]++;
-            });
+            AGGR_ITER(
+                index, len, offset, val, res, guid, i64, $out[$y] = 0,
+                {
+                    UNUSED($in);
+                    $out[$y]++;
+                },
+                $out[$y] = 0);
             return res;
         case TYPE_LIST:
-            AGGR_ITER(index, len, offset, val, res, list, i64, $out[$y] = 0, {
-                UNUSED($in);
-                $out[$y]++;
-            });
+            AGGR_ITER(
+                index, len, offset, val, res, list, i64, $out[$y] = 0,
+                {
+                    UNUSED($in);
+                    $out[$y]++;
+                },
+                $out[$y] = 0);
             return res;
         default:
             res->len = 0;
@@ -957,15 +981,15 @@ obj_p aggr_collect(obj_p val, obj_p index) {
         case TYPE_I32:
         case TYPE_DATE:
         case TYPE_TIME:
-            AGGR_ITER(index, l, 0, val, res, i32, list, , push_raw($out + $y, $in + $x));
+            AGGR_ITER(index, l, 0, val, res, i32, list, , push_raw($out + $y, $in + $x), );
             return res;
         case TYPE_I64:
         case TYPE_SYMBOL:
         case TYPE_TIMESTAMP:
-            AGGR_ITER(index, l, 0, val, res, i64, list, , push_raw($out + $y, $in + $x));
+            AGGR_ITER(index, l, 0, val, res, i64, list, , push_raw($out + $y, $in + $x), );
             return res;
         case TYPE_F64:
-            AGGR_ITER(index, l, 0, val, res, f64, list, , push_raw($out + $y, $in + $x));
+            AGGR_ITER(index, l, 0, val, res, f64, list, , push_raw($out + $y, $in + $x), );
             return res;
         case TYPE_ENUM:
             k = ray_key(val);
@@ -984,11 +1008,14 @@ obj_p aggr_collect(obj_p val, obj_p index) {
                 return error(ERR_TYPE, "enum: '%s' is not a 'Symbol'", type_name(v->type));
             }
 
-            AGGR_ITER(index, l, 0, val, res, i64, list, , push_raw($out + $y, AS_SYMBOL(v) + $in[$x]));
+            AGGR_ITER(index, l, 0, val, res, i64, list, , push_raw($out + $y, AS_SYMBOL(v) + $in[$x]), );
             drop_obj(v);
             return res;
+        case TYPE_GUID:
+            AGGR_ITER(index, l, 0, val, res, guid, list, , push_raw($out + $y, $in + $x), );
+            return res;
         case TYPE_LIST:
-            AGGR_ITER(index, l, 0, val, res, list, list, , push_obj($out + $y, clone_obj($in[$x])));
+            AGGR_ITER(index, l, 0, val, res, list, list, , push_obj($out + $y, clone_obj($in[$x])), );
             return res;
         default:
             drop_obj(res);
@@ -1018,7 +1045,11 @@ obj_p aggr_row_index(obj_p val, obj_p index) {
             $out[$y] = I64(m);
             $out[$y]->len = 0;
         },
-        AS_I64($out[$y])[$out[$y]->len++] = $x);
+        AS_I64($out[$y])[$out[$y]->len++] = $x,
+        {
+            i64_t nil = NULL_I64;
+            AS_I64($out[$y])[$out[$y]->len++] = nil;
+        });
     drop_obj(cnt);
 
     return res;
