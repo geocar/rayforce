@@ -22,6 +22,7 @@
  */
 
 #include "compose.h"
+#include "rayforce.h"
 #include "util.h"
 #include "heap.h"
 #include "ops.h"
@@ -207,14 +208,15 @@ obj_p ray_table(obj_p x, obj_p y) {
         switch (AS_LIST(y)[i]->type) {
             case -TYPE_B8:
             case -TYPE_U8:
-            case -TYPE_I64:
-            case -TYPE_F64:
             case -TYPE_C8:
+            case -TYPE_I16:
             case -TYPE_I32:
-            case -TYPE_DATE:
             case -TYPE_TIME:
+            case -TYPE_DATE:
+            case -TYPE_I64:
             case -TYPE_SYMBOL:
             case -TYPE_TIMESTAMP:
+            case -TYPE_F64:
             case -TYPE_GUID:
             case TYPE_LAMBDA:
             case TYPE_DICT:
@@ -223,13 +225,14 @@ obj_p ray_table(obj_p x, obj_p y) {
                 break;
             case TYPE_B8:
             case TYPE_U8:
+            case TYPE_C8:
+            case TYPE_I16:
             case TYPE_I32:
             case TYPE_DATE:
             case TYPE_TIME:
             case TYPE_I64:
             case TYPE_F64:
             case TYPE_TIMESTAMP:
-            case TYPE_C8:
             case TYPE_SYMBOL:
             case TYPE_LIST:
             case TYPE_GUID:
@@ -274,14 +277,15 @@ obj_p ray_table(obj_p x, obj_p y) {
         switch (AS_LIST(y)[i]->type) {
             case -TYPE_B8:
             case -TYPE_U8:
+            case -TYPE_C8:
+            case -TYPE_I16:
             case -TYPE_I32:
             case -TYPE_DATE:
             case -TYPE_TIME:
             case -TYPE_I64:
-            case -TYPE_F64:
-            case -TYPE_C8:
             case -TYPE_SYMBOL:
             case -TYPE_TIMESTAMP:
+            case -TYPE_F64:
             case -TYPE_GUID:
                 c = i64(cl);
                 AS_LIST(lst)[i] = ray_take(c, AS_LIST(y)[i]);
