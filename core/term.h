@@ -43,6 +43,7 @@
 #define KEYCODE_END 'F'
 #define KEYCODE_ESCAPE 0x1b
 #define KEYCODE_CTRL_C 0x03
+#define KEYCODE_CTRL_D 0x04
 #define KEYCODE_CTRL_U 0x15
 #define KEYCODE_LPAREN '('
 #define KEYCODE_RPAREN ')'

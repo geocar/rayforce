@@ -1323,6 +1323,11 @@ obj_p term_read(term_p term) {
             term->input_len = 0;
             break;
         case KEYCODE_CTRL_C:
+            autocp_reset_current(term);
+            term_handle_ctrl_u(term);
+            term->input_len = 0;
+            break;
+        case KEYCODE_CTRL_D:
             poll_exit(runtime_get()->poll, 0);
             term->input_len = 0;
             break;
