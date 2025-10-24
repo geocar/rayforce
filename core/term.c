@@ -35,6 +35,9 @@
 #include "env.h"
 #include "mmap.h"
 #include "fs.h"
+#if !defined(OS_WINDOWS)
+#include <sys/ioctl.h>
+#endif
 
 #define MAX_PATH_LEN 128
 #define HIST_FILE_PATH ".rayhist.dat"
@@ -52,17 +55,129 @@
 
 nil_t cursor_move_start() { printf("\r"); }
 
-nil_t cursor_move_left(i32_t i) { printf("\033[%dD", i); }
+nil_t cursor_move_left(i32_t i) {
+    if (i > 0)
+        printf("\033[%dD", i);
+}
 
-nil_t cursor_move_right(i32_t i) { printf("\033[%dC", i); }
+nil_t cursor_move_right(i32_t i) {
+    if (i > 0)
+        printf("\033[%dC", i);
+}
+
+nil_t cursor_move_up(i32_t i) {
+    if (i > 0)
+        printf("\033[%dA", i);
+}
+
+nil_t cursor_move_down(i32_t i) {
+    if (i > 0)
+        printf("\033[%dB", i);
+}
 
 nil_t line_clear() { printf("\r\033[K"); }
+
+nil_t line_clear_below() { printf("\033[J"); }
 
 nil_t line_new() { printf("\n"); }
 
 nil_t cursor_hide() { printf("\e[?25l"); }
 
 nil_t cursor_show() { printf("\e[?25h"); }
+
+// Get terminal size
+nil_t term_get_size(term_p term) {
+#if defined(OS_WINDOWS)
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(term->h_stdout, &csbi)) {
+        term->term_width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        term->term_height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    } else {
+        term->term_width = 80;   // Default fallback
+        term->term_height = 24;
+    }
+#else
+    struct winsize w;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == 0) {
+        term->term_width = w.ws_col;
+        term->term_height = w.ws_row;
+    } else {
+        term->term_width = 80;   // Default fallback
+        term->term_height = 24;
+    }
+#endif
+}
+
+// Calculate visual width of a string, excluding ANSI escape codes
+i32_t term_visual_width(const c8_t *str, i32_t len) {
+    i32_t i, width, in_escape;
+
+    width = 0;
+    in_escape = 0;
+
+    for (i = 0; i < len; i++) {
+        if (str[i] == '\033') {
+            in_escape = 1;
+        } else if (in_escape) {
+            if (str[i] == 'm' || str[i] == 'K' || str[i] == 'H' ||
+                str[i] == 'A' || str[i] == 'B' || str[i] == 'C' || str[i] == 'D') {
+                in_escape = 0;
+            }
+        } else {
+            // Handle UTF-8 multi-byte characters
+            if ((str[i] & 0x80) == 0) {
+                width++;  // ASCII
+            } else if ((str[i] & 0xE0) == 0xC0) {
+                width++;  // 2-byte UTF-8
+            } else if ((str[i] & 0xF0) == 0xE0) {
+                width++;  // 3-byte UTF-8
+            } else if ((str[i] & 0xF8) == 0xF0) {
+                width += 2;  // 4-byte UTF-8 (emoji, wide chars)
+            }
+            // Skip continuation bytes (0x80-0xBF)
+        }
+    }
+
+    return width;
+}
+
+// Move cursor from one buffer position to another, handling line wrapping
+nil_t term_goto_position(term_p term, i32_t from_pos, i32_t to_pos) {
+    i32_t from_row, from_col, to_row, to_col, total_width;
+    i32_t row_diff, col_diff;
+
+    if (term->term_width <= 0)
+        return;
+
+    // Calculate total visual width at each position
+    total_width = term->prompt_len + term_visual_width(term->buf, from_pos);
+    from_row = total_width / term->term_width;
+    from_col = total_width % term->term_width;
+
+    total_width = term->prompt_len + term_visual_width(term->buf, to_pos);
+    to_row = total_width / term->term_width;
+    to_col = total_width % term->term_width;
+
+    row_diff = to_row - from_row;
+    col_diff = to_col - from_col;
+
+    // Move vertically first
+    if (row_diff < 0) {
+        cursor_move_up(-row_diff);
+    } else if (row_diff > 0) {
+        cursor_move_down(row_diff);
+    }
+
+    // Then move horizontally
+    if (col_diff < 0) {
+        cursor_move_left(-col_diff);
+    } else if (col_diff > 0) {
+        cursor_move_right(col_diff);
+    }
+
+    // Update tracked cursor row
+    term->last_cursor_row = to_row;
+}
 
 hist_p hist_create() {
     i64_t pos, fd, fsize;
@@ -324,6 +439,12 @@ term_p term_create() {
     term->buf_pos = 0;
     term->hist = hist;
     term->autocp_idx.entry = 0;
+    term->term_width = 80;
+    term->term_height = 24;
+    term->prompt_len = 0;
+    term->last_total_rows = 1;
+    term->last_cursor_row = 0;
+    term_get_size(term);
 
     return term;
 }
@@ -387,6 +508,12 @@ term_p term_create() {
     term->buf_pos = 0;
     term->hist = hist;
     term->autocp_idx.entry = 0;
+    term->term_width = 80;
+    term->term_height = 24;
+    term->prompt_len = 0;
+    term->last_total_rows = 1;
+    term->last_cursor_row = 0;
+    term_get_size(term);
 
     return term;
 }
@@ -416,13 +543,16 @@ i64_t term_getc(term_p term) {
 #endif
 
 nil_t term_prompt(term_p term) {
-    UNUSED(term);
     obj_p prompt = NULL_OBJ;
 
     prompt_fmt_into(&prompt);
+    term->prompt_len = term_visual_width(AS_C8(prompt), (i32_t)prompt->len);
     printf("%.*s", (i32_t)prompt->len, AS_C8(prompt));
     fflush(stdout);
     drop_obj(prompt);
+
+    // Refresh terminal size on each prompt (handles window resize)
+    term_get_size(term);
 }
 
 i64_t term_redraw_into(term_p term, obj_p *dst) {
@@ -533,24 +663,51 @@ i64_t term_redraw_into(term_p term, obj_p *dst) {
 }
 
 nil_t term_redraw(term_p term) {
-    i64_t n;
+    i32_t total_width, i;
     obj_p out = NULL_OBJ;
 
-    term_redraw_into(term, &out);
-
     cursor_hide();
-    cursor_move_start();
-    line_clear();
 
+    // Refresh terminal size
+    term_get_size(term);
+
+    // Strategy: Move cursor back to start using backspaces, then clear forward
+    // This is more reliable than trying to calculate rows with wrapping
+
+    // First, move cursor to the very beginning by going to column 0 and clearing
+    printf("\r");  // Return to column 0 of current line
+
+    // Now we need to clear all the lines we might have used
+    // Move up enough lines to cover any possible wrapping
+    if (term->last_total_rows > 1) {
+        for (i = 1; i < term->last_total_rows; i++) {
+            cursor_move_up(1);
+            printf("\r");  // Start of each line
+        }
+    }
+
+    // Now we should be at the start of the first line
+    // Clear from here to end of screen to remove all old content
+    printf("\033[J");  // Clear from cursor to end of screen
+
+    // Redraw prompt and input (term_redraw_into includes the prompt)
+    term_redraw_into(term, &out);
     printf("%.*s", (i32_t)out->len, AS_C8(out));
+    drop_obj(out);
 
-    n = term->buf_len - term->buf_pos;
-    if (n > 0)
-        cursor_move_left(n);
+    // Calculate and save how many rows the output spans for next time
+    total_width = term->prompt_len + term_visual_width(term->buf, term->buf_len);
+    if (term->term_width > 0) {
+        term->last_total_rows = (total_width + term->term_width - 1) / term->term_width;
+        if (term->last_total_rows == 0) term->last_total_rows = 1;
+    }
+
+    // Position cursor at buf_pos
+    // We're currently at the end of the output
+    term_goto_position(term, term->buf_len, term->buf_pos);
 
     cursor_show();
     fflush(stdout);
-    drop_obj(out);
     autocp_reset_current(term);
 }
 
@@ -981,8 +1138,9 @@ obj_p term_handle_escape(term_p term) {
     // Right arrow esc
     if (IS_ESC(term, "\x1b[C")) {
         if (term->buf_pos < term->buf_len) {
+            i32_t old_pos = term->buf_pos;
             term->buf_pos++;
-            cursor_move_right(1);
+            term_goto_position(term, old_pos, term->buf_pos);
             fflush(stdout);
         }
         goto proceed;
@@ -991,8 +1149,9 @@ obj_p term_handle_escape(term_p term) {
     // Left arrow esc
     if (IS_ESC(term, "\x1b[D")) {
         if (term->buf_pos > 0) {
+            i32_t old_pos = term->buf_pos;
             term->buf_pos--;
-            cursor_move_left(1);
+            term_goto_position(term, old_pos, term->buf_pos);
             fflush(stdout);
         }
         goto proceed;
@@ -1001,8 +1160,9 @@ obj_p term_handle_escape(term_p term) {
     // Home esc
     if (IS_ESC(term, "\x1b[H")) {
         if (term->buf_pos > 0) {
-            cursor_move_left(term->buf_pos);
+            i32_t old_pos = term->buf_pos;
             term->buf_pos = 0;
+            term_goto_position(term, old_pos, term->buf_pos);
             fflush(stdout);
         }
         goto proceed;
@@ -1011,8 +1171,9 @@ obj_p term_handle_escape(term_p term) {
     // End esc
     if (IS_ESC(term, "\x1b[F")) {
         if (term->buf_len > 0) {
-            cursor_move_right(term->buf_len - term->buf_pos);
+            i32_t old_pos = term->buf_pos;
             term->buf_pos = term->buf_len;
+            term_goto_position(term, old_pos, term->buf_pos);
             fflush(stdout);
         }
         goto proceed;

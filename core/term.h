@@ -101,6 +101,11 @@ typedef struct term_t {
     i32_t autocp_buf_pos;
     c8_t autocp_buf[TERM_BUF_SIZE];
     hist_p hist;
+    i32_t term_width;   // Terminal width in columns
+    i32_t term_height;  // Terminal height in rows
+    i32_t prompt_len;   // Length of the prompt (for wrapping calculation)
+    i32_t last_total_rows;  // Number of rows used in last redraw
+    i32_t last_cursor_row;  // Cursor row position from last redraw
 } *term_p;
 
 hist_p hist_create();
@@ -120,10 +125,16 @@ obj_p term_read(term_p term);
 nil_t cursor_move_start();
 nil_t cursor_move_left(i32_t i);
 nil_t cursor_move_right(i32_t i);
+nil_t cursor_move_up(i32_t i);
+nil_t cursor_move_down(i32_t i);
 nil_t line_clear();
+nil_t line_clear_below();
 nil_t line_new();
 nil_t cursor_hide();
 nil_t cursor_show();
 nil_t autocp_reset_current(term_p term);
+nil_t term_get_size(term_p term);
+i32_t term_visual_width(const c8_t *str, i32_t len);
+nil_t term_goto_position(term_p term, i32_t from_pos, i32_t to_pos);
 
 #endif  // TERM_H
