@@ -136,6 +136,17 @@ obj_p ray_reverse(obj_p x) {
 
             return res;
 
+				case TYPE_I32:
+				case TYPE_DATE:
+				case TYPE_TIME:
+            l = x->len;
+            res = vector(x->type, l);
+
+            for (i = 0; i < l; i++)
+                AS_I32(res)[i] = AS_I32(x)[l - i - 1];
+
+            return res;
+
         case TYPE_I64:
         case TYPE_TIMESTAMP:
         case TYPE_SYMBOL:
