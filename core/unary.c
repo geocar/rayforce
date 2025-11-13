@@ -82,8 +82,8 @@ obj_p ray_get(obj_p x) {
             res = (obj_p)mmap_file(fd, NULL, size, 0);
 
             if (IS_EXTERNAL_SERIALIZED(res)) {
-                sz = size;
-                v = de_raw((u8_t *)res, &sz);
+                sz = size - ISIZEOF(struct obj_t);
+                v = de_raw((u8_t *)res + ISIZEOF(struct obj_t), &sz);
                 mmap_free(res, size);
                 fs_fclose(fd);
                 drop_obj(path);
